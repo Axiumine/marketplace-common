@@ -1,0 +1,70 @@
+# Placeholder template. Copy to `.env` (gitignored) and fill in the real values —
+# never commit `.env` itself. See CLAUDE.md / .githooks/pre-commit.
+
+# ── The dev database, named here only so the drop-guard can see it ────────────
+#
+# This package runs no service, so nothing here dials MONGODB_URI: the integration project is handed
+# its own URL, assembled from the MONGO_TEST_* block below, under this very name.
+#
+# It is in the template because `buildTestMongoUrl` in vitest.mongo.mts compares MONGO_TEST_DB
+# against the database MONGODB_URI points at and refuses to run when they are the same — globalSetup
+# drops that database, and the dev and test databases live on one cluster with only the name telling
+# them apart. That comparison reads the value dotenv loaded from `.env`, before the integration
+# project overrides the variable. Leave it empty and the guard is inert: `dbNameFromUri('')` is
+# empty, the check short-circuits, and the one typo it exists to catch goes through.
+#
+# So: same value as the nine services' MONGODB_URI — the dev URI, dbMarketplaceDev. It is a
+# credential; it belongs in the gitignored `.env` and never here.
+MONGODB_URI=
+
+# ── Integration tests: real MongoDB (MONGO_TEST_*) ────────────────────────────
+#
+# `yarn test:int` needs this whole block or it fails fast with a clear
+# "Missing MONGO_TEST_*" message (see vitest.mongo.mts / test/integration/globalSetup.mts)
+# instead of a stack trace or a connection timeout.
+#
+# Copy the four user/password values from marketplace-db-setup/.env — it is the same cluster and
+# the same two users. The database name is this package’s own.
+#
+# Two users on purpose, the same split production uses:
+#   OWNER — dbOwner. test/integration/globalSetup.mts drops MONGO_TEST_DB before the
+#           suite runs. This package has no migrations of its own to replay (that is
+#           marketplace-db-setup's job, and it is only exercised by the services' own
+#           integration suites) — dropping the database is the entire setup step here.
+#   R/W   — readWrite. test/integration/models.int.test.mts connects with this one, so
+#           a schema that quietly needs more than readWrite fails in the suite instead
+#           of in production.
+#
+# ⚠️ THREE variables name the test database and all three must carry the SAME name:
+# MONGO_TEST_DB, MONGO_TEST_AUTH_ADMIN, and the database path of MONGO_TEST_CONN_STRING.
+# vitest.mongo.mts refuses to build a URL when they disagree, because it rebuilds the path from
+# MONGO_TEST_DB — a connection string naming a different database would still connect, and the
+# suite would drop a database that string never mentioned.
+#
+# The name below belongs to this package alone; no other repo may reuse it, since every
+# suite drops its own database.
+#
+# authSource is therefore the test database itself, NOT `admin`: both users have to be created in
+# it, with a role on it — see marketplace-db-setup/setup/mongodb.js. Dropping the database does not
+# delete them; MongoDB keeps every user in admin.system.users whatever its auth database is.
+#
+# Shape: mongodb+srv://<host>/dbMarketplaceTestCommon   (credentials are injected from the pairs below)
+MONGO_TEST_CONN_STRING=
+MONGO_TEST_AUTH_ADMIN=dbMarketplaceTestCommon
+
+# DB OWNER USER
+MONGO_TEST_UDBOWNER=
+MONGO_TEST_PWDDBOWNER=
+
+# R/W USER
+MONGO_TEST_UDBRW=
+MONGO_TEST_PWDDBRW=
+
+MONGO_TEST_DB=dbMarketplaceTestCommon
+
+
+# ── Qodana Ultimate Plus ──────────────────────────────────────────────────────
+# Project token from https://qodana.cloud (project settings → token).
+# Required by ./qodana.sh to run the paid jetbrains/qodana-js linter and to enable
+# coverage / license-audit / taint inspections.
+QODANA_TOKEN=

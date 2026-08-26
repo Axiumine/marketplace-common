@@ -1,0 +1,103 @@
+#-------------------------------------------------------------------------------#
+#               Qodana analysis is configured by qodana.yaml file               #
+#             https://www.jetbrains.com/help/qodana/qodana-yaml.html            #
+#-------------------------------------------------------------------------------#
+version: '1.0'
+
+# Full Ultimate inspection set: code quality + SAST / taint dataflow.
+# Ultimate & Ultimate Plus features unlock via QODANA_TOKEN (see env, run via ./qodana.sh).
+profile:
+  name: qodana.recommended
+
+# Qodana for JS/TS — Ultimate-tier linter (no community JS variant exists).
+# Docker images go under `image:`; `linter:` is for the linter *name* and makes the
+# CLI warn "has image value, please use --image param".
+# 2026.2 is the newest published image tag (pushed 2026-07-27) at the time this was
+# written — check https://hub.docker.com/r/jetbrains/qodana-js/tags before bumping.
+image: jetbrains/qodana-js:2026.2
+
+# ── SCA: third-party license audit (Ultimate Plus) ────────────────────────────
+# Scans npm/Yarn deps and surfaces license conflicts as problems.
+raiseLicenseProblems: true
+
+# `keys` is THIS project's license, `allowed` the dependency licenses accepted
+# against it.
+#
+# ⚠️ **This package is GPL-3.0-or-later, and `keys` had to move with it.** It was
+# "UNLICENSED" — which Qodana maps to PROPRIETARY-LICENSE — right up until the
+# rename to `@axiumine/marketplace-common` and the first public release. `keys`
+# must carry the key Qodana derives from `package.json`, and a `keys` entry that
+# matches no project does not fail: the rule silently does nothing and the audit
+# looks green while checking nothing at all. Both keys are listed so the rule
+# holds whichever way the metadata is read.
+#
+# The `allowed` set is unchanged and needs no argument now: a GPL-3.0-or-later
+# project accepting copyleft dependencies is the ordinary case, not an exception
+# anyone has to sign off. The permissive and public-domain entries below it
+# (MPL-2.0, CC0-1.0) are one-way compatible into GPL-3 and stay for the build-time
+# dependencies that carry them.
+licenseRules:
+  - keys: ['GPL-3.0-or-later', 'PROPRIETARY-LICENSE']
+    allowed:
+      ['GPL-3.0-or-later', 'GPL-3.0-only', 'LGPL-3.0-or-later', 'LGPL-3.0-only', 'PROPRIETARY-LICENSE', 'MPL-2.0', 'CC0-1.0']
+
+# The sibling backend services carry a `dependencyOverrides` entry here for
+# @axiumine/marketplace-common, because Qodana resolves a license reliably for the
+# project it scans and not always for a *dependency*. That entry does not apply
+# here: marketplace-common cannot depend on itself. No other dependency of this
+# package is currently known to ship unparseable license metadata, so the override
+# block is omitted rather than carried over unused. If a future `yarn why` / Qodana
+# run surfaces a real "licenses cannot be recognized" finding on some other
+# dependency, add a scoped entry then — see the sibling services' qodana.yaml for
+# the shape.
+
+# Vulnerable-dependency check (SCA) and taint/SAST run automatically as part of
+# the recommended profile on the Ultimate linter — no extra key required.
+
+# ── Quality gate: 100% test coverage required on every metric ────────────────
+# If coverage is below 100%, the fix is to add tests or delete dead code until it
+# returns to 100% — never lower these numbers. See CLAUDE.md.
+#
+# severityThresholds is what makes the *inspection* results binding. Without it
+# the scan prints "✗ Found N new problems" and still exits 0, so only the
+# coverage condition above could ever fail a run — and vitest already enforces
+# that, leaving the scan with nothing of its own to block on. Verified: the run
+# that reported a High `JSVoidFunctionReturnValueUsed` exited 0.
+#
+# critical/high only. Moderate stays advisory on purpose: the three standing
+# DuplicatedCode notes are test boilerplate that the mutation gate needs spelled
+# out explicitly, and folding them into a shared helper to green a scan would
+# weaken assertions to satisfy a linter.
+failureConditions:
+  severityThresholds:
+    critical: 0
+    high: 0
+  testCoverageThresholds:
+    total: 100 # whole project
+    fresh: 100 # new / changed code
+
+#Enable inspections
+#include:
+#  - name: <SomeEnabledInspectionId>
+
+# ── Disabled inspections ──────────────────────────────────────────────────────
+# semgrep/vendor holds third-party semgrep rulesets, refreshed by its own
+# refresh.sh — not our code. secrets.yml is a catalogue of credential-detection
+# *patterns*, so it is full of example passwords and API keys by design, and
+# HardcodedPasswords reads those literals as real secrets. False positives on a
+# file whose entire purpose is to contain password-shaped strings.
+#
+# Scoped to the path, NOT disabled globally: a genuine hardcoded secret anywhere
+# in src/ must still fail the build. Do not widen this to the whole semgrep/
+# dir either — custom.yml is ours and should stay inspected.
+exclude:
+  - name: HardcodedPasswords
+    paths:
+      - semgrep/vendor
+
+#Execute shell command before Qodana execution (Applied in CI/CD pipeline)
+#bootstrap: sh ./prepare-qodana.sh
+
+#Install IDE plugins before Qodana execution (Applied in CI/CD pipeline)
+#plugins:
+#  - id: <plugin.id> #(plugin id can be found at https://plugins.jetbrains.com)

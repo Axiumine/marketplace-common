@@ -1,0 +1,4 @@
+# Rewrite the yarn.lock registry host on the way in and out of git, so a local
+# npm proxy never leaks into history. See scripts/lockfile-registry-filter.sh.
+# Clones without the filter configured get the public registry URLs verbatim.
+yarn.lock filter=yarnlock-registry

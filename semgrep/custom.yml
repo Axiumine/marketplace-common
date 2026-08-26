@@ -1,0 +1,61 @@
+# Project-specific Semgrep rules for marketplace-common.
+#
+# Registry packs (p/typescript, p/javascript, p/nodejs, p/secrets) are passed
+# on the command line by the `semgrep` / `semgrep:ci` yarn scripts. This file
+# holds only rules specific to the Marketplace platform's own conventions.
+#
+# This is a LIBRARY, not a running Koa service: `src/` has zero console/logger
+# call sites (grep confirms it) and no introspection-code handling of its own
+# — that lives in the seven backend services that consume this package. The
+# sibling services' custom.yml carries three rules; only one of them can ever
+# match anything here, so only that one is vendored:
+#
+#   - marketplace-no-log-introspection-code — DROPPED. This library has no concept
+#     of x-introspectioncode / INTROSPECTION_CODE anywhere in src/
+#     (`grep -ri introspection src` → no hits). An always-empty rule is noise,
+#     not a guard.
+#   - marketplace-no-log-auth-token — DROPPED. The Redis session DTOs this library
+#     defines (`src/others/Redis/IRedisData*`) carry `email`, `_id`,
+#     `onboardingStep` — never a token value; the opaque access/refresh
+#     tokens themselves are minted and (potentially) logged by the
+#     authorization services, not by this package. No accessToken /
+#     refreshToken / bearer literal exists in src/ to guard.
+#   - marketplace-no-log-reset-secret — KEPT (see below). This library owns the
+#     reset-password shape end to end.
+#
+# Note: the sink below is restricted to console / logger / log receivers on
+# purpose — matching any `x.y(...)` call gives false positives (e.g. setting a
+# cookie or a header whose name contains one of these words).
+rules:
+  # This library defines the reset-password sub-document shared by ShopOwner
+  # and Admin: src/models/MongoDBInterfaces/sub/IResetPwdSubDocSchema.mts (the
+  # `resetHash` / `resetDateReq` shape) and src/models/MongoDB/sub/ResetPwdSubDocSchema.mts
+  # (the Mongoose schema built from it). The reset-password flow built on top of
+  # these types, in the public-facing services, is deliberately built so that no
+  # response distinguishes a registered address from an unknown one. Logging the
+  # reset hash — or the address it was issued for — puts that secret, and the
+  # enumeration signal, into the log file. Kept here even though nothing in this
+  # repo currently logs: any helper added next to these schemas is covered from
+  # the start.
+  - id: marketplace-no-log-reset-secret
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Do not log the password-reset hash or the address it was issued for. The hash authenticates the reset link, and logging the pair reintroduces the account-enumeration oracle the flow was written to close.
+    metadata:
+      category: security
+      confidence: MEDIUM
+      references:
+        - src/models/MongoDB/sub/ResetPwdSubDocSchema.mts
+        - src/models/MongoDBInterfaces/sub/IResetPwdSubDocSchema.mts
+    patterns:
+      - pattern-either:
+          - pattern: console.$M(..., $ARG, ...)
+          - patterns:
+              - pattern: $L.$M(..., $ARG, ...)
+              - metavariable-regex:
+                  metavariable: $L
+                  regex: (?i)^(logger|log)$
+      - metavariable-regex:
+          metavariable: $ARG
+          regex: (?i)(resethash|reset_hash|resetpwd|resetdatereq)

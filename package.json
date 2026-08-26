@@ -1,0 +1,434 @@
+{
+	"name": "@axiumine/marketplace-common",
+	"version": "1.0.0",
+	"description": "Marketplace common",
+	"author": "Giovanni Manzoni <dev@giovannimanzoni.com> (https://giovannimanzoni.com)",
+	"homepage": "https://github.com/Axiumine/marketplace-common#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Axiumine/marketplace-common.git"
+	},
+	"bugs": {
+		"url": "https://github.com/Axiumine/marketplace-common/issues"
+	},
+	"license": "GPL-3.0-or-later",
+	"private": false,
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
+	"scripts": {
+		"prepare": "yarn run hooks:install && rm -rf dist && yarn run build",
+		"hooks:install": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .githooks && ./scripts/lockfile-registry-filter.sh install || true",
+		"build": "yarn run build:esm",
+		"prepare:all": "echo 'read REAMDE' && rm -rf dist && yarn run build:all",
+		"build:all": "yarn run build:cjs && yarn run build:esm",
+		"build:cjs": "yarn run tsc -p tsconfig.cjs.json && find dist/cjs -type f -name \"*.js\" -exec bash -c 'mv \"$0\" \"${0%.js}.cjs\"' {} \\; && cp -R dist/cjs/* dist/ && rm -rf dist/cjs",
+		"build:esm": "yarn run tspc -p tsconfig.json",
+		"lint": "eslint --fix . && prettier --write .",
+		"lint:check": "eslint . && prettier --check .",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:cov": "vitest run --coverage",
+		"test:contract": "yarn build && vitest run -c vitest.contract.config.mts",
+		"test:int": "vitest run -c vitest.integration.config.mts",
+		"test:types": "vitest run -c vitest.types.config.mts",
+		"test:mutation": "stryker run",
+		"test:all": "yarn test:cov && yarn test:contract && yarn test:int && yarn test:types",
+		"upload": "npm publish --registry=https://registry.npmjs.org/",
+		"update": "yarn upgrade-interactive --latest --network-timeout 100000",
+		"cloc": "cloc . --exclude-dir=node_modules,dist,.git,upload",
+		"scc": "scc . --exclude-dir=node_modules,dist,.git -w --sort --directory-walker-job-workers=32 --count-as=mts:TypeScript",
+		"semgrep": "docker run --rm --network none -e HOME=/tmp -u \"$(id -u):$(id -g)\" -v \"$PWD\":/src -w /src semgrep/semgrep:1.172.0 semgrep scan --metrics=off --disable-version-check --scan-unknown-extensions --config semgrep/ $(find src -type f \\( -name '*.mts' -o -name '*.cts' -o -name '*.ts' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.js' \\))",
+		"semgrep:ci": "docker run --rm --network none -e HOME=/tmp -u \"$(id -u):$(id -g)\" -v \"$PWD\":/src -w /src semgrep/semgrep:1.172.0 semgrep scan --metrics=off --disable-version-check --scan-unknown-extensions --error --sarif --output semgrep.sarif --config semgrep/ $(find src -type f \\( -name '*.mts' -o -name '*.cts' -o -name '*.ts' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.js' \\))",
+		"qodana": "./qodana.sh"
+	},
+	"engines": {
+		"node": "^24.18.0"
+	},
+	"packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+	"type": "module",
+	"files": [
+		"dist"
+	],
+	"exports": {
+		"./schema/types/fragments/GraphQLBaseAddressFrag": {
+			"import": "./dist/schema/types/fragments/GraphQLBaseAddressFrag.mjs",
+			"types": "./dist/schema/types/fragments/GraphQLBaseAddressFrag.d.mts"
+		},
+		"./schema/types/fragments/GraphQLAddressFrag": {
+			"import": "./dist/schema/types/fragments/GraphQLAddressFrag.mjs",
+			"types": "./dist/schema/types/fragments/GraphQLAddressFrag.d.mts"
+		},
+		"./schema/types/fragments/GraphQLPositionFrag": {
+			"import": "./dist/schema/types/fragments/GraphQLPositionFrag.mjs",
+			"types": "./dist/schema/types/fragments/GraphQLPositionFrag.d.mts"
+		},
+		"./schema/GraphQLInput/GraphQLInputShopOwnerPersonalData": {
+			"import": "./dist/schema/GraphQLInput/GraphQLInputShopOwnerPersonalData.mjs",
+			"types": "./dist/schema/GraphQLInput/GraphQLInputShopOwnerPersonalData.d.mts"
+		},
+		"./models/MongoDBInterfaces/IShopOwnerPersonalData": {
+			"import": "./dist/models/MongoDBInterfaces/IShopOwnerPersonalData.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IShopOwnerPersonalData.d.mts"
+		},
+		"./schema/interfaces/ILoginInput": {
+			"import": "./dist/schema/interfaces/ILoginInput.mjs",
+			"types": "./dist/schema/interfaces/ILoginInput.d.mts"
+		},
+		"./models/MongoDB/ShopOwner": {
+			"import": "./dist/models/MongoDB/ShopOwner.mjs",
+			"types": "./dist/models/MongoDB/ShopOwner.d.mts"
+		},
+		"./models/MongoDBInterfaces/IShopOwnerModel": {
+			"import": "./dist/models/MongoDBInterfaces/IShopOwnerModel.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IShopOwnerModel.d.mts"
+		},
+		"./models/MongoDBInterfaces/IShopOwnerSchema": {
+			"import": "./dist/models/MongoDBInterfaces/IShopOwnerSchema.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IShopOwnerSchema.d.mts"
+		},
+		"./models/MongoDB/Company": {
+			"import": "./dist/models/MongoDB/Company.mjs",
+			"types": "./dist/models/MongoDB/Company.d.mts"
+		},
+		"./models/MongoDBInterfaces/ICompanySchema": {
+			"import": "./dist/models/MongoDBInterfaces/ICompanySchema.mjs",
+			"types": "./dist/models/MongoDBInterfaces/ICompanySchema.d.mts"
+		},
+		"./models/MongoDB/Item": {
+			"import": "./dist/models/MongoDB/Item.mjs",
+			"types": "./dist/models/MongoDB/Item.d.mts"
+		},
+		"./models/MongoDBInterfaces/IItemSchema": {
+			"import": "./dist/models/MongoDBInterfaces/IItemSchema.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IItemSchema.d.mts"
+		},
+		"./models/MongoDB/ItemCategory": {
+			"import": "./dist/models/MongoDB/ItemCategory.mjs",
+			"types": "./dist/models/MongoDB/ItemCategory.d.mts"
+		},
+		"./models/MongoDBInterfaces/IItemCategorySchema": {
+			"import": "./dist/models/MongoDBInterfaces/IItemCategorySchema.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IItemCategorySchema.d.mts"
+		},
+		"./schema/types/fragments/GraphQLItemFrag": {
+			"import": "./dist/schema/types/fragments/GraphQLItemFrag.mjs",
+			"types": "./dist/schema/types/fragments/GraphQLItemFrag.d.mts"
+		},
+		"./schema/types/fragments/GraphQLItemCategoryFrag": {
+			"import": "./dist/schema/types/fragments/GraphQLItemCategoryFrag.mjs",
+			"types": "./dist/schema/types/fragments/GraphQLItemCategoryFrag.d.mts"
+		},
+		"./models/MongoDB/Admin": {
+			"import": "./dist/models/MongoDB/Admin.mjs",
+			"types": "./dist/models/MongoDB/Admin.d.mts"
+		},
+		"./models/MongoDBInterfaces/IAdminModel": {
+			"import": "./dist/models/MongoDBInterfaces/IAdminModel.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IAdminModel.d.mts"
+		},
+		"./models/MongoDBInterfaces/IAdminSchema": {
+			"import": "./dist/models/MongoDBInterfaces/IAdminSchema.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IAdminSchema.d.mts"
+		},
+		"./models/MongoDB/User": {
+			"import": "./dist/models/MongoDB/User.mjs",
+			"types": "./dist/models/MongoDB/User.d.mts"
+		},
+		"./models/MongoDBInterfaces/IUserModel": {
+			"import": "./dist/models/MongoDBInterfaces/IUserModel.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IUserModel.d.mts"
+		},
+		"./models/MongoDBInterfaces/IUserSchema": {
+			"import": "./dist/models/MongoDBInterfaces/IUserSchema.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IUserSchema.d.mts"
+		},
+		"./models/MongoDBInterfaces/IUserPersonalData": {
+			"import": "./dist/models/MongoDBInterfaces/IUserPersonalData.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IUserPersonalData.d.mts"
+		},
+		"./models/MongoDBInterfaces/IUserAddress": {
+			"import": "./dist/models/MongoDBInterfaces/IUserAddress.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IUserAddress.d.mts"
+		},
+		"./schema/GraphQLInput/GraphQLInputUserPersonalData": {
+			"import": "./dist/schema/GraphQLInput/GraphQLInputUserPersonalData.mjs",
+			"types": "./dist/schema/GraphQLInput/GraphQLInputUserPersonalData.d.mts"
+		},
+		"./schema/GraphQLInput/GraphQLInputUserAddress": {
+			"import": "./dist/schema/GraphQLInput/GraphQLInputUserAddress.mjs",
+			"types": "./dist/schema/GraphQLInput/GraphQLInputUserAddress.d.mts"
+		},
+		"./models/MongoDBInterfaces/IAdminEmail": {
+			"import": "./dist/models/MongoDBInterfaces/IAdminEmail.mjs",
+			"types": "./dist/models/MongoDBInterfaces/IAdminEmail.d.mts"
+		},
+		"./encryption/setupFieldEncryption": {
+			"import": "./dist/encryption/setupFieldEncryption.mjs",
+			"types": "./dist/encryption/setupFieldEncryption.d.mts"
+		},
+		"./encryption/encryptDocument": {
+			"import": "./dist/encryption/encryptDocument.mjs",
+			"types": "./dist/encryption/encryptDocument.d.mts"
+		},
+		"./encryption/decryptDocument": {
+			"import": "./dist/encryption/decryptDocument.mjs",
+			"types": "./dist/encryption/decryptDocument.d.mts"
+		},
+		"./encryption/fieldEncryption": {
+			"import": "./dist/encryption/fieldEncryption.mjs",
+			"types": "./dist/encryption/fieldEncryption.d.mts"
+		},
+		"./encryption/encryptedFields": {
+			"import": "./dist/encryption/encryptedFields.mjs",
+			"types": "./dist/encryption/encryptedFields.d.mts"
+		},
+		"./encryption/EncryptionAlgorithm": {
+			"import": "./dist/encryption/EncryptionAlgorithm.mjs",
+			"types": "./dist/encryption/EncryptionAlgorithm.d.mts"
+		},
+		"./encryption/isCiphertext": {
+			"import": "./dist/encryption/isCiphertext.mjs",
+			"types": "./dist/encryption/isCiphertext.d.mts"
+		},
+		"./encryption/wrapKeygripKeys": {
+			"import": "./dist/encryption/wrapKeygripKeys.mjs",
+			"types": "./dist/encryption/wrapKeygripKeys.d.mts"
+		},
+		"./encryption/unwrapKeygripKeys": {
+			"import": "./dist/encryption/unwrapKeygripKeys.mjs",
+			"types": "./dist/encryption/unwrapKeygripKeys.d.mts"
+		},
+		"./encryption/rotateKeygripKeys": {
+			"import": "./dist/encryption/rotateKeygripKeys.mjs",
+			"types": "./dist/encryption/rotateKeygripKeys.d.mts"
+		},
+		"./encryption/retireKeygripKey": {
+			"import": "./dist/encryption/retireKeygripKey.mjs",
+			"types": "./dist/encryption/retireKeygripKey.d.mts"
+		},
+		"./others/assertHashFieldTTLSupport": {
+			"import": "./dist/others/assertHashFieldTTLSupport.mjs",
+			"types": "./dist/others/assertHashFieldTTLSupport.d.mts"
+		},
+		"./others/assertRefreshLineage": {
+			"import": "./dist/others/assertRefreshLineage.mjs",
+			"types": "./dist/others/assertRefreshLineage.d.mts"
+		},
+		"./others/assertTier": {
+			"import": "./dist/others/assertTier.mjs",
+			"types": "./dist/others/assertTier.d.mts"
+		},
+		"./others/assertTurnstile": {
+			"import": "./dist/others/assertTurnstile.mjs",
+			"types": "./dist/others/assertTurnstile.d.mts"
+		},
+		"./others/assertUnderRateLimit": {
+			"import": "./dist/others/assertUnderRateLimit.mjs",
+			"types": "./dist/others/assertUnderRateLimit.d.mts"
+		},
+		"./others/authBoundaryContract": {
+			"import": "./dist/others/authBoundaryContract.mjs",
+			"types": "./dist/others/authBoundaryContract.d.mts"
+		},
+		"./others/checkShopOwnerApproval": {
+			"import": "./dist/others/checkShopOwnerApproval.mjs",
+			"types": "./dist/others/checkShopOwnerApproval.d.mts"
+		},
+		"./others/checkShopOwnerEmailVerified": {
+			"import": "./dist/others/checkShopOwnerEmailVerified.mjs",
+			"types": "./dist/others/checkShopOwnerEmailVerified.d.mts"
+		},
+		"./others/checkUserAuthorizationDisDel": {
+			"import": "./dist/others/checkUserAuthorizationDisDel.mjs",
+			"types": "./dist/others/checkUserAuthorizationDisDel.d.mts"
+		},
+		"./others/constantTimeEquals": {
+			"import": "./dist/others/constantTimeEquals.mjs",
+			"types": "./dist/others/constantTimeEquals.d.mts"
+		},
+		"./others/findAccountForSession": {
+			"import": "./dist/others/findAccountForSession.mjs",
+			"types": "./dist/others/findAccountForSession.d.mts"
+		},
+		"./others/hashSessionToken": {
+			"import": "./dist/others/hashSessionToken.mjs",
+			"types": "./dist/others/hashSessionToken.d.mts"
+		},
+		"./others/IKeygripKeyMaterial": {
+			"import": "./dist/others/IKeygripKeyMaterial.mjs",
+			"types": "./dist/others/IKeygripKeyMaterial.d.mts"
+		},
+		"./others/IRefreshData": {
+			"import": "./dist/others/IRefreshData.mjs",
+			"types": "./dist/others/IRefreshData.d.mts"
+		},
+		"./others/ITombstoneData": {
+			"import": "./dist/others/ITombstoneData.mjs",
+			"types": "./dist/others/ITombstoneData.d.mts"
+		},
+		"./others/isIntrospectionBypassAllowed": {
+			"import": "./dist/others/isIntrospectionBypassAllowed.mjs",
+			"types": "./dist/others/isIntrospectionBypassAllowed.d.mts"
+		},
+		"./others/keygripFingerprint": {
+			"import": "./dist/others/keygripFingerprint.mjs",
+			"types": "./dist/others/keygripFingerprint.d.mts"
+		},
+		"./others/loadKeygrip": {
+			"import": "./dist/others/loadKeygrip.mjs",
+			"types": "./dist/others/loadKeygrip.d.mts"
+		},
+		"./others/newSessionLineage": {
+			"import": "./dist/others/newSessionLineage.mjs",
+			"types": "./dist/others/newSessionLineage.d.mts"
+		},
+		"./others/operatorOnlyFields": {
+			"import": "./dist/others/operatorOnlyFields.mjs",
+			"types": "./dist/others/operatorOnlyFields.d.mts"
+		},
+		"./others/readKeygrip": {
+			"import": "./dist/others/readKeygrip.mjs",
+			"types": "./dist/others/readKeygrip.d.mts"
+		},
+		"./others/recordReuseEvent": {
+			"import": "./dist/others/recordReuseEvent.mjs",
+			"types": "./dist/others/recordReuseEvent.d.mts"
+		},
+		"./others/Redis/IRedisDataAdmin": {
+			"import": "./dist/others/Redis/IRedisDataAdmin.mjs",
+			"types": "./dist/others/Redis/IRedisDataAdmin.d.mts"
+		},
+		"./others/Redis/IRedisDataAdminCommon": {
+			"import": "./dist/others/Redis/IRedisDataAdminCommon.mjs",
+			"types": "./dist/others/Redis/IRedisDataAdminCommon.d.mts"
+		},
+		"./others/Redis/IRedisDataAdminForNode": {
+			"import": "./dist/others/Redis/IRedisDataAdminForNode.mjs",
+			"types": "./dist/others/Redis/IRedisDataAdminForNode.d.mts"
+		},
+		"./others/Redis/IRedisDataShopOwner": {
+			"import": "./dist/others/Redis/IRedisDataShopOwner.mjs",
+			"types": "./dist/others/Redis/IRedisDataShopOwner.d.mts"
+		},
+		"./others/Redis/IRedisDataShopOwnerCommon": {
+			"import": "./dist/others/Redis/IRedisDataShopOwnerCommon.mjs",
+			"types": "./dist/others/Redis/IRedisDataShopOwnerCommon.d.mts"
+		},
+		"./others/Redis/IRedisDataShopOwnerForNode": {
+			"import": "./dist/others/Redis/IRedisDataShopOwnerForNode.mjs",
+			"types": "./dist/others/Redis/IRedisDataShopOwnerForNode.d.mts"
+		},
+		"./others/Redis/IRedisDataUser": {
+			"import": "./dist/others/Redis/IRedisDataUser.mjs",
+			"types": "./dist/others/Redis/IRedisDataUser.d.mts"
+		},
+		"./others/Redis/IRedisDataUserCommon": {
+			"import": "./dist/others/Redis/IRedisDataUserCommon.mjs",
+			"types": "./dist/others/Redis/IRedisDataUserCommon.d.mts"
+		},
+		"./others/Redis/IRedisDataUserForNode": {
+			"import": "./dist/others/Redis/IRedisDataUserForNode.mjs",
+			"types": "./dist/others/Redis/IRedisDataUserForNode.d.mts"
+		},
+		"./others/refreshRateLimit": {
+			"import": "./dist/others/refreshRateLimit.mjs",
+			"types": "./dist/others/refreshRateLimit.d.mts"
+		},
+		"./others/refreshSessionTokens": {
+			"import": "./dist/others/refreshSessionTokens.mjs",
+			"types": "./dist/others/refreshSessionTokens.d.mts"
+		},
+		"./others/resolveAuthorizationSession": {
+			"import": "./dist/others/resolveAuthorizationSession.mjs",
+			"types": "./dist/others/resolveAuthorizationSession.d.mts"
+		},
+		"./others/ReuseEventAction": {
+			"import": "./dist/others/ReuseEventAction.mjs",
+			"types": "./dist/others/ReuseEventAction.d.mts"
+		},
+		"./others/revokeAllSessionsForAccount": {
+			"import": "./dist/others/revokeAllSessionsForAccount.mjs",
+			"types": "./dist/others/revokeAllSessionsForAccount.d.mts"
+		},
+		"./others/revokeSessionFamily": {
+			"import": "./dist/others/revokeSessionFamily.mjs",
+			"types": "./dist/others/revokeSessionFamily.d.mts"
+		},
+		"./others/sentryBeforeSend": {
+			"import": "./dist/others/sentryBeforeSend.mjs",
+			"types": "./dist/others/sentryBeforeSend.d.mts"
+		},
+		"./others/sessionKeys": {
+			"import": "./dist/others/sessionKeys.mjs",
+			"types": "./dist/others/sessionKeys.d.mts"
+		},
+		"./others/sessionLifetime": {
+			"import": "./dist/others/sessionLifetime.mjs",
+			"types": "./dist/others/sessionLifetime.d.mts"
+		},
+		"./others/sha256Hex": {
+			"import": "./dist/others/sha256Hex.mjs",
+			"types": "./dist/others/sha256Hex.d.mts"
+		},
+		"./others/throwRefreshRaceRetry": {
+			"import": "./dist/others/throwRefreshRaceRetry.mjs",
+			"types": "./dist/others/throwRefreshRaceRetry.d.mts"
+		},
+		"./others/Tier": {
+			"import": "./dist/others/Tier.mjs",
+			"types": "./dist/others/Tier.d.mts"
+		},
+		"./others/watchKeygrip": {
+			"import": "./dist/others/watchKeygrip.mjs",
+			"types": "./dist/others/watchKeygrip.d.mts"
+		}
+	},
+	"dependencies": {
+		"graphql-scalars": "^1.25.0"
+	},
+	"peerDependencies": {
+		"@axiumine/koa-utils": "*",
+		"@node-rs/bcrypt": "*",
+		"dotenv": "*",
+		"graphql": "*",
+		"mongodb": "*",
+		"mongodb-client-encryption": "*",
+		"mongoose": "*",
+		"reflect-metadata": "*"
+	},
+	"devDependencies": {
+		"@axiumine/eslint-config-be": "^2.0.1",
+		"@axiumine/koa-utils": "^6.0.0",
+		"@eslint/eslintrc": "^3.3.5",
+		"@eslint/js": "^10.0.1",
+		"@node-rs/bcrypt": "^1.10.7",
+		"@sentry/node": "^10.69.0",
+		"@stryker-mutator/core": "^9.6.1",
+		"@stryker-mutator/vitest-runner": "^9.6.1",
+		"@types/node": "^26.1.1",
+		"@typescript-eslint/eslint-plugin": "^8.36.0",
+		"@typescript-eslint/parser": "^8.36.0",
+		"@vitest/coverage-v8": "^4.1.10",
+		"dotenv": "^17.2.0",
+		"eslint": "^10.8.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-import-resolver-typescript": "^4.4.4",
+		"eslint-plugin-n": "^18.2.2",
+		"eslint-plugin-promise": "^7.2.1",
+		"eslint-plugin-simple-import-sort": "^14.0.0",
+		"graphql": "^16.11.0",
+		"mongodb": "^7.5.0",
+		"mongodb-client-encryption": "^7.2.1",
+		"mongoose": "^9.1.1",
+		"prettier": "^3.9.6",
+		"reflect-metadata": "^0.2.2",
+		"ts-node": "^10.9.2",
+		"ts-patch": "^3.3.0",
+		"typescript": "^5.8.3",
+		"typescript-transform-paths": "^3.5.5",
+		"uuid": "^14.0.1",
+		"vitest": "^4.1.10"
+	}
+}
