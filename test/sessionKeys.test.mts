@@ -233,6 +233,28 @@ describe('readSessionHash', () => {
 	})
 
 	/*
+	 * ⚠️ **The empty hash is minted here, never the reply handed back.** `Object.keys(hash).length !== 0`
+	 * is the only thing deciding that, and no shape assertion can see it — the reply and the hash this
+	 * returns are both empty — so the assertion is identity.
+	 *
+	 * The fixture is the *odd* half of this helper's doc comment rather than a plain `{}`: an empty array
+	 * has no keys either, so it takes the same exit, and a caller handed it back would be branching on
+	 * `Array.isArray` where the signature promises a record. That is the difference between "your session
+	 * expired" and an incident, which is the whole reason the two answers are made to converge here.
+	 */
+	it('mints the empty hash rather than passing an odd empty reply through', async () => {
+		vi.stubEnv('REDIS_KEY', REDIS_KEY)
+		const odd = [] as unknown as Record<string, string>
+		const s = store({ hGetAll: vi.fn(async () => odd) })
+
+		const read = await readSessionHash(s, TOKEN)
+
+		expect(read).not.toBe(odd)
+		expect(Array.isArray(read)).toBe(false)
+		expect(read).toEqual({})
+	})
+
+	/*
 	 * ⚠️ A nullish reply is a miss, not a crash. `Object.keys(null)` throws a `TypeError`, which the
 	 * GraphQL layer answers with a 500 — so without the guard the difference between "your session
 	 * expired" and "the platform is broken" would be decided by what the client handed back. The caller
