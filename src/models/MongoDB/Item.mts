@@ -8,9 +8,10 @@ import { model, Schema } from 'mongoose'
  * `itemCategory` document rather than a model, a migration and a set of resolvers. Nothing here may
  * presume what is sold, and do not reintroduce a per-type model.
  *
- * ⚠️ **No `price`.** Cart, order, delivery and payment have no model on this platform yet, so a
- * price would be a guess at a currency, a precision, a VAT treatment and a discount model at once.
- * It lands with the ordering tier.
+ * ⚠️ **No `price`, permanently.** Cart, order, delivery and payment are permanently out of scope on
+ * this platform (ADR-038, 2026-08-27), so a price would be a guess at a currency, a precision, a VAT
+ * treatment and a discount model at once, with nothing to resolve the guess against. It lands with
+ * nothing: there is no ordering tier coming, and a display-only price was refused the same day.
  *
  * `required` here matches the collection validator field for field, which it can afford to do
  * because the collection was created empty by `20260804030000-create-item` — `collMod` does not

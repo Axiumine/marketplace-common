@@ -11,9 +11,11 @@ import { Types } from 'mongoose'
  * collection name. **Do not reintroduce a per-type model** — that is exactly the duplication this
  * pair exists to avoid.
  *
- * ⚠️ **There is no `price`.** Cart, order, delivery and payment have no model anywhere on this
- * platform and no design decision behind them yet, so a price would be a guess at a currency, a
- * precision, a VAT treatment and a discount model at once. It arrives with the ordering tier.
+ * ⚠️ **There is no `price`, and there never will be.** Cart, order, delivery and payment are
+ * permanently out of scope on this platform — ADR-038, the platform owner's decision of 2026-08-27 —
+ * so a price would be a guess at a currency, a precision, a VAT treatment and a discount model at
+ * once, with nothing to resolve the guess against. It does not arrive later: there is no ordering
+ * tier to arrive with, and a display-only price was offered and refused on the same day.
  *
  * Neither `idCompany` nor `idCategory` is enforced by the database, so nothing stops an item
  * pointing at a company that was never created. The resolvers check both before writing, the same
