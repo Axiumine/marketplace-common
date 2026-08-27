@@ -13,8 +13,16 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v1.0.1...HEAD)
 
-Nothing yet. `src/` and `package.json` are untouched since `v1.0.1`, so the tarball this would build is
-byte-identical to the published one and there is nothing to release.
+`src/` is untouched since `v1.0.1`, so `dist/` — the whole of `files` — is byte-identical to the
+published tarball's and **there is nothing to release**.
+
+### Changed
+
+- `devDependencies`: `@axiumine/koa-utils` `^6.0.0` → `^7.0.0`, in step with the nine services
+  (2026-08-27). Ships no change to `dist/`. A consumer never installs this package's
+  `devDependencies`, and the sole API change in `koa-utils@7` — `uploadTemp` renamed
+  `uploadTempImage` — is not on any path this package compiles, so nothing a consumer can observe
+  moves. `peerDependencies` still ranges `@axiumine/koa-utils` at `*` and is deliberately untouched.
 
 ## [1.0.1](https://github.com/Axiumine/marketplace-common/releases/tag/v1.0.1) - 2026-08-27
 
