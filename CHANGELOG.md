@@ -11,17 +11,29 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v1.0.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v1.0.1...HEAD)
 
-Nothing consumer-facing. `src/` and `package.json` are untouched since `v1.0.0`, so the tarball this
-would build is byte-identical to the published one and there is nothing to release yet.
+Nothing yet. `src/` and `package.json` are untouched since `v1.0.1`, so the tarball this would build is
+byte-identical to the published one and there is nothing to release.
+
+## [1.0.1](https://github.com/Axiumine/marketplace-common/releases/tag/v1.0.1) - 2026-08-27
+
+A directory rename in the workspace around this package, plus the repo plumbing that had accumulated
+since `v1.0.0`. Exactly one string a consumer can observe changes; no behaviour does.
 
 ### Changed
 
+- **The Redis-too-old error thrown by `assertHashFieldTTLSupport` now names `marketplace-docker-DBs/README.md`**
+  rather than `docker-DBs/README.md`, following the rename of that directory. The message text is the only
+  runtime-visible difference in this release — a consumer asserting on the old string must update it.
+- JSDoc in `assertHashFieldTTLSupport`, `recordKeygripHolder` and `sessionKeys` follows the same rename.
+  `removeComments` is off, so comments are emitted and this does reach `dist/`.
 - The local npm mirror is opt-in and its host is read from yarn's own configuration rather than from a
   tracked file. Installs default to `registry.npmjs.org`; nothing in the repo names a mirror, and a
-  clean/smudge filter keeps the mirror host out of the committed `yarn.lock`. Repo plumbing —
-  `scripts/lockfile-registry-filter.sh`, `.githooks/pre-commit`, `yarnrc`, docs. No change to `dist/`.
+  clean/smudge filter keeps the mirror host out of the committed `yarn.lock`. `scripts/lockfile-registry-filter.sh`
+  now builds the filter command from `git rev-parse --show-prefix`, so one script is correct both at a repo
+  root and in a package tracked inside a larger repo. Repo plumbing — `.githooks/pre-commit`, `yarnrc`, docs.
+  No change to `dist/`.
 - Test coverage for the empty-hash identity path in `sessionKeys`, killing a surviving mutant. Test-only.
   No change to `dist/`.
 
