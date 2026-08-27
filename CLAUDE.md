@@ -237,6 +237,38 @@ repo in the workspace is push-on-request.
   missing assertion.
 - Tabs, not spaces. English only. Node `^24.18.0`, yarn classic.
 
+## ⚠️ Publishing a release — the mandatory flow
+
+Every published version follows these steps **in this order**, and all of them. Skipping one is what
+produces a tag pointing at no release, a `dist/` that disagrees with its own version number, a changelog
+that still claims the tarball is byte-identical to the last one, or a silent publish to a local mirror.
+
+1. **Decide the bump from what reaches `dist/`, not from the size of the diff.** `files` is `["dist"]`, so
+   repo plumbing ships nothing at all. But `removeComments` is off, so JSDoc *is* emitted — a comment edit
+   in `src/` does change the tarball. A changed thrown-error string is consumer-observable: patch at least.
+2. **Branch.** `git switch -c chore/release-<version>`. Never on `main`.
+3. **Bump `package.json`** — `npm version <version> --no-git-tag-version`. The flag is not optional: the
+   tag belongs on `main` after the merge, and letting npm create it here strands it on the branch.
+4. **Update `CHANGELOG.md` in the same commit.** Move `[Unreleased]` into a new `[<version>]` section dated
+   today, re-point the `[Unreleased]` compare link at the new tag, and leave `[Unreleased]` empty. Mark every
+   entry that ships no change to `dist/` as such — that is what lets the next reader tell a release worth
+   publishing from one that only moved plumbing.
+5. **Commit, merge to `main` with `--no-ff`, delete the branch** (`git branch -d`, in the same breath).
+6. **Tag `main`: annotated, message = the version.** `git tag -a v<version> -m "v<version>"`. Lightweight
+   tags are not used in this repo.
+7. **Push commit and tag together** — `git push origin main --follow-tags`. `pre-push` runs the full gate
+   (semgrep → engines → lint → coverage → mutation). That hook is the only sanctioned mutation run.
+8. **Publish with `yarn upload`, never a bare `npm publish`.** See §Registry traps: `yarn upload` pins
+   `--registry=https://registry.npmjs.org/`, and on a machine pointed at a local mirror a bare publish goes
+   to the mirror instead and still prints success.
+9. **Verify, then bump consumers deliberately** — `npm view @axiumine/marketplace-common version`. Consumers
+   resolve through their own `yarn.lock`, so a new version reaches none of them until that lockfile is
+   updated. That is separate work in each consuming repo, and it is not part of this flow.
+
+⚠️ **`deploy-local.sh` is not a release.** It copies into one consumer's `node_modules` and produces no
+lockfile entry, so nothing about it is reproducible on another machine or in CI. It is for iterating
+locally — never for making a change reach a consumer permanently.
+
 ## Commands
 
 ```bash
