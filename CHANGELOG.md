@@ -36,6 +36,8 @@ since `v1.0.0`. Exactly one string a consumer can observe changes; no behaviour 
   No change to `dist/`.
 - Test coverage for the empty-hash identity path in `sessionKeys`, killing a surviving mutant. Test-only.
   No change to `dist/`.
+- `CLAUDE.md` records the mandatory release flow — bump, changelog, merge, annotated tag, push, `yarn upload`
+  — so a publish cannot skip a step. Documentation. No change to `dist/`.
 
 ## [1.0.0](https://github.com/Axiumine/marketplace-common/releases/tag/v1.0.0) - 2026-08-26
 
