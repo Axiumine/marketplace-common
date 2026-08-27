@@ -27,8 +27,8 @@ const UNKNOWN_COMMAND = /unknown command/i
  * ⚠️ **This exists because Redis does not check commands at startup — it checks them at first use.**
  * Without this, a platform pointed at a 7.2 server boots cleanly, serves every read, and then fails the
  * *first login of the day* with `ERR unknown command 'HEXPIRE'` from inside a rollback, in one service,
- * with the cause three layers below the symptom. The floor is written down in `docker-DBs/README.md`
- * §Redis and pinned by `docker-DBs/env`, but a pin is one edit away from being lowered and a developer's
+ * with the cause three layers below the symptom. The floor is written down in `marketplace-docker-DBs/README.md`
+ * §Redis and pinned by `marketplace-docker-DBs/env`, but a pin is one edit away from being lowered and a developer's
  * own Redis was never pinned by anything — so the platform asks the server it actually got.
  *
  * ⚠️ **Anything that is not "unknown command" is rethrown untouched.** A connection refused at boot is a
@@ -42,7 +42,7 @@ export async function assertHashFieldTTLSupport(store: IHashFieldTTLProbeStore):
 		if (!UNKNOWN_COMMAND.test(`${(e as Error)?.message}`)) throw e
 
 		throw new Error(
-			'Redis is older than 7.4.0: hash-field TTLs (HEXPIRE/HTTL) are missing, and the session index cannot prune itself without them. See docker-DBs/README.md §Redis.'
+			'Redis is older than 7.4.0: hash-field TTLs (HEXPIRE/HTTL) are missing, and the session index cannot prune itself without them. See marketplace-docker-DBs/README.md §Redis.'
 		)
 	}
 }

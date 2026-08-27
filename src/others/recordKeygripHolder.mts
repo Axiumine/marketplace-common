@@ -23,7 +23,7 @@ export const KEYGRIP_HOLDER_TTL_SECONDS = 3_600
 /**
  * The two verbs writing a holders row needs.
  *
- * `hExpire` is Redis 7.4's per-field TTL — the platform runs 7.4 (`docker-DBs/docker-compose.yml`). Per
+ * `hExpire` is Redis 7.4's per-field TTL — the platform runs 7.4 (`marketplace-docker-DBs/docker-compose.yml`). Per
  * *field*, not per key: one expiry on the hash would take the whole table with it, including the rows of
  * every service that is still alive.
  */
