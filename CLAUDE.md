@@ -85,9 +85,11 @@ argument.
 ⚠️ **`Item` and `ItemCategory` are one domain-neutral catalogue.** Nothing here may presume what is sold;
 reintroducing a per-type model would restore exactly the duplication a single catalogue exists to avoid.
 
-- **`Item` has no `price`.** Cart, order, delivery and payment have no model anywhere on this platform and
-  no design decision behind them, so a price would be a guess at a currency, a precision, a VAT treatment
-  and a discount model at once. It arrives with the ordering tier.
+- **`Item` has no `price`, and never will.** Cart, order, delivery and payment are **permanently out of
+  scope** on this platform — ADR-038, the platform owner's decision of 2026-08-27 — so a price would be a
+  guess at a currency, a precision, a VAT treatment and a discount model at once, with nothing that will
+  ever resolve it. It arrives with nothing: there is no ordering tier coming, and a display-only price was
+  offered and refused the same day. Adding the field contradicts an accepted ADR.
 - **`ItemCategory`'s two-level cap is enforced in neither this model nor the collection validator**, and
   cannot be: "my parent must itself be top-level" reads a *second* document, and a Mongoose path and a
   MongoDB validator each see exactly one. `itemCategoryAdd` / `itemCategoryUpdate` in the Admin resource

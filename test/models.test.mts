@@ -520,8 +520,9 @@ describe('Item schema — full field verification', () => {
 	/*
 	 * ⚠️ The absence of `price` is asserted, not merely unwritten.
 	 *
-	 * Cart, order, delivery and payment have no model anywhere on this platform, so a price would be a
-	 * guess at a currency, a precision, a VAT treatment and a discount model at once — and the
+	 * Cart, order, delivery and payment are permanently out of scope on this platform (ADR-038,
+	 * 2026-08-27), so a price would be a guess at a currency, a precision, a VAT treatment and a
+	 * discount model at once, with nothing that will ever resolve the guess — and the
 	 * collection validator is `additionalProperties: false`, so a path added here in good faith fails
 	 * every write of every item rather than being quietly ignored.
 	 */

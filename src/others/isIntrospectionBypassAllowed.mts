@@ -1,7 +1,7 @@
 /**
  * Whether the `x-introspectioncode` authentication bypass may run at all in this process. Every site
- * that compares `INTROSPECTION_CODE` calls this **first**, so outside the two environments below the
- * configured value is never read and the header is indistinguishable from a header nobody sent.
+ * that compares `INTROSPECTION_CODE` calls this **first**, so outside the two environments it admits
+ * the configured value is never read and the header is indistinguishable from a header nobody sent.
  *
  * The bypass exists so a service-to-service caller — and a developer pointing a GraphQL client at a
  * port — can reach the schema with no cookie and no `Authorization` header at all. That is a
@@ -10,12 +10,14 @@
  * which refuses the introspection *query* while leaving the *authentication* bypass fully live. The
  * header was therefore a production credential, whatever it was meant to be.
  *
- * ⚠️ **An allowlist, never `NODE_ENV !== 'production'`.** The denylist form is the natural way to
- * write this and it is the wrong polarity: it fails **open** on precisely the input most likely to be
- * wrong — unset, empty, `Production`, `staging`, a typo, whatever a broken deploy script exports — and
- * an unset `NODE_ENV` is the ordinary failure of every container runtime on this platform. Here an
- * unrecognised value refuses, so a mislabelled environment loses a development convenience rather than
- * opening authentication.
+ * ⚠️ **Re-exported, not reimplemented.** The predicate itself is
+ * `@axiumine/koa-utils/lib/isIntrospectionBypassAllowed`, added in `6.0.0`, where
+ * `verifyIntrospectionCode` evaluates it as its own first statement. This platform kept a second copy
+ * of the same allowlist from E13-S11 until `2.0.0` of this package; two definitions of one security
+ * predicate can only ever agree by luck, so the copy is gone and this module forwards. Its doc there
+ * carries the reason the allowlist must never become `NODE_ENV !== 'production'` — the negated form
+ * fails **open** on an unset, empty, `Production` or `staging` value, which is the ordinary failure of
+ * a container runtime and of a deploy script. Do not substitute it, here or upstream.
  *
  * ⚠️ **This does not replace `INTROSPECTION_CODE` in `REQUIRED_ENV_VARS`, and removing it there is the
  * tidy-up to refuse.** The comparison sites interpolate the variable, so an unset one stringifies to
@@ -30,6 +32,4 @@
  * E14-S08, and the plaintext Redis leg, R45). This gate is written to hold with the port open, which is
  * why it is an environment check rather than an allowlist of peers.
  */
-export function isIntrospectionBypassAllowed() {
-	return process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
-}
+export { isIntrospectionBypassAllowed } from '@axiumine/koa-utils/lib/isIntrospectionBypassAllowed'

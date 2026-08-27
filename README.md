@@ -48,8 +48,9 @@ commands used and nothing more, so importing a Mongoose model from here does not
 - **A company *is* a shop.** There is no `shop` model and there will not be one; the chain is
   `shopOwner ──idShopOwner──> company ──idCompany──> item`.
 - **The catalogue is domain-neutral.** `Item` and `ItemCategory` presume nothing about what is sold. `Item` carries no
-  `price` — cart, order, delivery and payment have no model on this platform yet, so a price would be a guess at a
-  currency, a precision, a VAT treatment and a discount model at once.
+  `price` and never will — cart, order, delivery and payment are permanently out of scope on this platform (ADR-038,
+  2026-08-27), so a price would be a guess at a currency, a precision, a VAT treatment and a discount model at once,
+  with nothing that will ever resolve it.
 - **Role is which collection you authenticate against**, not a field. There is no `role` and no permission enum
   anywhere; each tier has its own collection, its own service pair and its own `tier` value in the session, and
   `assertTier` is what refuses a foreign-tier token — with a 403, and treating a missing `tier` as invalid rather than
