@@ -195,7 +195,7 @@ git show :yarn.lock | grep -cF "$MIRROR"                # index: expect 0
 ```
 
 Only this repo has the mechanism. The other sub-repos commit whatever host their lockfile was resolved
-against; `services-status` has no lockfile at all. The same three files fix each of them, and are the thing
+against; `marketplace-services-status` has no lockfile at all. The same three files fix each of them, and are the thing
 to port rather than reinvent.
 
 ## Test layout

@@ -25,7 +25,7 @@ export interface ISessionKeyStore {
  *
  * ⚠️ **`hExpire` is why this platform's Redis floor is 7.4.0** — hash-field TTLs exist in no earlier
  * release, and Redis refuses an unknown command at the first call rather than at startup. The floor is
- * written down in `docker-DBs/README.md` §Redis, pinned by `docker-DBs/env`, and asserted at boot by
+ * written down in `marketplace-docker-DBs/README.md` §Redis, pinned by `marketplace-docker-DBs/env`, and asserted at boot by
  * `assertHashFieldTTLSupport` so a server that cannot do this says so before it serves a request.
  */
 export interface ISessionIndexStore {
