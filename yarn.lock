@@ -38,10 +38,10 @@
   resolved "https://registry.npmjs.org/@axiumine/eslint-config-be/-/eslint-config-be-2.0.1.tgz#5ea6b80ec91583742efd4925e0d3acce8cc7412a"
   integrity sha512-6xpapwLuKYSSP4ywTsM/TF23zOSvUwSjjOPWorgrbCeh9JoJnH4rVU+njAN7yunAuZslqbIy0SGaUUJ2G0hDqg==
 
-"@axiumine/koa-utils@^6.0.0":
-  version "6.0.0"
-  resolved "https://registry.npmjs.org/@axiumine/koa-utils/-/koa-utils-6.0.0.tgz#7b4720d7141f2f41ed55d42a4b383c60c520dd0c"
-  integrity sha512-SNqJOkXoc4K1Uny/uehHdPgHnS2Qpp854PY8uKG4W4TvpjzqkytjFlF38XAZv+1FZZkajLU/KfJ6G8pgJvosaA==
+"@axiumine/koa-utils@^7.0.0":
+  version "7.0.0"
+  resolved "https://registry.npmjs.org/@axiumine/koa-utils/-/koa-utils-7.0.0.tgz#df7f93668107ec1b1442d1dc215fd287a3add452"
+  integrity sha512-V1VdbDkXTBlSvJcTEwWma3K6DZU1kPjMPoNcaomCmquCKWBQ89frWrk55SwmYxO1ApojuWa2G+/TdqnSGupCaA==
 
 "@babel/code-frame@^7.29.7":
   version "7.29.7"
