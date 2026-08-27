@@ -73,20 +73,6 @@ yarn test:mutation  # Stryker, break threshold 100
 Coverage and mutation are both gated at 100 and are enforced by git hooks. Never lower a threshold to get a commit
 through — add the missing assertion.
 
-### Registry
-
-`yarn.lock` always resolves against `https://registry.npmjs.org/`, so a plain clone installs with no extra setup.
-
-Maintainers who install through a private npm mirror should not commit its host: a git clean/smudge filter rewrites the
-`resolved` URLs in both directions, keeping the mirror in the working copy and the public registry in history.
-`yarn install` configures it (via `prepare` → `hooks:install`); point it at your own mirror with `YARN_PROXY_REGISTRY`.
-A pre-commit check rejects any lockfile that still names a non-public host.
-
-## Versioning
-
-`1.0.0` is the first release under this name. The package reached `4.4.0` privately under a different scope;
-the rename to `@axiumine` restarted the numbering. Same code, new name, new number.
-
 ## License
 
 GPL-3.0-or-later — see [LICENSE](./LICENSE).

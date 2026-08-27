@@ -7,7 +7,7 @@ Building blocks only; nothing here listens on a port.
 
 | Need | File |
 |---|---|
-| consumer-facing overview, import paths, versioning | [`README.md`](./README.md) |
+| consumer-facing overview, import paths | [`README.md`](./README.md) |
 | hooks, build, registry filter, test layout | [`REPO.md`](./REPO.md) |
 | why the three authz svcs stay three | parent [`docs/decisions/authorization-service-consolidation.md`](https://github.com/Axiumine/fullstack-marketplace-blueprint/blob/main/docs/decisions/authorization-service-consolidation.md) |
 
@@ -213,12 +213,15 @@ Assertions that pass while the code is wrong, and what replaces them:
 
 ## Registry traps
 
-⚠️ **`yarn upload` pins `--registry=https://registry.npmjs.org/`.** Yarn 1 exports the `.yarnrc` registry to
-child processes as `npm_config_registry`, so a bare `npm publish` run through yarn publishes *to the LAN
-mirror* — silently, and with a success message.
+⚠️ **`yarn upload` pins `--registry=https://registry.npmjs.org/`.** Yarn 1 exports whatever registry it is
+configured with to child processes as `npm_config_registry`, so on a machine pointed at a local mirror a bare
+`npm publish` through yarn publishes *to that mirror* — silently, and with a success message.
 
-Installs go through `yarnproxy.gio.lan:4873` while git and npmjs must only ever see `registry.npmjs.org`; a
-clean/smudge filter keeps the two apart. How it works, and how to verify it: [`REPO.md`](./REPO.md).
+**Installs come from `registry.npmjs.org`, and nothing tracked in this repo names a mirror.** A mirror is
+opt-in, configured the ordinary way — gitignored `.yarnrc`, or `~/.yarnrc` — and there is no second switch:
+`yarn install` (`prepare` → `hooks:install`) reads that same `npm_config_registry` and records the host, and a
+clean/smudge filter keeps it out of the committed `yarn.lock`. Point yarn back at public npm and the next
+install tears the filter down again. How to opt in and out, and how to verify either: [`REPO.md`](./REPO.md).
 
 ## Version control
 
