@@ -108,39 +108,90 @@ must drop the copy too, or the maps break again in the CJS half.
 `../../src/x.mts` names a file no consumer has. The sources are embedded, which is what makes the shipped
 maps resolvable off this checkout — about 36 KB across the whole of `dist/`.
 
-## Registry: proxy on disk, public npm in git
+## Registry: public npm by default, a local mirror only if you ask
 
-Installs go through the LAN mirror `yarnproxy.gio.lan:4873`; git and npmjs must only ever see
-`registry.npmjs.org`. Yarn 1 writes **absolute** tarball URLs into every `resolved` line of `yarn.lock`, so
-installing through the mirror would put a host that resolves on one LAN into ~477 lines of a lockfile this
-repo publishes on a public GitHub, and `yarn install` would then fail for every clone not on that LAN. The
-npm tarball is unaffected (`files: ["dist"]` keeps `yarn.lock` out of it); clones are not.
+Every clone installs from `registry.npmjs.org`, and its `yarn.lock` keeps the public URLs — on the first
+install and on every one after it. Nothing below runs unless a machine explicitly opts in, and that is the
+default the whole section exists to protect.
 
-Three parts, all copied from `@axiumine/koa-utils`, which solved this first — **keep the two in sync rather
-than letting them drift**:
+The committed lockfile names `registry.npmjs.org` throughout, and that is the host to keep. Yarn 1's *own*
+default is `registry.yarnpkg.com`, npm's CDN alias, so re-resolving the lockfile from scratch with stock yarn
+config rewrites all 510 lines to it. Both are public and both install for everyone, so the pre-commit gate
+accepts either rather than rejecting a contributor who never went near a mirror.
+
+Installing through a local mirror is what needs machinery. Yarn 1 writes **absolute** tarball URLs into every
+`resolved` line of `yarn.lock`, so a mirrored install would put a host that resolves on one network only into
+510 lines of a lockfile this repo publishes on a public GitHub, and `yarn install` would then fail for every
+clone that cannot reach it. The npm tarball is unaffected (`files: ["dist"]` keeps `yarn.lock` out of it);
+clones are not.
+
+Three parts:
 
 |Part|Does|
 |---|---|
-|`scripts/lockfile-registry-filter.sh`|`clean` (worktree → git) rewrites proxy → npmjs; `smudge` (git → worktree) rewrites npmjs → proxy; `install` writes the filter into `.git/config` and reconciles the current checkout; `uninstall` removes it|
+|`scripts/lockfile-registry-filter.sh`|`clean` (worktree → git) rewrites mirror → npmjs; `smudge` (git → worktree) rewrites npmjs → mirror; `install` reads the mirror out of yarn, records it, writes the filter into `.git/config` and reconciles the current checkout; `uninstall` restores the public URLs and removes both|
 |`.gitattributes`|`yarn.lock filter=yarnlock-registry` — binds the filter to the one file|
-|`.githooks/pre-commit`|blocks any commit whose **staged** `yarn.lock` still resolves against a non-public host|
+|`.githooks/pre-commit`|blocks any commit whose **indexed** `yarn.lock` resolves against a non-public host — the two public registries pass, everything else blocks|
 
-The filter definition lives in `.git/config`, which git never clones, so it applies only to checkouts that
-ran `yarn install` (→ `prepare` → `hooks:install`). Everyone else gets the public URLs verbatim, which is
-the point. `required` is deliberately `false`: a missing script must degrade to passthrough, not break
-checkout. Override the mirror per machine with `YARN_PROXY_REGISTRY`.
+### Opting in
 
-A fresh clone lands the public URLs *before* the filter exists, and git will not re-smudge a file it
-already considers up to date — `hooks:install` therefore rewrites `yarn.lock` in place once, by hand. If
-the worktree lock ever disagrees with what you expect, `touch yarn.lock && git add yarn.lock` re-runs
-`clean` on it.
-
-Verify both directions at any time:
+**There is no switch of this repo's own to set.** Point yarn at the mirror the way you would for any project
+— the gitignored `.yarnrc`, or `~/.yarnrc` for every project on the machine — and install:
 
 ```bash
-grep -c 'yarnproxy\.gio\.lan' yarn.lock          # worktree: expect all of them
-git show :yarn.lock | grep -c 'registry\.npmjs'  # index: expect the same count
-git show :yarn.lock | grep -c 'yarnproxy'        # index: expect 0
+printf 'registry "http://<your-mirror>/"\n' > .yarnrc   # this checkout only
+yarn config set registry 'http://<your-mirror>/'        # or every project, ~/.yarnrc
+yarn install
+```
+
+`install` takes the host from **yarn itself**: yarn 1 exports the effective registry to every script it runs,
+this one included (`prepare` → `hooks:install`), as `npm_config_registry`. That value already folds in
+`.yarnrc`, `~/.yarnrc` and a `--registry` flag, so a mirror configured *globally* — which no repo-local
+setting could see — is caught as well. A second variable naming the same host would be a second source of
+truth, and the case it would miss is exactly the dangerous one: yarn on a mirror, the filter unaware, the LAN
+host in the index.
+
+The host is then written to `yarnlock-registry.mirror` in `.git/config`, with the filter next to it. git never
+clones `.git/config`, so the choice is per-checkout and reaches nobody else.
+
+⚠️ **`clean` and `smudge` read the host back from `.git/config`, never from yarn.** git runs them as its own
+subprocesses, from whichever shell happened to touch the file — an IDE checkout, a hook's `git add`, a rebase
+— and none of those carry yarn's environment. Reading it from there would let one direction fire while the
+other did not, and the two disagreeing is precisely the state that puts a mirror host into a public lockfile.
+Hence a recorded copy, refreshed on every install.
+
+`z-ram.sh` asks yarn the same question, with `yarn config get registry`, and **refuses to run** on a public
+answer: it wipes `node_modules` before installing, so with no mirror in play it would do nothing but refill it
+from npmjs over the internet.
+
+### Opting back out
+
+Point yarn back at the public registry (remove `.yarnrc`, or `yarn config delete registry`) and run
+`yarn install`. `install` sees a public `npm_config_registry`, and a mirror recorded earlier is now stale — so
+it tears the filter down for you rather than leaving `smudge` writing a host into `yarn.lock` that nothing
+fetches from any more. `./scripts/lockfile-registry-filter.sh uninstall` does the same thing directly.
+
+Either way the worktree is rewritten back to the public URLs *before* the config is dropped — the other order
+leaves the mirror host in the worktree with the filter that would have stripped it already gone, so the next
+`git add` stages it and the pre-commit gate blocks the commit.
+
+Running the script **by hand** outside yarn is the one case with no `npm_config_registry` to read: no
+information, so no opinion — whatever is recorded stays.
+
+`required` is deliberately `false`: a missing script must degrade to passthrough, not break checkout.
+
+A fresh clone lands the public URLs *before* the filter exists, and git will not re-smudge a file it already
+considers up to date — `install` therefore rewrites `yarn.lock` in place once, by hand. If the worktree lock
+ever disagrees with what you expect, `touch yarn.lock && git add yarn.lock` re-runs `clean` on it.
+
+Verify both directions at any time. An empty first line is the answer on a machine that never opted in — there
+is no filter and nothing to check:
+
+```bash
+MIRROR="$(git config --get yarnlock-registry.mirror)"   # empty → public npm, no filter, stop here
+grep -cF "$MIRROR" yarn.lock                            # worktree: expect all of them
+git show :yarn.lock | grep -c 'registry\.npmjs'         # index: expect the same count
+git show :yarn.lock | grep -cF "$MIRROR"                # index: expect 0
 ```
 
 Only this repo has the mechanism. The other sub-repos commit whatever host their lockfile was resolved
@@ -178,11 +229,3 @@ survivor was a weak assertion, and the holes it exposed were real (the embedded 
 no type or required checks at all, the `LoginSubDocSchema` pre-save hook never asserted the field name it
 passes to `isModified()`, a shared field-shape checker checked `.required` but never `.type`). Most of
 those models are gone now; the shape of the weakness is not.
-
-## Versioning
-
-[`README.md`](./README.md) has the story. In short: the package was renamed and renumbered in one move —
-a private scope at `4.4.0` became `@axiumine/marketplace-common@1.0.0`. The old scope is gone from every
-package here and is not coming back — the 4.x line was never a public release train, so the reset cost no
-installed consumer anything. If you meet a `4.x` number in an old note, it is the same code under the old
-name.
