@@ -1,6 +1,6 @@
 {
 	"name": "@axiumine/marketplace-common",
-	"version": "1.0.1",
+	"version": "2.0.0",
 	"description": "Marketplace common",
 	"author": "Giovanni Manzoni <dev@giovannimanzoni.com> (https://giovannimanzoni.com)",
 	"homepage": "https://github.com/Axiumine/marketplace-common#readme",
@@ -389,7 +389,7 @@
 		"graphql-scalars": "^1.25.0"
 	},
 	"peerDependencies": {
-		"@axiumine/koa-utils": "*",
+		"@axiumine/koa-utils": ">=6",
 		"@node-rs/bcrypt": "*",
 		"dotenv": "*",
 		"graphql": "*",
