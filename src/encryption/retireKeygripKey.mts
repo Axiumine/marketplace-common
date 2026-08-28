@@ -15,8 +15,9 @@ export const KEYGRIP_RETIRE_UNKNOWN = 'KEYGRIP_RETIRE_UNKNOWN'
  * The key array with one named key removed (ADR-034, E16-S04).
  *
  * This is the operation for a *suspected compromise*, and it is the only one on this platform that drops a
- * key before its age says it may go. `rotateKeygripKeys` retires from the old end and only when
- * `SESSION_CAP_DAYS_REMEMBERED` has passed, because nobody should be logged out by routine maintenance;
+ * key before its age says it may go. `rotateKeygripKeys` retires from the old end and only once
+ * `SESSION_CAP_DAYS_REMEMBERED` has passed **since the key was demoted**, because nobody should be logged
+ * out by routine maintenance;
  * here the operator is asking for the opposite trade deliberately, and every cookie the retired key signed
  * stops verifying the moment the last process picks the change up.
  *
