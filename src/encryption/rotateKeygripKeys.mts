@@ -64,7 +64,7 @@ const nextKeyId = (keys: readonly IKeygripKeyMaterial[]) => {
  * minting one is the only thing that demotes another. Nothing needs storing, and `IKeygripKeyMaterial`
  * keeps its three fields.
  *
- * `forceRetire` can take an entry out of the middle, which makes the neighbour newer than the key that
+ * `retireKeygripKey` can take an entry out of the middle, which makes the neighbour newer than the key that
  * actually did the demoting — so the derived instant can only ever read *late*, and reading late keeps a
  * key nobody needs rather than dropping one somebody does. The error is on the side that costs a byte.
  *
