@@ -13,7 +13,26 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v2.0.1...HEAD)
 
-Nothing since `v2.0.1`.
+`@axiumine/koa-utils@7.1.0` puts the Redis connection scheme behind a `REDIS_TLS` flag, and this package's
+E13-S05 tripwire fired on the bump exactly as it was built to. **Nothing here reaches a consumer**: the change
+is a devDependency range and a test file, `dist/` — the whole of `files` — is byte-identical to the published
+tarball's, and `peerDependencies` still ranges `@axiumine/koa-utils` at `>=6`, which `7.1.0` satisfies. There
+is nothing to release, and this section stays until something else earns one.
+
+### Changed
+
+- **`devDependencies`: `@axiumine/koa-utils` `^7.0.0` → `^7.1.0`** (2026-08-28). Ships no change to `dist/`,
+  and a consumer never installs this package's `devDependencies`. The `peerDependencies` range is left at
+  `>=6` deliberately: nothing on a path this package compiles reaches the new capability, so narrowing it
+  would refuse installs for no gain.
+- **`test/redisScheme.test.mts` retargeted, not deleted.** Its three cases asserted that koa-utils *still*
+  forced plaintext `redis://` on the cluster branch — a recorded "we cannot fix this" turns into a lie the
+  moment the blocker disappears, which is what the assertion existed to catch. `7.1.0` removed it, all three
+  failed, and six cases now assert the shape of the capability instead: no hardcoded scheme in the rootNodes,
+  the flag carried into `defaults.socket`, the single-node URL routed through `resolveRedisUrl()`, the exact
+  `=== 'true'` match, the `rediss`/`redis` choice, and the fail-closed refusal of a plaintext `REDIS_URL`.
+  ⚠️ **R45 does not close** — nothing in the consuming workspace sets the flag and the dev Redis serves no
+  TLS listener, so the leg is still cleartext, now by deployment rather than by upstream constraint.
 
 ## [2.0.1](https://github.com/Axiumine/marketplace-common/releases/tag/v2.0.1) - 2026-08-28
 
