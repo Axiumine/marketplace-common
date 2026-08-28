@@ -167,9 +167,20 @@ Reasoning and rejected alternatives: the decision doc named above.
 
 Four design points that look like accidents otherwise:
 
-- **The Redis client is a parameter, not an import.** `ISessionReadStore` / `ISessionWriteStore` declare the
-  four commands used and nothing more. Importing `redisClient` from koa-utils would drag the `redis` types
-  in and make a Redis install a precondition for importing a Mongoose model.
+- **The Redis client is a parameter, not an import.** `ISessionWriteStore` (`src/others/refreshSessionTokens.mts`)
+  declares eight commands — `hSet`, `expire`, `del`, `sAdd`, `incr`, `ttl`, `hExpire`, `hDel` — and nothing
+  more. `ISessionReadStore` (`src/others/resolveAuthorizationSession.mts`) is declared `extends
+  ISessionFamilyStore`, the interface `revokeSessionFamily` (`src/others/revokeSessionFamily.mts`) owns, rather
+  than taking a second store parameter: `revokeSessionFamily` needs the family key (`sMembers`, `del`) and the
+  resolver needs to read a session, so extending gives the resolver one injection point instead of two, both
+  backed by the same `redisClient`. `ISessionFamilyStore` in turn extends `IReuseEventStore`
+  (`src/others/recordReuseEvent.mts`, `lPush`/`lTrim`/`expire`) for the same reason. Importing `redisClient`
+  from koa-utils would drag the `redis` types in and make a Redis install a precondition for importing a
+  Mongoose model.
+
+  The set has grown before and will again: E14 added the family `sAdd`, the reuse tombstone (reusing the
+  existing `hSet`/`expire`), and the mint-rate `incr`/`ttl`. Treat any number stated here as a snapshot, not
+  a fact — re-read the interface declarations above before relying on a count.
 - **`TAuthorizationSession<TAccountData>` is the declared type of `ctx.state.user` in all three services.**
   `TAccountData` is exactly the tier's `IRedisData…Common` —
   which is why those three DTOs got `exports` entries. Tying context state to the helper's return type is
