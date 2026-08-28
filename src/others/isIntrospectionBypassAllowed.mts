@@ -26,10 +26,17 @@
  * repo's boot check is the second half of that.
  *
  * ⚠️ **Neither of those two is a network boundary, and none is assumed.** The nine services bind the
- * wildcard address by decision (ADR-022), so the header reaches whatever can open a socket to the port,
- * and *which* callers those are is the production topology no document describes — recorded as owed by
- * **ADR-032**, alongside the other two findings bounded by the same unknown (the `refresh` flood,
- * E14-S08, and the plaintext Redis leg, R45). This gate is written to hold with the port open, which is
- * why it is an environment check rather than an allowlist of peers.
+ * wildcard address by decision (ADR-022), so the header reaches whatever can open a socket to the port.
+ * *Which* callers those are was the production topology no document described — recorded as owed by
+ * **ADR-032** until **ADR-039** (2026-08-28) superseded it and wrote the topology down: Cloudflare at the
+ * edge, one application host behind a default-deny cloud security group, and the datastores on a separate
+ * host on a private segment the platform owner declares trusted.
+ *
+ * ⚠️ **That changes nothing in this file, by the new ADR's own requirement.** ADR-039 §5 keeps this
+ * allowlist unconditional and names E13-S11 while doing it, because it narrows the old standing rule
+ * rather than lifting it: a network boundary may be cited as a second layer and never as the whole
+ * argument. So this gate stays written to hold with the port open, which is why it is an environment
+ * check rather than an allowlist of peers. Of the three findings once bounded by that one unknown, only
+ * R46 closed with the ADR — the `refresh` flood (E14-S08) and the plaintext Redis leg (R45) did not.
  */
 export { isIntrospectionBypassAllowed } from '@axiumine/koa-utils/lib/isIntrospectionBypassAllowed'

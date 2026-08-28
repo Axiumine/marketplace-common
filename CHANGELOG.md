@@ -11,9 +11,34 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v2.0.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v2.0.1...HEAD)
 
-Nothing since `v2.0.0`.
+Nothing since `v2.0.1`.
+
+## [2.0.1](https://github.com/Axiumine/marketplace-common/releases/tag/v2.0.1) - 2026-08-28
+
+Two JSDoc blocks stop describing the production topology as undecided. `ADR-039` (2026-08-28) supersedes
+`ADR-032` and writes it down, which made the shipped comments wrong the day it was accepted — and
+`removeComments` is off, so those comments are in `dist/` on the registry rather than only in the repo.
+**No exported symbol, signature, thrown string or runtime path changes**, and no control is relaxed:
+ADR-039 §5 narrows the old standing rule instead of lifting it, so a network boundary may be cited as a
+second layer and never as the whole argument. Both files now say that in the place they previously said
+the topology was owed. A patch and not a `docs:` no-op purely because the tarball differs.
+
+### Changed
+
+- **`others/isIntrospectionBypassAllowed` — JSDoc only.** The paragraph that recorded the topology as owed
+  by `ADR-032` now records `ADR-039`: Cloudflare at the edge, one application host behind a default-deny
+  cloud security group, datastores on a separate host on a private segment the platform owner declares
+  trusted. It then states what did **not** change — the `NODE_ENV` allowlist stays unconditional, which
+  ADR-039 §5 requires by name (E13-S11) — so the new boundary cannot be read as a licence to relax it.
+  Reaches `dist/`.
+- **`others/refreshRateLimit` — JSDoc only.** Same substitution on the hand-off paragraph, plus the same
+  explicit *nothing is resized* clause for both buckets (E14-S08, named in ADR-039 §5). Reaches `dist/`.
+- Of the three findings those two blocks named as bounded by one unknown, **only `R46` closed** with the
+  ADR. `R45` — the Redis leg is still cleartext — is re-scored 🟢 Low and stays **open**, blocked on
+  `@axiumine/koa-utils` hardcoding `redis://` in `createCluster`. Both blocks now say so, because a
+  reader who saw only the closure would draw the wrong conclusion about the wire.
 
 ## [2.0.0](https://github.com/Axiumine/marketplace-common/releases/tag/v2.0.0) - 2026-08-27
 
