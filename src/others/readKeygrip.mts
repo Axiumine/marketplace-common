@@ -1,5 +1,6 @@
 import { unwrapKeygripKeys } from '@encryption/unwrapKeygripKeys.mjs'
 import { IKeygripKeyMaterial } from '@others/IKeygripKeyMaterial.mjs'
+import { readKek } from '@others/readKek.mjs'
 import { keygripKey } from '@others/sessionKeys.mjs'
 
 /**
@@ -20,9 +21,6 @@ export interface IKeygripRecord {
 	keys: IKeygripKeyMaterial[]
 }
 
-/** Bytes a decoded `KEYGRIP_KEK` must be — AES-256 takes a 256-bit key and nothing else. */
-const KEK_BYTES = 32
-
 /**
  * Reads the fleet's cookie-signing keys out of Redis and unwraps them, or throws (ADR-034).
  *
@@ -36,7 +34,10 @@ const KEK_BYTES = 32
  *
  * - `KEYGRIP_RECORD_MISSING` — nobody has minted a key set yet, or the record was flushed with the rest
  *   of Redis. The operator runs the seed script. Nothing is wrong with the caller.
- * - `KEYGRIP_KEK_MISMATCH` — a key set exists and this process cannot open it. Its `KEYGRIP_KEK` differs
+ * - `KEYGRIP_KEK_MISMATCH` — a key set exists and this process cannot open it. The length half of that
+ *   refusal is `readKek`'s, which every KEK decode on the platform goes through (ADR-040); the unwrap half
+ *   is below, because only a caller holding the record can tell that the key is the wrong one rather than
+ *   the wrong shape. Its `KEYGRIP_KEK` differs
  *   from the one the record was written under. For a signing service, starting anyway would be the
  *   split-brain this whole design removes; for the rotation mutation, rewrapping anyway would hand the
  *   fleet a record none of it can open.
@@ -54,10 +55,7 @@ export async function readKeygrip(store: IKeygripReadStore): Promise<IKeygripRec
 			`KEYGRIP_RECORD_MISSING: no keygrip key set at "${keygripKey()}". Run "yarn seed:keygrip" in marketplace-db-setup before starting any service.`
 		)
 
-	const kek = Buffer.from(process.env.KEYGRIP_KEK ?? '', 'base64')
-
-	if (kek.length !== KEK_BYTES)
-		throw new Error(`KEYGRIP_KEK_MISMATCH: KEYGRIP_KEK must be base64 of ${KEK_BYTES} bytes, this one decodes to ${kek.length}.`)
+	const kek = readKek()
 
 	const version = Number(record.version)
 
