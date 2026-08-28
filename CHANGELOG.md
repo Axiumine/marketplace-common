@@ -67,7 +67,10 @@ release deletes the local implementation and forwards to the library's, which ma
 **runtime** requirement of that subpath rather than a compile-time convenience — the reason this is a
 major and not a patch. Both halves of the change are the same breaking change, which is why they ship
 together rather than costing a major twice. Recorded as the two open items in
-`docs/devprotocol/phase5/epics/E13.md` §7.
+`docs/devprotocol/phase5/epics/E13.md` §7 — that record was deleted on 2026-08-28 and distributed
+rather than moved; both items now read in `docs/report/dependency-tree-advisory-scan.md` §6.1. The
+sentence above is left as it was written, with the redirect appended, because a released entry is
+not rewritten here.
 
 ### Changed
 
