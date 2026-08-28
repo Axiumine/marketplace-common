@@ -11,13 +11,31 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v2.0.1...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v2.0.2...HEAD)
 
-`@axiumine/koa-utils@7.1.0` puts the Redis connection scheme behind a `REDIS_TLS` flag, and this package's
-E13-S05 tripwire fired on the bump exactly as it was built to. **Nothing here reaches a consumer**: the change
-is a devDependency range and a test file, `dist/` — the whole of `files` — is byte-identical to the published
-tarball's, and `peerDependencies` still ranges `@axiumine/koa-utils` at `>=6`, which `7.1.0` satisfies. There
-is nothing to release, and this section stays until something else earns one.
+Nothing yet.
+
+## [2.0.2](https://github.com/Axiumine/marketplace-common/releases/tag/v2.0.2) - 2026-08-28
+
+**A rotation could log out the customers who asked not to be logged out.** `rotateKeygripKeys` measured its
+retirement window from a key's own `createdAt`, when what the window has to cover is how long the key kept
+*signing* — from its `createdAt` until the rotation that pushed it off index 0. On any cadence faster than
+monthly the two diverge, and the rule dropped keys that were still verifying idle remembered sessions. The
+release also carries the `@axiumine/koa-utils@7.1.0` devDependency bump that had been sitting unreleased.
+
+### Fixed
+
+- **`encryption/rotateKeygripKeys` — the retirement clock runs from demotion, not from minting.**
+  `isTailRetirable` compares `now` against the `createdAt` of the key **in front of** the tail, which is the
+  instant that demoted it — minting a key is the only thing that demotes another, so the instant was always
+  in the record and `IKeygripKeyMaterial` keeps its three fields. A key minted on day 0 and demoted on day 7
+  signed cookies alive until day 37; the old rule retired it on day 30. Reaches `dist/`.
+  ⚠️ **Behaviour a consumer can see, in two places.** A rotation now keeps a key the previous build would
+  have dropped, and `KEYGRIP_ROTATE_CAP` therefore refuses a sixth key in situations where the old rule made
+  room — correctly: the room it made came out of somebody's session. The thrown message changed with it, to
+  *"none of them stopped signing more than 30 days ago"*, and `marketplace-dev-admin-authenticated-resource`
+  asserts it verbatim. `ADR-034` carries the amendment (2026-08-28).
+- **`encryption/retireKeygripKey` — JSDoc only**, following the same correction. Reaches `dist/`.
 
 ### Changed
 
