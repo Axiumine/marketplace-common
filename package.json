@@ -1,6 +1,6 @@
 {
 	"name": "@axiumine/marketplace-common",
-	"version": "2.0.2",
+	"version": "2.0.3",
 	"description": "Marketplace common",
 	"author": "Giovanni Manzoni <dev@giovannimanzoni.com> (https://giovannimanzoni.com)",
 	"homepage": "https://github.com/Axiumine/marketplace-common#readme",
@@ -287,6 +287,10 @@
 		"./others/operatorOnlyFields": {
 			"import": "./dist/others/operatorOnlyFields.mjs",
 			"types": "./dist/others/operatorOnlyFields.d.mts"
+		},
+		"./others/readKek": {
+			"import": "./dist/others/readKek.mjs",
+			"types": "./dist/others/readKek.d.mts"
 		},
 		"./others/readKeygrip": {
 			"import": "./dist/others/readKeygrip.mjs",
