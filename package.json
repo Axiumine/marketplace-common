@@ -400,7 +400,7 @@
 	},
 	"devDependencies": {
 		"@axiumine/eslint-config-be": "^2.0.1",
-		"@axiumine/koa-utils": "^7.0.0",
+		"@axiumine/koa-utils": "^7.1.0",
 		"@eslint/eslintrc": "^3.3.5",
 		"@eslint/js": "^10.0.1",
 		"@node-rs/bcrypt": "^1.10.7",
