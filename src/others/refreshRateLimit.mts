@@ -16,12 +16,18 @@ import { hashSessionToken } from '@others/hashSessionToken.mjs'
  * stays off). The residual that leaves, a flood of *distinct* garbage tokens each getting its own bucket,
  * is named and accepted in E14-S08 as closable only at the edge.
  *
- * ⚠️ **That hand-off assumes a boundary nobody has written down.** The `limit_req` rules exist and are
- * tested; the host nginx runs on, and whether anything but nginx can reach these ports, is the production
- * topology recorded as owed by **ADR-032** — alongside the other two findings bounded by the same unknown
- * (the introspection bypass, E13-S11, and the plaintext Redis leg, R45). Its standing rule is that until it
- * is superseded no control may be argued closed by appeal to a network boundary, so both buckets below are
- * sized to be worth having with the port open to anyone.
+ * ⚠️ **That hand-off assumed a boundary nobody had written down; one is written now.** The `limit_req`
+ * rules exist and are tested; the host nginx runs on, and whether anything but nginx can reach these ports,
+ * was the production topology recorded as owed by **ADR-032** until **ADR-039** (2026-08-28) superseded it —
+ * Cloudflare at the edge, one application host behind a default-deny cloud security group, and the
+ * datastores on a separate host on a private segment the platform owner declares trusted.
+ *
+ * ⚠️ **Neither bucket below is resized by that, by the new ADR's own requirement.** ADR-039 §5 narrows
+ * the old standing rule rather than lifting it — a network boundary may be cited as a second layer and
+ * never as the whole argument — and it names E14-S08 while keeping this limiter exactly as written. Both
+ * buckets stay sized to be worth having with the port open to anyone. Of the three findings once bounded
+ * by that one unknown, only R46 closed with the ADR — the introspection bypass (E13-S11) and the plaintext
+ * Redis leg (R45) did not.
  *
  * ⚠️ **Both buckets are named `refresh:<something>` rather than one of them being bare `refresh`.** A bare
  * bucket would make `rl:refresh:` a prefix of `rl:refresh:family:`, so an operator counting one bucket
