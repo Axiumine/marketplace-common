@@ -72,11 +72,11 @@ describe('rotateKeygripKeys', () => {
 	})
 
 	/*
-	 * ⚠️ The thirty-day promise, as a rule rather than a paragraph. A key younger than the longest session
-	 * this platform issues may still be verifying a remembered customer's cookie, and dropping it logs
-	 * exactly those customers out — the ones who asked not to be.
+	 * ⚠️ The thirty-day promise, as a rule rather than a paragraph. A key demoted less recently than the
+	 * longest session this platform issues may still be verifying a remembered customer's cookie, and
+	 * dropping it logs exactly those customers out — the ones who asked not to be.
 	 */
-	it('retires nothing when no key is older than the remembered-session cap', () => {
+	it('retires nothing when no key was demoted longer ago than the remembered-session cap', () => {
 		const before = [aged('k3', 1), aged('k2', 20), aged('k1', SESSION_CAP_DAYS_REMEMBERED)]
 
 		const after = rotateKeygripKeys(before, NOW)
@@ -85,22 +85,40 @@ describe('rotateKeygripKeys', () => {
 		expect(after.map((key) => key.id)).toEqual(['k4', 'k3', 'k2', 'k1'])
 	})
 
-	// The boundary belongs on the side that keeps the key: one minted exactly at the cap could have signed
+	/*
+	 * ⚠️ **The regression this rule exists for.** `k1` is far past the cap by its own age and is still
+	 * verifying cookies: it signed everything issued until `k2` was minted twenty days ago, and a
+	 * remembered session started one instant before that lives for ten more days. A rule reading
+	 * `createdAt` drops it here and logs those customers out — the one thing a routine rotation must never
+	 * do. The instant that governs is the *next key's* `createdAt`, because minting one is what demoted
+	 * this one.
+	 */
+	it('keeps a key that is ancient in itself but was demoted inside the cap', () => {
+		const before = [aged('k3', 1), aged('k2', 20), aged('k1', 400)]
+
+		expect(rotateKeygripKeys(before, NOW).map((key) => key.id)).toEqual(['k4', 'k3', 'k2', 'k1'])
+	})
+
+	// The boundary belongs on the side that keeps the key: one demoted exactly at the cap could have signed
 	// a cookie a millisecond earlier, and that cookie is alive until the same millisecond today.
-	it('retires a key one millisecond past the cap, and not one at it', () => {
-		const atTheCap = [aged('k3', 1), aged('k2', 2), aged('k1', SESSION_CAP_DAYS_REMEMBERED)]
+	it('retires a key demoted one millisecond past the cap, and not one demoted at it', () => {
+		const atTheCap = [aged('k3', 1), aged('k2', SESSION_CAP_DAYS_REMEMBERED), aged('k1', 400)]
 		const pastIt: IKeygripKeyMaterial[] = [
 			atTheCap[0],
-			atTheCap[1],
-			{ ...atTheCap[2], createdAt: new Date(NOW.getTime() - SESSION_CAP_DAYS_REMEMBERED * DAY_MS - 1).toISOString() }
+			{ ...atTheCap[1], createdAt: new Date(NOW.getTime() - SESSION_CAP_DAYS_REMEMBERED * DAY_MS - 1).toISOString() },
+			atTheCap[2]
 		]
 
 		expect(rotateKeygripKeys(atTheCap, NOW).map((key) => key.id)).toEqual(['k4', 'k3', 'k2', 'k1'])
 		expect(rotateKeygripKeys(pastIt, NOW).map((key) => key.id)).toEqual(['k4', 'k3', 'k2'])
 	})
 
-	it('retires every key past the cap, oldest first', () => {
-		const before = [aged('k3', 1), aged('k2', SESSION_CAP_DAYS_REMEMBERED + 1), aged('k1', SESSION_CAP_DAYS_REMEMBERED + 90)]
+	it('retires every key demoted past the cap, oldest first', () => {
+		const before = [
+			aged('k3', SESSION_CAP_DAYS_REMEMBERED + 1),
+			aged('k2', SESSION_CAP_DAYS_REMEMBERED + 30),
+			aged('k1', SESSION_CAP_DAYS_REMEMBERED + 90)
+		]
 
 		expect(rotateKeygripKeys(before, NOW).map((key) => key.id)).toEqual(['k4', 'k3'])
 	})
@@ -129,14 +147,20 @@ describe('rotateKeygripKeys', () => {
 
 		expect(before).toHaveLength(KEYGRIP_MAX_KEYS)
 		expect(() => rotateKeygripKeys(before, NOW)).toThrow(
-			`KEYGRIP_ROTATE_CAP: the key set already holds ${KEYGRIP_MAX_KEYS} keys and none is older than ${SESSION_CAP_DAYS_REMEMBERED} days.`
+			`KEYGRIP_ROTATE_CAP: the key set already holds ${KEYGRIP_MAX_KEYS} keys and none of them stopped signing more than ${SESSION_CAP_DAYS_REMEMBERED} days ago.`
 		)
 	})
 
-	// The same five, with the oldest one past the cap: the retirement makes room, so the cap is a refusal
-	// only when it has nothing to drop.
+	// The same five, with the oldest one demoted past the cap: the retirement makes room, so the cap is a
+	// refusal only when it has nothing to drop.
 	it('accepts a full array when the oldest key has aged out', () => {
-		const before = [aged('k5', 1), aged('k4', 2), aged('k3', 3), aged('k2', 4), aged('k1', SESSION_CAP_DAYS_REMEMBERED + 1)]
+		const before = [
+			aged('k5', 1),
+			aged('k4', 2),
+			aged('k3', 3),
+			aged('k2', SESSION_CAP_DAYS_REMEMBERED + 1),
+			aged('k1', SESSION_CAP_DAYS_REMEMBERED + 60)
+		]
 
 		expect(rotateKeygripKeys(before, NOW).map((key) => key.id)).toEqual(['k6', 'k5', 'k4', 'k3', 'k2'])
 	})
