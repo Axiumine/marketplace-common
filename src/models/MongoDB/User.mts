@@ -147,8 +147,42 @@ const UserSchema: Schema<IUserModel> = new Schema(
 		deleted: {
 			type: Date
 		},
+		// Which operator closed this account — an `admin._id`, and **absent when the account holder
+		// closed it themselves**. That absence is the whole encoding: no actor *type* sits beside it,
+		// because a field naming which collection an id came from is a `role` field by the back door and
+		// ADR-002 does not have one. In the clear: an id the server minted is not personal data.
+		deletedBy: {
+			type: Schema.Types.ObjectId
+		},
 		disabled: {
 			type: Boolean
+		},
+		// Which operator suspended this account — an `admin._id`, written with `disabled: true` and
+		// always present beside it. No self-service counterpart, unlike `deletedBy`: a person closes
+		// their own account, they never suspend it.
+		disabledBy: {
+			type: Schema.Types.ObjectId
+		},
+		// Why, in the operator's own words. **Mandatory whenever `disabled` is true** — enforced by the
+		// collection validator's `dependencies`, which can require the path's *presence* without being
+		// able to read what is in it.
+		//
+		// ⚠️ **The 1000-character cap is not here and cannot be.** The field is encrypted, so the
+		// validator sees a `binData` and `maxLength` does not apply. The length is enforced in the
+		// service that writes it and nowhere else — ADR-044 records the split, ADR-035 is its mirror
+		// image, and a `maxLength` added to the validator refuses every write instead of long ones.
+		//
+		// Encrypted, and the one field on this model the subject never sees: it is what the platform
+		// wrote about a customer, not what the customer declared about themselves.
+		disabledReason: encryptedPath({ plaintext: 'string' }),
+		// When the retention sweeper overwrote this document's personal data with placeholders.
+		//
+		// ⚠️ **Its absence is the sweeper's candidate filter**, which is why it stays in the clear: the
+		// sweep matches `{ deleted: { $lte: cutoff }, scrubbedAt: { $exists: false } }`, a server-side
+		// comparison. Deterministic ciphertext answers equality and nothing else — never `$lte` — and
+		// random ciphertext answers nothing at all.
+		scrubbedAt: {
+			type: Date
 		},
 		// No `waitApprov`: a shop owner waits for an operator to approve the account, a customer
 		// self-serves. The only gate between registering and logging in is `emailVerify.valid`,

@@ -436,6 +436,42 @@ describe('ShopOwner schema — full field verification', () => {
 	})
 
 	/*
+	 * The four lifecycle fields of ADR-041 and ADR-044, and the split between them is the design: three
+	 * are ids and a timestamp the *server* minted, and one is free text an operator wrote about a
+	 * person. Only the last is encrypted.
+	 *
+	 * ⚠️ `scrubbedAt` has to stay readable by the database. The retention sweep selects on its absence,
+	 * `{ deleted: { $lte: cutoff }, scrubbedAt: { $exists: false } }`, and neither CSFLE algorithm
+	 * answers that — deterministic does equality only, random does nothing.
+	 */
+	it('carries the four lifecycle fields, three in the clear and only the reason encrypted', () => {
+		const deletedBy = ShopOwner.schema.path('deletedBy')
+		expect(deletedBy.instance).toBe('ObjectId')
+		expect(deletedBy.isRequired).toBeUndefined()
+		// Bare, not `ref: 'Admin'`: a populate would pull an operator's document into a read of this
+		// collection, and the only tier that ever renders the name behind this id can look it up itself.
+		expect((deletedBy.options as { ref?: string }).ref).toBeUndefined()
+
+		const disabledBy = ShopOwner.schema.path('disabledBy')
+		expect(disabledBy.instance).toBe('ObjectId')
+		expect(disabledBy.isRequired).toBeUndefined()
+		expect((disabledBy.options as { ref?: string }).ref).toBeUndefined()
+
+		const scrubbedAt = ShopOwner.schema.path('scrubbedAt')
+		expect(scrubbedAt.instance).toBe('Date')
+		expect(scrubbedAt.isRequired).toBeUndefined()
+
+		const reason = ShopOwner.schema.path('disabledReason')
+		expect(reason.instance).toBe('EncryptedField')
+		expect(reason.options.plaintext).toBe('string')
+		// ⚠️ **Optional here and mandatory in the database, which is not a contradiction.** It is
+		// required only *when `disabled` is true*, and Mongoose has no conditional requiredness that the
+		// collection validator would agree with. The validator's `dependencies` carries the rule; a
+		// `required: true` here would refuse every document that was never suspended.
+		expect(reason.isRequired).toBeUndefined()
+	})
+
+	/*
 	 * `.clone()` on the shared address schema is load-bearing, and this is what fails without it.
 	 * `Schema.prototype.add` mutates in place: adding the point to `BaseAddressSchema` itself would
 	 * put it on every model that embeds that address, which is most of them — and the shopOwner's
@@ -811,6 +847,42 @@ describe('User schema — full field verification', () => {
 	// password-reset token and the activation token share a slot: a hash issued by either flow
 	// authenticates the other, and an unauthenticated reset request kills every pending activation
 	// link. Neither may be required — both are absent on a customer who has requested neither.
+	/*
+	 * The four lifecycle fields of ADR-041 and ADR-044, and the split between them is the design: three
+	 * are ids and a timestamp the *server* minted, and one is free text an operator wrote about a
+	 * person. Only the last is encrypted.
+	 *
+	 * ⚠️ `scrubbedAt` has to stay readable by the database. The retention sweep selects on its absence,
+	 * `{ deleted: { $lte: cutoff }, scrubbedAt: { $exists: false } }`, and neither CSFLE algorithm
+	 * answers that — deterministic does equality only, random does nothing.
+	 */
+	it('carries the four lifecycle fields, three in the clear and only the reason encrypted', () => {
+		const deletedBy = User.schema.path('deletedBy')
+		expect(deletedBy.instance).toBe('ObjectId')
+		expect(deletedBy.isRequired).toBeUndefined()
+		// Bare, not `ref: 'Admin'`: a populate would pull an operator's document into a read of this
+		// collection, and the only tier that ever renders the name behind this id can look it up itself.
+		expect((deletedBy.options as { ref?: string }).ref).toBeUndefined()
+
+		const disabledBy = User.schema.path('disabledBy')
+		expect(disabledBy.instance).toBe('ObjectId')
+		expect(disabledBy.isRequired).toBeUndefined()
+		expect((disabledBy.options as { ref?: string }).ref).toBeUndefined()
+
+		const scrubbedAt = User.schema.path('scrubbedAt')
+		expect(scrubbedAt.instance).toBe('Date')
+		expect(scrubbedAt.isRequired).toBeUndefined()
+
+		const reason = User.schema.path('disabledReason')
+		expect(reason.instance).toBe('EncryptedField')
+		expect(reason.options.plaintext).toBe('string')
+		// ⚠️ **Optional here and mandatory in the database, which is not a contradiction.** It is
+		// required only *when `disabled` is true*, and Mongoose has no conditional requiredness that the
+		// collection validator would agree with. The validator's `dependencies` carries the rule; a
+		// `required: true` here would refuse every document that was never suspended.
+		expect(reason.isRequired).toBeUndefined()
+	})
+
 	it('resetPwd and emailVerify are distinct, optional, disjoint sub-documents', () => {
 		expectResetPwdAndEmailVerify(User.schema)
 	})
@@ -826,7 +898,11 @@ describe('User schema — full field verification', () => {
 				'defaultAddress',
 				'registeredAt',
 				'deleted',
+				'deletedBy',
 				'disabled',
+				'disabledBy',
+				'disabledReason',
+				'scrubbedAt',
 				'resetPwd',
 				'emailVerify'
 			].sort()
