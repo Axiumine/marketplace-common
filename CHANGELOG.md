@@ -11,9 +11,49 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v2.0.2...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v2.0.3...HEAD)
 
-Nothing yet.
+### Added
+
+- **Four account-lifecycle paths on `shopOwner` and on `user`** (`ADR-041`, `ADR-044`, `ADR-045`):
+  `deletedBy` and `disabledBy` (plain `ObjectId`, deliberately **without** `ref` — the actor is an `admin`
+  for an operator's decision and the account holder itself for a self-closure, and one path cannot point at
+  two collections), `disabledReason` (**encrypted**, `ALGORITHM_RANDOM`) and `scrubbedAt` (plain `Date`).
+  All four are optional here. Reaches `dist/`.
+  ⚠️ **The five deterministic fields `ADR-029` pins are unchanged.** `ENCRYPTED_FIELDS_SHOP_OWNER` and
+  `ENCRYPTED_FIELDS_USER` each gain exactly one `ALGORITHM_RANDOM` entry, which is queryable by nothing
+  and equality-comparable by nothing; `test/encryption.test.mts` still asserts the same five deterministic
+  paths, by whole-set equality.
+  ⚠️ **A consumer cannot write these paths on `marketplace-common` alone.** The collection validators carry
+  `additionalProperties: false`, so MongoDB refuses an insert or update naming an unknown path until
+  `marketplace-db-setup`'s matching `collMod` migration has run against that database. *Reason mandatory
+  when `disabled` is true* is that validator's `dependencies` clause, not a Mongoose `required`, so it is
+  absent until the same migration lands.
+
+## [2.0.3](https://github.com/Axiumine/marketplace-common/releases/tag/v2.0.3) - 2026-08-28
+
+**Recorded late.** `2.0.3` reached the registry with no entry on this page; it is written up here from the
+diff rather than backdated silently. One new export, and one exception type that consumers see change.
+
+### Added
+
+- **`exports`: `./others/readKek`.** `readKek()` decodes `KEYGRIP_KEK` from base64 and returns the raw
+  AES-256 key, or throws `KEYGRIP_KEK_MISMATCH` naming only the length it decoded to. It is the single
+  decode site for the fleet, which is what makes the secrets-manager swap in `docs/PRODUCTION_HARDENING.md`
+  §1 one line rather than three. Reaches `dist/`.
+
+### Changed
+
+- **`encryption`/`others/readKeygrip` decodes through `readKek` instead of inline.** The length check and
+  its thrown message moved without alteration, so `loadKeygrip` and `readKeygrip` throw exactly what they
+  threw in `2.0.2`. Reaches `dist/`.
+  ⚠️ **Behaviour a consumer can see, once it adopts the export.** A caller that decoded the KEK itself with
+  `Buffer.from(process.env.KEYGRIP_KEK as string, 'base64')` threw `ERR_INVALID_ARG_TYPE` when the variable
+  was unset — `as string` lies to the compiler and `undefined` reaches `Buffer.from`. Calling `readKek`
+  instead yields `KEYGRIP_KEK_MISMATCH`, the same refusal every other caller already got. The two reseal
+  mutations in `marketplace-dev-admin-authenticated-resource` were switched over in the companion commit.
+  ⚠️ **This does not make the KEK agree across processes.** `ADR-040` and the hardening page still own that;
+  one decode site is not one resolution.
 
 ## [2.0.2](https://github.com/Axiumine/marketplace-common/releases/tag/v2.0.2) - 2026-08-28
 
