@@ -30,6 +30,22 @@ apart without reading the diff.
   when `disabled` is true* is that validator's `dependencies` clause, not a Mongoose `required`, so it is
   absent until the same migration lands.
 
+- **`exports`: `./others/accountScrub`** (`ADR-041`). `buildAccountScrub(tier, accountId, at)` returns the
+  one update a retention scrub is — a `$set` that overwrites every personal value a closed `user` or
+  `shopOwner` holds, and a `$unset` that removes the rest — beside the placeholder constants it writes
+  (`scrubbedEmail`, `SCRUBBED_PASSWORD_HASH`, `SCRUBBED_FIRST_NAME`, `SCRUBBED_LAST_NAME`, `SCRUBBED_TEXT`,
+  `SCRUBBED_POSTAL_CODE`, `SCRUBBED_PROVINCE`, `scrubbedBirthDate`, `SCRUBBED_EMAIL_HOST`). Reaches `dist/`.
+  ⚠️ **The values it hands back are plaintext and must reach MongoDB through Mongoose.**
+  `fieldEncryptionPlugin` encrypts `$set` operands on the way past, including the whole-object `$set` on
+  `personalData`; a caller that writes them with `Model.collection.updateOne` puts readable personal data
+  into `binData` paths.
+  ⚠️ **It overwrites, it does not delete.** `deleted`, `deletedBy`, `disabled`, `disabledBy` and
+  `registeredAt` are in neither half — they are the record that a person held an account, which `ADR-041`
+  keeps for ever. `login.email` moves to `deleted-<id>@invalid.local`, which is what frees the address for
+  a fresh registration without removing a row.
+  ⚠️ **Two callers by design** — the day-30 sweep, and the registration confirm that reclaims an address
+  early (`ADR-042`) — and neither may keep its own copy of the field list.
+
 ## [2.0.3](https://github.com/Axiumine/marketplace-common/releases/tag/v2.0.3) - 2026-08-28
 
 **Recorded late.** `2.0.3` reached the registry with no entry on this page; it is written up here from the
