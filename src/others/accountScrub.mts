@@ -178,10 +178,15 @@ const scrubbedPersonalDataShopOwner = (accountId: string) => ({
  * it would be re-scrubbed for ever; one that stamps without scrubbing hides an account from the sweep
  * that still holds everything.
  *
- * There are two callers by design and they are the same operation at two different times: the retention
- * sweep at day 30, and the registration confirm that reclaims the address earlier because somebody
- * proved they can read mail at it (ADR-042). Neither may have its own copy of this list — a field added
- * to one collection and forgotten in one of two hand-written scrubs is data that silently survives.
+ * ⚠️ **One caller, by design: the retention sweep at day 30.** The registration confirm used to run this
+ * too, to reclaim the address early for a new account. It no longer may — ADR-046 made the retention
+ * window an *undo* window, so a closed account still holding its address is handed back to the person
+ * rather than overwritten, and this routine is what ends that window rather than something that races
+ * with it. A second caller would be a path that erases somebody's account while they are recovering it.
+ *
+ * That leaves the invariant this function exists for: a scrubbed document no longer holds the address it
+ * was registered with, so it can never be found by an address lookup again — which is exactly why the
+ * confirm path needs no scrubbed-account branch at all.
  */
 export function buildAccountScrub(tier: ScrubbableTier, accountId: string, at: Date): IAccountScrub {
 	const isUser = tier === TIER.user
