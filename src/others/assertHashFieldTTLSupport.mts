@@ -17,7 +17,7 @@ export const HASH_FIELD_TTL_PROBE_KEY = () => `${process.env.REDIS_KEY}hash-fiel
  * What a Redis older than 7.4.0 says when it is asked for a command it has never had. Matched on the
  * phrase rather than on an error class: the client surfaces server errors as `ErrorReply` whatever the
  * server said, so the phrase is the only thing that distinguishes "this server is too old" from "this
- * server is unreachable" — and the two need very different messages in front of an operator.
+ * server is unreachable" — and the two need very different messages in front of an admin.
  */
 const UNKNOWN_COMMAND = /unknown command/i
 

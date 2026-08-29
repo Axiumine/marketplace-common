@@ -20,7 +20,7 @@ export interface IShopOwnerSchema {
 	registeredAt: Date
 	deleted?: Date
 	/**
-	 * Which operator closed this account — an `admin._id` — and **absent when the account holder closed
+	 * Which admin closed this account — an `admin._id` — and **absent when the account holder closed
 	 * it themselves**. That absence is the whole encoding: there is no actor *type* beside it, because a
 	 * field naming which collection an id came from is a `role` field by the back door, and ADR-002 does
 	 * not have one. ADR-044.
@@ -28,13 +28,13 @@ export interface IShopOwnerSchema {
 	deletedBy?: Types.ObjectId
 	disabled?: boolean
 	/**
-	 * Which operator suspended this account — an `admin._id`, written with `disabled: true` and always
+	 * Which admin suspended this account — an `admin._id`, written with `disabled: true` and always
 	 * present beside it. No self-service counterpart, unlike `deletedBy`: a person closes their own
 	 * account, they never suspend it.
 	 */
 	disabledBy?: Types.ObjectId
 	/**
-	 * Why, in the operator's own words. **Mandatory whenever `disabled` is true**, which the collection
+	 * Why, in the admin's own words. **Mandatory whenever `disabled` is true**, which the collection
 	 * validator enforces through `dependencies` — presence, without being able to read the value.
 	 *
 	 * ⚠️ **The 1000-character cap lives in the service and nowhere else.** The field is encrypted, so
@@ -53,7 +53,7 @@ export interface IShopOwnerSchema {
 	scrubbedAt?: Date
 	waitApprov?: boolean
 	/**
-	 * Free text an operator keeps about this account. **Operator-only.**
+	 * Free text an admin keeps about this account. **Admin-only.**
 	 *
 	 * Top level rather than inside `personalData`: it is not something the shopOwner declared about
 	 * themselves, it is what the platform wrote about them. Nothing on the ShopOwner tier can read

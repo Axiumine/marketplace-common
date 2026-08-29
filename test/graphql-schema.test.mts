@@ -77,7 +77,7 @@ describe('assembled GraphQLSchema', () => {
 	/*
 	 * Nullable, and asserted as such. Every shopOwner in the collection predates the point, and
 	 * `shopOwnerAdd` may be called with an address that was typed rather than picked — a NonNull here
-	 * turns both into a mutation the operator app cannot send at all.
+	 * turns both into a mutation the admin app cannot send at all.
 	 */
 	it('takes the address point as an optional coordinates-only input', () => {
 		const address = (GraphQLInputShopOwnerPersonalData.getFields().address.type as GraphQLNonNull<GraphQLInputObjectType>).ofType

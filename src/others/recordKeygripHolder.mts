@@ -7,11 +7,11 @@ import { keygripHoldersKey } from '@others/sessionKeys.mjs'
  * `watchKeygrip`'s five-minute poll, so a live service refreshes its own expiry twelve times over before
  * it lapses. A service that is decommissioned — or renamed, or moved to another port — stops refreshing,
  * and its row leaves the table within the hour instead of sitting there forever as a permanent "has not
- * adopted the current keys", which is a red an operator learns to ignore.
+ * adopted the current keys", which is a red an admin learns to ignore.
  *
  * Twelve missed polls rather than one or two: a Redis blip, a long GC pause or a redeploy must not erase
  * a service that is perfectly alive, because a *missing* row and a *stale* row mean different things and
- * the operator acts differently on each.
+ * the admin acts differently on each.
  *
  * ⚠️ **Written out rather than derived from `KEYGRIP_POLL_MS`**, even though it is twelve times it:
  * `watchKeygrip` imports this module, so importing the constant back would be a cycle — and one whose

@@ -96,7 +96,7 @@ describe('the flag that decides the scheme', () => {
 
 	/*
 	 * Fail-closed, and the distinction matters to what R45 can claim: a package that silently rewrote
-	 * `redis://` to `rediss://` under an operator who wrote the former would hide the misconfiguration
+	 * `redis://` to `rediss://` under an admin who wrote the former would hide the misconfiguration
 	 * until a handshake failed against a host that may not be the intended one. Refusing at load is what
 	 * lets the risk row say the flag either encrypts the leg or stops the boot, with no third outcome.
 	 */

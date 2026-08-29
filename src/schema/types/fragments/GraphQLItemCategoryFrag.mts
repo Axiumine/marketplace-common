@@ -2,7 +2,7 @@ import { GraphQLInt, GraphQLNonNull, GraphQLString } from 'graphql'
 
 /**
  * The `itemCategory` fields every tier renders. The taxonomy is platform-wide, so all three tiers
- * show the same categories: the operator writes them, the shop owner picks one when filing an item,
+ * show the same categories: the admin writes them, the shop owner picks one when filing an item,
  * and the public tier draws `/category/:slug`.
  *
  * ⚠️ `position` is a **sort ordinal**, not the GeoJSON `position` of `GraphQLPositionFrag`. The two

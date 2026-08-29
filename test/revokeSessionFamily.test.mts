@@ -140,7 +140,7 @@ describe('revokeSessionFamily', () => {
 	})
 
 	/*
-	 * ⚠️ **Revoke first, record last.** A failed append after a successful revocation leaves an operator
+	 * ⚠️ **Revoke first, record last.** A failed append after a successful revocation leaves an admin
 	 * without an explanation; the reverse leaves a trail claiming a logout that never happened, which is
 	 * worse than silence because it is an explanation that is wrong.
 	 */

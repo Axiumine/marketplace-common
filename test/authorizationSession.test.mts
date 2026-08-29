@@ -423,7 +423,7 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * E17-S05. The mass logout the line above performs is the one an operator eventually has to explain, so
+	 * E17-S05. The mass logout the line above performs is the one an admin eventually has to explain, so
 	 * this path files the reason under the account that lost the sessions.
 	 *
 	 * ⚠️ **The account comes off the tombstone, and it has to.** By this point the session hash the token
@@ -506,7 +506,7 @@ describe('resolveAuthorizationSession', () => {
 	 * its way past it — that is the difference between this and the idle timeout the refresh TTL already is.
 	 * A session this old is the shape a quietly stolen token has, so it takes its family with it.
 	 *
-	 * ⚠️ The three rows per cap are the relational-operator mutants: `>` is what makes a session exactly at
+	 * ⚠️ The three rows per cap are the relational-admin mutants: `>` is what makes a session exactly at
 	 * the cap survive, and `>=` or `<` would each be caught by exactly one of these.
 	 */
 	it.each([
@@ -535,7 +535,7 @@ describe('resolveAuthorizationSession', () => {
 
 	/*
 	 * E17-S05's second call site. A session ended by its own age cap is the other way a lineage dies without
-	 * anybody asking, so it gets the other action — an operator reading "sessionCapReached" is looking at a
+	 * anybody asking, so it gets the other action — an admin reading "sessionCapReached" is looking at a
 	 * policy expiry, and reading "refreshTokenReplayed" at a suspected theft. One vocabulary, two meanings,
 	 * and confusing them would send an incident response after a session that simply got old.
 	 *
@@ -985,7 +985,7 @@ describe('refreshSessionTokens', () => {
 	 *
 	 * ⚠️ **The identity is the `familyId`, and the key carries no plaintext of it.** `assertUnderRateLimit`
 	 * hashes what it is handed, so the id is not recoverable from a `KEYS` scan or an AOF file — while
-	 * `rl:refresh:family:` stays readable, so an operator can still count the bucket without naming anyone.
+	 * `rl:refresh:family:` stays readable, so an admin can still count the bucket without naming anyone.
 	 */
 	it('counts one mint against the lineage, in its own bucket, over an hour', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)

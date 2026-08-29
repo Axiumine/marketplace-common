@@ -25,7 +25,7 @@ export interface IKeygripRecord {
  * Reads the fleet's cookie-signing keys out of Redis and unwraps them, or throws (ADR-034).
  *
  * ⚠️ **Reading is not holding.** This writes nothing, which is what separates it from `loadKeygrip`: the
- * five services that *sign* with these keys announce themselves in the holders table, and the operator
+ * five services that *sign* with these keys announce themselves in the holders table, and the admin
  * service that rotates them must not — it holds the KEK to reseal the record, never to sign a cookie, and
  * a row it wrote would sit in that table without a heartbeat behind it, indistinguishable from a signing
  * service that died.
@@ -33,7 +33,7 @@ export interface IKeygripRecord {
  * The two failures are deliberately two, because they need two different fixes:
  *
  * - `KEYGRIP_RECORD_MISSING` — nobody has minted a key set yet, or the record was flushed with the rest
- *   of Redis. The operator runs the seed script. Nothing is wrong with the caller.
+ *   of Redis. The admin runs the seed script. Nothing is wrong with the caller.
  * - `KEYGRIP_KEK_MISMATCH` — a key set exists and this process cannot open it. The length half of that
  *   refusal is `readKek`'s, which every KEK decode on the platform goes through (ADR-040); the unwrap half
  *   is below, because only a caller holding the record can tell that the key is the wrong one rather than
@@ -44,7 +44,7 @@ export interface IKeygripRecord {
  *
  * ⚠️ **No message here names a key, a fingerprint of key material, or any part of the KEK.** These
  * strings are printed to a boot log, which is the least protected place on the platform. The version and
- * the record fingerprint are safe by construction — see `keygripFingerprint` — and are what an operator
+ * the record fingerprint are safe by construction — see `keygripFingerprint` — and are what an admin
  * actually needs to tell two records apart.
  */
 export async function readKeygrip(store: IKeygripReadStore): Promise<IKeygripRecord> {

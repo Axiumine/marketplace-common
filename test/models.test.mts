@@ -210,7 +210,7 @@ function expectLoginSubDoc(schema: Schema) {
  * it differ between the two, so the caller gets the sub-schema back and asserts those itself.
  *
  * ⚠️ **Requiredness is a parameter and the two models disagree on it.** An `admin` is created by
- * another operator who fills the whole record in; a `shopOwner` may now create *themselves* through
+ * another admin who fills the whole record in; a `shopOwner` may now create *themselves* through
  * `shopOwnerRegister`, with an address and a password and nothing else, and declare who they are at
  * onboarding. `isRequired` is `undefined` rather than `false` on an optional embedded path, which is
  * why this asserts the exact value both ways instead of a truthiness.
@@ -254,8 +254,8 @@ describe('Admin schema — full field verification', () => {
 	it('personalData: required embedded doc, _id disabled, own field shapes', () => {
 		const personalDataSchema = expectPersonalDataSubDoc(Admin.schema, true)
 
-		// Encrypted, unlike the shop owner's two: there is no operator table over this collection, so
-		// nothing sorts or prefix-searches an operator's name.
+		// Encrypted, unlike the shop owner's two: there is no admin table over this collection, so
+		// nothing sorts or prefix-searches an admin's name.
 		const firstName = personalDataSchema.path('firstName')
 		expect(firstName.instance).toBe('EncryptedField')
 		expect(firstName.options.plaintext).toBe('string')
@@ -325,7 +325,7 @@ describe('ShopOwner schema — full field verification', () => {
 		// asymmetry is the decision ADR-029 records rather than an oversight: `shopOwnersActiveTbl`
 		// sorts on `tbl_active_firstName` / `tbl_active_lastName_firstName` and prefix-searches both
 		// with `/^term/i`. No CSFLE algorithm answers a sort or a regex, so encrypting them would not
-		// slow the operator table, it would falsify it.
+		// slow the admin table, it would falsify it.
 		const firstName = personalDataSchema.path('firstName')
 		expect(firstName.instance).toBe('String')
 		expect(firstName.isRequired).toBe(true)
@@ -367,9 +367,9 @@ describe('ShopOwner schema — full field verification', () => {
 		}
 		expect(addressSchema.path('city').instance).toBe('String')
 
-		// The geo point the operator app draws a map from — and, unlike the company's, **not
+		// The geo point the admin app draws a map from — and, unlike the company's, **not
 		// required**. Every shopOwner in the collection was written before this path existed, so a
-		// required one would make each of them fail validation on the next save: an operator fixing a
+		// required one would make each of them fail validation on the next save: an admin fixing a
 		// phone number would be stopped by an address nobody has re-picked yet.
 		//
 		// Flat rather than the nested GeoJSON sub-schema it used to be: the point is encrypted whole
@@ -425,7 +425,7 @@ describe('ShopOwner schema — full field verification', () => {
 		expect(ShopOwner.schema.path('deleted').instance).toBe('Date')
 		expect(ShopOwner.schema.path('disabled').instance).toBe('Boolean')
 		expect(ShopOwner.schema.path('waitApprov').instance).toBe('Boolean')
-		// The operator's own free text about this account — never required, and never `personalData`:
+		// The admin's own free text about this account — never required, and never `personalData`:
 		// it is what the platform wrote about the shopOwner, not what they declared themselves.
 		// Encrypted all the same, and the one encrypted field here the subject never sees.
 		const note = ShopOwner.schema.path('notes')
@@ -437,7 +437,7 @@ describe('ShopOwner schema — full field verification', () => {
 
 	/*
 	 * The four lifecycle fields of ADR-041 and ADR-044, and the split between them is the design: three
-	 * are ids and a timestamp the *server* minted, and one is free text an operator wrote about a
+	 * are ids and a timestamp the *server* minted, and one is free text an admin wrote about a
 	 * person. Only the last is encrypted.
 	 *
 	 * ⚠️ `scrubbedAt` has to stay readable by the database. The retention sweep selects on its absence,
@@ -448,7 +448,7 @@ describe('ShopOwner schema — full field verification', () => {
 		const deletedBy = ShopOwner.schema.path('deletedBy')
 		expect(deletedBy.instance).toBe('ObjectId')
 		expect(deletedBy.isRequired).toBeUndefined()
-		// Bare, not `ref: 'Admin'`: a populate would pull an operator's document into a read of this
+		// Bare, not `ref: 'Admin'`: a populate would pull an admin's document into a read of this
 		// collection, and the only tier that ever renders the name behind this id can look it up itself.
 		expect((deletedBy.options as { ref?: string }).ref).toBeUndefined()
 
@@ -684,7 +684,7 @@ describe('User schema — full field verification', () => {
 		// its own enough to make every write of this sub-object fail.
 		expect(personalDataSchema.options._id).toBe(false)
 
-		// Encrypted, unlike the shop owner's two — there is no operator table over this collection, so
+		// Encrypted, unlike the shop owner's two — there is no admin table over this collection, so
 		// nothing sorts or prefix-searches a customer's name.
 		for (const name of ['firstName', 'lastName']) {
 			const path = personalDataSchema.path(name)
@@ -828,7 +828,7 @@ describe('User schema — full field verification', () => {
 	/*
 	 * ⚠️ Divergence 4: **no `waitApprov`**, and its absence is the assertion.
 	 *
-	 * A shop owner is held behind a manual approval gate an operator opens; a customer self-serves, and
+	 * A shop owner is held behind a manual approval gate an admin opens; a customer self-serves, and
 	 * the only gate is `emailVerify.valid`, which `loginUser` checks. A `waitApprov` path added here by
 	 * analogy with ShopOwner would be a field nothing ever clears — every customer stuck at
 	 * registration.
@@ -849,7 +849,7 @@ describe('User schema — full field verification', () => {
 	// link. Neither may be required — both are absent on a customer who has requested neither.
 	/*
 	 * The four lifecycle fields of ADR-041 and ADR-044, and the split between them is the design: three
-	 * are ids and a timestamp the *server* minted, and one is free text an operator wrote about a
+	 * are ids and a timestamp the *server* minted, and one is free text an admin wrote about a
 	 * person. Only the last is encrypted.
 	 *
 	 * ⚠️ `scrubbedAt` has to stay readable by the database. The retention sweep selects on its absence,
@@ -860,7 +860,7 @@ describe('User schema — full field verification', () => {
 		const deletedBy = User.schema.path('deletedBy')
 		expect(deletedBy.instance).toBe('ObjectId')
 		expect(deletedBy.isRequired).toBeUndefined()
-		// Bare, not `ref: 'Admin'`: a populate would pull an operator's document into a read of this
+		// Bare, not `ref: 'Admin'`: a populate would pull an admin's document into a read of this
 		// collection, and the only tier that ever renders the name behind this id can look it up itself.
 		expect((deletedBy.options as { ref?: string }).ref).toBeUndefined()
 

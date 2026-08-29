@@ -29,9 +29,9 @@ describe('retireKeygripKey', () => {
 	})
 
 	/*
-	 * ⚠️ The point of the whole operation: an operator who is told "retired" must be able to believe it. A
+	 * ⚠️ The point of the whole operation: an admin who is told "retired" must be able to believe it. A
 	 * retire that answered the array unchanged would report success while every process still verifies with
-	 * the key the operator has just declared compromised.
+	 * the key the admin has just declared compromised.
 	 */
 	it('refuses an id no key carries, rather than answering the array unchanged', () => {
 		expect(() => retireKeygripKey([key('k4'), key('k3')], 'k9')).toThrow(
@@ -49,7 +49,7 @@ describe('retireKeygripKey', () => {
 
 	/*
 	 * ⚠️ `Keygrip` signs with index 0. Removing it without minting a replacement would leave the platform
-	 * signing with nothing, or — worse — leave the operator believing the suspect key is out of use while a
+	 * signing with nothing, or — worse — leave the admin believing the suspect key is out of use while a
 	 * later rotation is what actually replaces it.
 	 */
 	it('refuses to retire the key the platform is signing with, and names rotation as the operation', () => {
@@ -68,7 +68,7 @@ describe('retireKeygripKey', () => {
 
 	/*
 	 * No lower bound, deliberately. `rotateKeygripKeys` stops at two survivors because routine maintenance
-	 * must not spend the grace period; an incident response is the operator spending it on purpose, and the
+	 * must not spend the grace period; an incident response is the admin spending it on purpose, and the
 	 * single survivor is the signer, so the keyring still signs and still verifies.
 	 */
 	it('leaves a single key rather than refusing to shorten the set', () => {

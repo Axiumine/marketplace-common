@@ -20,9 +20,9 @@ export interface IReuseEventStore {
  * How many events one account's trail keeps. The list is trimmed to this on every append, so the bound
  * holds by construction rather than by a sweep that has to be scheduled and could be skipped.
  *
- * Fifty, because the trail exists to explain a mass logout to an operator reading it now, and the fifty
+ * Fifty, because the trail exists to explain a mass logout to an admin reading it now, and the fifty
  * most recent events cover every investigation this platform can currently ask for. An account generating
- * more than fifty in a retention window is telling the operator something on its own.
+ * more than fifty in a retention window is telling the admin something on its own.
  */
 export const REUSE_EVENTS_MAX = 50
 
@@ -70,7 +70,7 @@ export interface IReuseEvent {
  * and setting the TTL first would leave a trail that was appended to after its own deadline was fixed.
  *
  * ⚠️ **A revocation is never conditional on this landing.** The caller records *after* revoking, so a store
- * that refuses the append leaves sessions ended and an operator without an explanation — the survivable
+ * that refuses the append leaves sessions ended and an admin without an explanation — the survivable
  * failure. The other order would let a failed write leave a trail claiming a logout that never happened,
  * which is worse than silence: it is an explanation that is wrong.
  */

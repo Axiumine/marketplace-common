@@ -5,6 +5,7 @@ import { REFRESH_TOKEN_EXPIRY } from '@axiumine/koa-utils/lib/tokens'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PositionType } from '../src/models/types/PositionType.mts'
+import { ADMIN_ONLY_FIELDS_SHOP_OWNER, APPROVAL_GATE_FIELD_SHOP_OWNER } from '../src/others/adminOnlyFields.mts'
 import { assertTier } from '../src/others/assertTier.mts'
 import { assertTurnstile } from '../src/others/assertTurnstile.mts'
 import { assertUnderRateLimit, IRateLimitStore } from '../src/others/assertUnderRateLimit.mts'
@@ -15,7 +16,6 @@ import { EMAIL_CHECK_LINK, SALT_ROUNDS } from '../src/others/Constants.mts'
 import { constantTimeEquals } from '../src/others/constantTimeEquals.mts'
 import { isIntrospectionBypassAllowed } from '../src/others/isIntrospectionBypassAllowed.mts'
 import { newSessionLineage } from '../src/others/newSessionLineage.mts'
-import { APPROVAL_GATE_FIELD_SHOP_OWNER, OPERATOR_ONLY_FIELDS_SHOP_OWNER } from '../src/others/operatorOnlyFields.mts'
 import { guardRefreshAttempt } from '../src/others/refreshRateLimit.mts'
 import {
 	GRACE_SECONDS,
@@ -820,7 +820,7 @@ describe('the hashing primitives', () => {
 })
 
 /*
- * The operator-only field list, held to the model it names (E01-S10).
+ * The admin-only field list, held to the model it names (E01-S10).
  *
  * Two assertions, and the second is the one that matters. The list is the input to three
  * `no-restricted-syntax` blocks in three service repos, and an eslint selector matching `notes`
@@ -832,7 +832,7 @@ describe('the hashing primitives', () => {
  * it is *complete*, and a `toContain` would let a field be dropped from it — quietly widening what the
  * three services are allowed to select — while staying green.
  */
-describe('OPERATOR_ONLY_FIELDS_SHOP_OWNER', () => {
+describe('ADMIN_ONLY_FIELDS_SHOP_OWNER', () => {
 	// Dynamic and inside `beforeEach`, for the reason `models.test.mts` documents at length on its own
 	// ShopOwner block: ShopOwner.mts builds a Schema with an inline `_id: false` that throws
 	// synchronously if a mutant flips it, and a top-level import moves that throw into Vitest's
@@ -845,12 +845,12 @@ describe('OPERATOR_ONLY_FIELDS_SHOP_OWNER', () => {
 		;({ ShopOwner } = await import('../src/models/MongoDB/ShopOwner.mts'))
 	})
 
-	it('names the operator notes and the approval gate, and nothing else', () => {
-		expect(OPERATOR_ONLY_FIELDS_SHOP_OWNER).toEqual(['notes'])
+	it('names the admin notes and the approval gate, and nothing else', () => {
+		expect(ADMIN_ONLY_FIELDS_SHOP_OWNER).toEqual(['notes'])
 	})
 
 	it('names only fields that still exist on ShopOwnerSchema', () => {
-		expect(OPERATOR_ONLY_FIELDS_SHOP_OWNER.map((field) => ShopOwner.schema.path(field)?.path)).toEqual(['notes'])
+		expect(ADMIN_ONLY_FIELDS_SHOP_OWNER.map((field) => ShopOwner.schema.path(field)?.path)).toEqual(['notes'])
 	})
 
 	/*

@@ -37,7 +37,7 @@ describe('ISessionAccountModel accepts the three tenant models', () => {
 	})
 
 	/*
-	 * The operator tier is the one that projects down to a shape with no model interface of its own —
+	 * The admin tier is the one that projects down to a shape with no model interface of its own —
 	 * `_id login.email deleted disabled` — which is why `IAdminEmail` exists as a declared type instead
 	 * of an inline one in the service. It must satisfy the same structural contract as the other two.
 	 */

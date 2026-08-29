@@ -2,12 +2,12 @@ import { IBaseAddressSchema } from '@MongoDBInterfaces/sub/IBaseAddressSchema.mj
 import { PositionType } from '@mtypes/PositionType.mjs'
 
 /**
- * The shopOwner's address, with the GeoJSON point the operator app draws a map from.
+ * The shopOwner's address, with the GeoJSON point the admin app draws a map from.
  *
  * ⚠️ `position` is **optional here and required on the company** (`ICompanyAddress`), and the asymmetry
  * is deliberate. Every shopOwner already in the collection was written before this field existed,
  * so a required position would make each of them fail its own validator on the next save — an
- * operator editing a phone number would be told to pick an address. It fills in the first time the
+ * admin editing a phone number would be told to pick an address. It fills in the first time the
  * address is chosen from the autocomplete; until then the account simply has no map.
  */
 export interface IShopOwnerAddress extends IBaseAddressSchema {

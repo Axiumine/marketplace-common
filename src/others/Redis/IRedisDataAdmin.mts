@@ -2,7 +2,7 @@ import { IRedisDataAdminCommon } from '@others/Redis/IRedisDataAdminCommon.mjs'
 import { Tier } from '@others/Tier.mjs'
 
 /**
- * The access-token session hash for an operator, as it is written to and read from Redis — every
+ * The access-token session hash for an admin, as it is written to and read from Redis — every
  * value a string, which is why `_id` is one here and an ObjectId in the `ForNode` variant.
  *
  * `tier` lives on the concrete Redis shapes rather than on `…Common` on purpose: it describes the

@@ -48,14 +48,14 @@ export const SCRUBBED_LAST_NAME = 'User'
 /**
  * The filler for every other required string.
  *
- * One word rather than a dash or an empty string: an operator reading a scrubbed record in the admin
+ * One word rather than a dash or an empty string: an admin reading a scrubbed record in the admin
  * table has to be able to tell "this was erased" from "this was never filled in", and a blank cell says
  * the second.
  */
 export const SCRUBBED_TEXT = 'Deleted'
 
 /**
- * What an operator's suspension note becomes on a **suspended** account that is then scrubbed.
+ * What an admin's suspension note becomes on a **suspended** account that is then scrubbed.
  *
  * ⚠️ **`disabledReason` is overwritten rather than removed, and only here — because removing it would
  * make the document unwritable.** The collection validator carries
@@ -66,7 +66,7 @@ export const SCRUBBED_TEXT = 'Deleted'
  * accounts most likely to reach it.
  *
  * The sentence, not the fact, is what the scrub is for: that the account was suspended survives in
- * `disabled` and `disabledBy`, and what goes is the free text an operator wrote *about a named person*.
+ * `disabled` and `disabledBy`, and what goes is the free text an admin wrote *about a named person*.
  * A placeholder that says so is more honest than a blank — see `SCRUBBED_TEXT`.
  */
 export const SCRUBBED_DISABLED_REASON = 'Deleted — the reason was erased with the account'
@@ -89,8 +89,8 @@ export const scrubbedBirthDate = (): Date => new Date(0)
 /**
  * The two collections that can be scrubbed.
  *
- * ⚠️ **`admin` is deliberately not one of them.** Operators are seeded, never publicly registered, and
- * nobody has decided who may close an operator's account or what happens to one — the same reason
+ * ⚠️ **`admin` is deliberately not one of them.** Admins are seeded, never publicly registered, and
+ * nobody has decided who may close an admin's account or what happens to one — the same reason
  * `20260829000000` gives none of the four lifecycle paths to that collection.
  */
 export type ScrubbableTier = typeof TIER.user | typeof TIER.shopOwner
@@ -122,7 +122,7 @@ const LOGIN_ACTIVITY = [
  * to is as personal as the one they arrived with. `resetPwd` is a live credential-reset token and has
  * no business outliving the account.
  *
- * ⚠️ **`disabledReason` was on this list and had to leave it.** It is free text an operator wrote
+ * ⚠️ **`disabledReason` was on this list and had to leave it.** It is free text an admin wrote
  * *about* a named person, which is the single highest-risk field either collection carries, so it does
  * go — but by overwrite rather than removal, because `dependencies: { disabled: ['disabledReason'] }`
  * refuses a suspended document that lacks it. See `SCRUBBED_DISABLED_REASON`.
@@ -137,7 +137,7 @@ const SHARED_UNSET = [...LOGIN_ACTIVITY, 'emailVerify', 'resetPwd']
 /** `user` alone: the address book, and the pointer into it the `$expr` clause validates. */
 const USER_UNSET = [...SHARED_UNSET, 'addresses', 'defaultAddress']
 
-/** `shopOwner` alone: `notes` is the operator's file on this person, and goes for `disabledReason`'s reason. */
+/** `shopOwner` alone: `notes` is the admin's file on this person, and goes for `disabledReason`'s reason. */
 const SHOP_OWNER_UNSET = [...SHARED_UNSET, 'notes']
 
 const unsetMap = (paths: readonly string[]): Record<string, ''> => Object.fromEntries(paths.map((path) => [path, '']))

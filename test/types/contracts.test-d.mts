@@ -69,7 +69,7 @@ describe('IShopOwnerSchema.emailVerify', () => {
 	})
 })
 
-describe('the operator-only fields on the shopOwner', () => {
+describe('the admin-only fields on the shopOwner', () => {
 	// Optional both ways round: every shopOwner in the collection predates the field, and most
 	// accounts never get a note at all. A mandatory one would force every caller that builds an
 	// ShopOwner to invent a value the validator does not ask for.

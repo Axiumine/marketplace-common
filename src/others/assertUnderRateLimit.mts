@@ -42,7 +42,7 @@ export interface IRateLimitStore {
  * it increments a counter and compares it to a ceiling, and never reads the identity back — so a digest
  * costs one `sha256` per call and changes no behaviour, while a `KEYS` scan, a slow log or the
  * append-only file stops being a list of the addresses that tried to register. The bucket stays readable
- * on purpose: `rl:loginUser:email:` remains a greppable prefix, so an operator can still count a bucket
+ * on purpose: `rl:loginUser:email:` remains a greppable prefix, so an admin can still count a bucket
  * without being able to name anybody in one. See `sha256Hex` for why this is pseudonymisation and not
  * anonymisation.
  *

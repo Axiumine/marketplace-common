@@ -17,9 +17,9 @@ const AdminSchema: Schema<IAdminModel> = new Schema(
 			type: LoginSubDocSchema,
 			required: true
 		},
-		// Both names are encrypted, and here that costs nothing: there is no operator table over this
+		// Both names are encrypted, and here that costs nothing: there is no admin table over this
 		// collection, so nothing sorts or prefix-searches them the way `shopOwnersActiveTbl` does on
-		// the shop owner. Random, because nothing looks an operator up by name either.
+		// the shop owner. Random, because nothing looks an admin up by name either.
 		personalData: {
 			type: {
 				_id: false,

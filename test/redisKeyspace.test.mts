@@ -161,7 +161,7 @@ describe('no raw token reaches a key name', () => {
 	)
 
 	// `assertUnderRateLimit` builds its key inline rather than through a builder, so it is driven instead
-	// of called. The bucket name stays legible on purpose — an operator counts a bucket without being able
+	// of called. The bucket name stays legible on purpose — an admin counts a bucket without being able
 	// to name anybody in one — and the identity, which is the half a caller could get wrong, does not.
 	it('assertUnderRateLimit digests the identity and leaves the bucket readable', async () => {
 		const store = {

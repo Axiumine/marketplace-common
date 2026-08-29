@@ -1,11 +1,11 @@
 import { GraphQLNonNull, GraphQLString } from 'graphql'
 
 /**
- * The three fields of an `item` that every tier renders: the shop owner editing it, the operator
+ * The three fields of an `item` that every tier renders: the shop owner editing it, the admin
  * moderating it, and the anonymous visitor reading the page.
  *
  * `published` and `deleted` are deliberately **not** here. They are tier-specific — the owner and the
- * operator need the flag to see a draft, and the public tier never renders one, because an unpublished item
+ * admin need the flag to see a draft, and the public tier never renders one, because an unpublished item
  * is filtered out before it reaches a field resolver. Putting them in the fragment would make the
  * public type carry a field whose only possible value is `true`.
  *

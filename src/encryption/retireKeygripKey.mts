@@ -18,18 +18,18 @@ export const KEYGRIP_RETIRE_UNKNOWN = 'KEYGRIP_RETIRE_UNKNOWN'
  * key before its age says it may go. `rotateKeygripKeys` retires from the old end and only once
  * `SESSION_CAP_DAYS_REMEMBERED` has passed **since the key was demoted**, because nobody should be logged
  * out by routine maintenance;
- * here the operator is asking for the opposite trade deliberately, and every cookie the retired key signed
+ * here the admin is asking for the opposite trade deliberately, and every cookie the retired key signed
  * stops verifying the moment the last process picks the change up.
  *
  * ⚠️ **Retiring `keys[0]` is refused, and the refusal names rotation.** `Keygrip` signs with index 0, so
- * removing it without minting a replacement would leave the platform signing with a key an operator has
+ * removing it without minting a replacement would leave the platform signing with a key an admin has
  * just declared untrustworthy — for one instant if they rotate next, forever if they do not. Rotation
  * already does both halves in one compare-and-set: it mints a fresh signer and pushes the suspect key down
  * the array, from where this operation can take it. The guard is on the *whole* operation rather than on a
  * prior read, so there is no window between the check and the removal.
  *
  * ⚠️ **An id nothing matches throws instead of answering the array unchanged.** A retire that silently
- * succeeds is the failure mode this story exists to stop: the operator reads a success and believes a
+ * succeeds is the failure mode this story exists to stop: the admin reads a success and believes a
  * compromised key is gone, while every process still verifies with it. The same argument as the
  * `matchedCount === 0` refusal at `funShopOwnerUpdateStatus.mts:39`.
  *

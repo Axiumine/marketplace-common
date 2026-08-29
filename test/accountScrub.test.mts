@@ -174,12 +174,12 @@ describe('what the scrub writes', () => {
 		}
 	})
 
-	it('says the note was erased rather than leaving something an operator could have typed', () => {
+	it('says the note was erased rather than leaving something an admin could have typed', () => {
 		expect(SCRUBBED_DISABLED_REASON).toBe('Deleted — the reason was erased with the account')
 		expect(SCRUBBED_DISABLED_REASON.startsWith(SCRUBBED_TEXT)).toBe(true)
 	})
 
-	it('overwrites the operator reason on an account that was parked, because removing it is refused', () => {
+	it('overwrites the admin reason on an account that was parked, because removing it is refused', () => {
 		for (const tier of [TIER.user, TIER.shopOwner] as const) {
 			const { $set, $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, true)
 
@@ -188,7 +188,7 @@ describe('what the scrub writes', () => {
 		}
 	})
 
-	it('removes the operator reason outright on an account that was never parked', () => {
+	it('removes the admin reason outright on an account that was never parked', () => {
 		for (const tier of [TIER.user, TIER.shopOwner] as const) {
 			const { $set, $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, false)
 
