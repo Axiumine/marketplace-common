@@ -208,6 +208,10 @@
 			"import": "./dist/encryption/retireKeygripKey.mjs",
 			"types": "./dist/encryption/retireKeygripKey.d.mts"
 		},
+		"./others/accountScrub": {
+			"import": "./dist/others/accountScrub.mjs",
+			"types": "./dist/others/accountScrub.d.mts"
+		},
 		"./others/assertHashFieldTTLSupport": {
 			"import": "./dist/others/assertHashFieldTTLSupport.mjs",
 			"types": "./dist/others/assertHashFieldTTLSupport.d.mts"

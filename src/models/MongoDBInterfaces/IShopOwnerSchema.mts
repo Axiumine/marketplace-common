@@ -19,7 +19,38 @@ export interface IShopOwnerSchema {
 	personalData?: IShopOwnerPersonalData
 	registeredAt: Date
 	deleted?: Date
+	/**
+	 * Which operator closed this account — an `admin._id` — and **absent when the account holder closed
+	 * it themselves**. That absence is the whole encoding: there is no actor *type* beside it, because a
+	 * field naming which collection an id came from is a `role` field by the back door, and ADR-002 does
+	 * not have one. ADR-044.
+	 */
+	deletedBy?: Types.ObjectId
 	disabled?: boolean
+	/**
+	 * Which operator suspended this account — an `admin._id`, written with `disabled: true` and always
+	 * present beside it. No self-service counterpart, unlike `deletedBy`: a person closes their own
+	 * account, they never suspend it.
+	 */
+	disabledBy?: Types.ObjectId
+	/**
+	 * Why, in the operator's own words. **Mandatory whenever `disabled` is true**, which the collection
+	 * validator enforces through `dependencies` — presence, without being able to read the value.
+	 *
+	 * ⚠️ **The 1000-character cap lives in the service and nowhere else.** The field is encrypted, so
+	 * the validator sees a `binData` and `maxLength` does not apply to it. ADR-044 records the split;
+	 * ADR-035 is its mirror image. Adding a `maxLength` to the validator refuses every write.
+	 */
+	disabledReason?: string
+	/**
+	 * When the retention sweeper overwrote this document's personal data with placeholders. ADR-041.
+	 *
+	 * ⚠️ **Its absence is the sweeper's own candidate filter**, so it stays in the clear: the sweep
+	 * matches `{ deleted: { $lte: cutoff }, scrubbedAt: { $exists: false } }`, a server-side comparison
+	 * that deterministic ciphertext cannot answer — deterministic supports equality only — and that
+	 * random ciphertext cannot answer at all.
+	 */
+	scrubbedAt?: Date
 	waitApprov?: boolean
 	/**
 	 * Free text an operator keeps about this account. **Operator-only.**
