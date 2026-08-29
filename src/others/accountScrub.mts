@@ -54,6 +54,23 @@ export const SCRUBBED_LAST_NAME = 'User'
  */
 export const SCRUBBED_TEXT = 'Deleted'
 
+/**
+ * What an operator's suspension note becomes on a **suspended** account that is then scrubbed.
+ *
+ * ⚠️ **`disabledReason` is overwritten rather than removed, and only here — because removing it would
+ * make the document unwritable.** The collection validator carries
+ * `dependencies: { disabled: ['disabledReason'] }` (ADR-044), and ADR-041 keeps `disabled` and
+ * `disabledBy` for ever as part of the record that a person held an account. Those two rules meet on
+ * exactly one document — one suspended at the moment it was closed — and a `$unset` of the reason there
+ * is refused by the server with `Document failed validation`, which would stall the sweep on the very
+ * accounts most likely to reach it.
+ *
+ * The sentence, not the fact, is what the scrub is for: that the account was suspended survives in
+ * `disabled` and `disabledBy`, and what goes is the free text an operator wrote *about a named person*.
+ * A placeholder that says so is more honest than a blank — see `SCRUBBED_TEXT`.
+ */
+export const SCRUBBED_DISABLED_REASON = 'Deleted — the reason was erased with the account'
+
 /** The postal code a scrubbed address carries — five characters, the shape the clear-text rule wants. */
 export const SCRUBBED_POSTAL_CODE = '00000'
 
@@ -103,16 +120,19 @@ const LOGIN_ACTIVITY = [
  *
  * `emailVerify` goes with everything in it, `newEmailTmp` included — an address the person was moving
  * to is as personal as the one they arrived with. `resetPwd` is a live credential-reset token and has
- * no business outliving the account. `disabledReason` is free text an operator wrote *about* a named
- * person, which is the single highest-risk field either collection carries; keeping it beside a record
- * whose every other personal value has just been overwritten would defeat the exercise.
+ * no business outliving the account.
+ *
+ * ⚠️ **`disabledReason` was on this list and had to leave it.** It is free text an operator wrote
+ * *about* a named person, which is the single highest-risk field either collection carries, so it does
+ * go — but by overwrite rather than removal, because `dependencies: { disabled: ['disabledReason'] }`
+ * refuses a suspended document that lacks it. See `SCRUBBED_DISABLED_REASON`.
  *
  * ⚠️ **`deleted`, `deletedBy`, `disabled`, `disabledBy` and `registeredAt` are NOT here and must not
  * be.** They are the record that a person held an account, which is the thing ADR-041 keeps for ever;
  * `deletedBy` in particular is meaningful by its *absence* (the holder closed it themselves), so a
  * routine that removed it would rewrite history rather than erase data.
  */
-const SHARED_UNSET = [...LOGIN_ACTIVITY, 'emailVerify', 'resetPwd', 'disabledReason']
+const SHARED_UNSET = [...LOGIN_ACTIVITY, 'emailVerify', 'resetPwd']
 
 /** `user` alone: the address book, and the pointer into it the `$expr` clause validates. */
 const USER_UNSET = [...SHARED_UNSET, 'addresses', 'defaultAddress']
@@ -187,17 +207,27 @@ const scrubbedPersonalDataShopOwner = (accountId: string) => ({
  * That leaves the invariant this function exists for: a scrubbed document no longer holds the address it
  * was registered with, so it can never be found by an address lookup again — which is exactly why the
  * confirm path needs no scrubbed-account branch at all.
+ *
+ * ⚠️ **`disabled` is the document's own current value, and the caller has to read it.** It picks which
+ * side of the `disabledReason` split applies — overwrite on a suspended account, remove on one that was
+ * never parked — and getting it wrong is not a cosmetic error: passing `false` for a suspended document
+ * builds a `$unset` the collection validator refuses. The sweep reads it in the same projection that
+ * finds the candidate, which is why the candidate query selects `_id disabled` and not `_id` alone.
  */
-export function buildAccountScrub(tier: ScrubbableTier, accountId: string, at: Date): IAccountScrub {
+export function buildAccountScrub(tier: ScrubbableTier, accountId: string, at: Date, disabled: boolean): IAccountScrub {
 	const isUser = tier === TIER.user
 
-	return {
-		$set: {
-			'login.email': scrubbedEmail(accountId),
-			'login.password': SCRUBBED_PASSWORD_HASH,
-			personalData: isUser ? scrubbedPersonalDataUser() : scrubbedPersonalDataShopOwner(accountId),
-			scrubbedAt: at
-		},
-		$unset: unsetMap(isUser ? USER_UNSET : SHOP_OWNER_UNSET)
+	const $set: Record<string, unknown> = {
+		'login.email': scrubbedEmail(accountId),
+		'login.password': SCRUBBED_PASSWORD_HASH,
+		personalData: isUser ? scrubbedPersonalDataUser() : scrubbedPersonalDataShopOwner(accountId),
+		scrubbedAt: at
 	}
+
+	const $unset = unsetMap(isUser ? USER_UNSET : SHOP_OWNER_UNSET)
+
+	if (disabled) $set.disabledReason = SCRUBBED_DISABLED_REASON
+	else $unset.disabledReason = ''
+
+	return { $set, $unset }
 }

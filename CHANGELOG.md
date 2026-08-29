@@ -30,11 +30,12 @@ apart without reading the diff.
   when `disabled` is true* is that validator's `dependencies` clause, not a Mongoose `required`, so it is
   absent until the same migration lands.
 
-- **`exports`: `./others/accountScrub`** (`ADR-041`). `buildAccountScrub(tier, accountId, at)` returns the
-  one update a retention scrub is — a `$set` that overwrites every personal value a closed `user` or
-  `shopOwner` holds, and a `$unset` that removes the rest — beside the placeholder constants it writes
-  (`scrubbedEmail`, `SCRUBBED_PASSWORD_HASH`, `SCRUBBED_FIRST_NAME`, `SCRUBBED_LAST_NAME`, `SCRUBBED_TEXT`,
-  `SCRUBBED_POSTAL_CODE`, `SCRUBBED_PROVINCE`, `scrubbedBirthDate`, `SCRUBBED_EMAIL_HOST`). Reaches `dist/`.
+- **`exports`: `./others/accountScrub`** (`ADR-041`). `buildAccountScrub(tier, accountId, at, disabled)`
+  returns the one update a retention scrub is — a `$set` that overwrites every personal value a closed
+  `user` or `shopOwner` holds, and a `$unset` that removes the rest — beside the placeholder constants it
+  writes (`scrubbedEmail`, `SCRUBBED_PASSWORD_HASH`, `SCRUBBED_FIRST_NAME`, `SCRUBBED_LAST_NAME`,
+  `SCRUBBED_TEXT`, `SCRUBBED_DISABLED_REASON`, `SCRUBBED_POSTAL_CODE`, `SCRUBBED_PROVINCE`,
+  `scrubbedBirthDate`, `SCRUBBED_EMAIL_HOST`). Reaches `dist/`.
   ⚠️ **The values it hands back are plaintext and must reach MongoDB through Mongoose.**
   `fieldEncryptionPlugin` encrypts `$set` operands on the way past, including the whole-object `$set` on
   `personalData`; a caller that writes them with `Model.collection.updateOne` puts readable personal data
@@ -43,8 +44,15 @@ apart without reading the diff.
   `registeredAt` are in neither half — they are the record that a person held an account, which `ADR-041`
   keeps for ever. `login.email` moves to `deleted-<id>@invalid.local`, which is what frees the address for
   a fresh registration without removing a row.
-  ⚠️ **Two callers by design** — the day-30 sweep, and the registration confirm that reclaims an address
-  early (`ADR-042`) — and neither may keep its own copy of the field list.
+  ⚠️ **The fourth argument is the document's own `disabled`, and the caller has to read it.**
+  `disabledReason` is the one path that cannot simply be removed: the collection validator's
+  `dependencies: { disabled: ['disabledReason'] }` clause refuses a suspended document that lacks it, and
+  `disabled` survives a scrub by design. So the reason is `$set` to `SCRUBBED_DISABLED_REASON` on an account
+  that was parked and `$unset` on one that never was. Passing the wrong value builds an update MongoDB
+  rejects with `Document failed validation`, on exactly the accounts most likely to reach the sweep.
+  ⚠️ **One caller by design: the day-30 sweep.** `ADR-046` made the retention window an *undo* window, so
+  the registration confirm no longer reclaims an address early — a closed account still holding its address
+  is handed back to the person rather than overwritten.
 
 ## [2.0.3](https://github.com/Axiumine/marketplace-common/releases/tag/v2.0.3) - 2026-08-28
 
