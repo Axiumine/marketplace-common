@@ -11,9 +11,28 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v3.0.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v3.1.0...HEAD)
 
 Nothing yet.
+
+## [3.1.0](https://github.com/Axiumine/marketplace-common/releases/tag/v3.1.0) - 2026-08-30
+
+### Added
+
+- **`exports`: `./others/unpublishOwnerStorefront`** — the storefront cascade ADR-045 requires, moved here
+  from the two resource services that each carried an identical copy of it. It takes an inactive shop
+  owner's companies and every item filed under one of them off air, inside the caller's transaction, and
+  has no inverse by design. Three call sites reach it across two services — an admin suspension and an
+  admin closure on the Admin resource service, the owner's own closure on the ShopOwner one — and the
+  platform owner's ruling names both hands at once: *"so disable a shop owner, by shop owner or by admin,
+  unpublish companies and items"*. The body is byte-for-byte what both services already ran, so nothing
+  changes for a consumer that has not yet deleted its copy.
+
+  ⚠️ **The first `others/` module that imports models.** `Company` and `Item` come from this package's own
+  `@MongoDB/` sources, which makes importing it enough to register both models on the default mongoose
+  connection. Every consumer of this symbol already imports both models directly, so no consumer gains a
+  connection it did not have — but a service that wanted the helper and not the collections cannot have
+  one, and that is the trade the move accepts.
 
 ## [3.0.0](https://github.com/Axiumine/marketplace-common/releases/tag/v3.0.0) - 2026-08-30
 
