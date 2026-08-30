@@ -37,6 +37,9 @@ export const scrubbedEmail = (accountId: string): string => `deleted-${accountId
  * A hash computed per account was the alternative and was rejected on cost: bcrypt at 14 rounds is
  * over a second of CPU each, and the retention sweep runs over a whole day's closures at once.
  */
+// It hashes a 48-byte secret nobody kept, so it authenticates nothing and is a poison value rather
+// than a credential — the whole point of the constant is that no password matches it.
+// nosemgrep: semgrep.vendor.generic.secrets.security.detected-bcrypt-hash.detected-bcrypt-hash
 export const SCRUBBED_PASSWORD_HASH = '$2y$14$pWWeKVbn6Buoc3.DB8KXguj1FxmxODlbbLT8g0dNNVI1dG6nHzGG2'
 
 /** The given name every scrubbed account carries — with `SCRUBBED_LAST_NAME`, it reads "Deleted User". */
