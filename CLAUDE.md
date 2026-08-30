@@ -14,8 +14,12 @@ Building blocks only; nothing here listens on a port.
 Contents: Mongoose models & schemas (`src/models/`) · GraphQL type fragments & inputs (`src/schema/`) ·
 interfaces, Redis DTOs, constants, auth helpers (`src/others/`, `src/models/MongoDBInterfaces/`).
 
-⚠️ **After every edit here, run `./deploy-local.sh`.** The package is consumed by name, so an undeployed
-edit is invisible and fails at the call site.
+⚠️ **Every edit here reaches a consumer one way and one way only: publish a release.** The package is
+consumed by name from `registry.npmjs.org`, so an unpublished edit is invisible at every call site — and
+hand-copying a build into somebody's `node_modules` is **banned** (platform owner, 2026-08-30). Bump,
+changelog, merge, tag, push, `yarn upload`, then move each consumer's range: the nine steps in
+§The release flow, all of them, every time. `deploy-local.sh` was the shortcut past that flow and is
+**deleted** — a consumer that runs a build no lockfile names is a consumer nobody can reproduce.
 
 ## ⚠️ NEVER run the mutation gate by hand
 
@@ -278,9 +282,12 @@ that still claims the tarball is byte-identical to the last one, or a silent pub
    resolve through their own `yarn.lock`, so a new version reaches none of them until that lockfile is
    updated. That is separate work in each consuming repo, and it is not part of this flow.
 
-⚠️ **`deploy-local.sh` is not a release.** It copies into one consumer's `node_modules` and produces no
-lockfile entry, so nothing about it is reproducible on another machine or in CI. It is for iterating
-locally — never for making a change reach a consumer permanently.
+⚠️ **There is no local shortcut, and there is no longer a script that offers one.** `deploy-local.sh`
+copied a fresh build straight into every consumer's `node_modules`: no version, no lockfile entry, nothing
+another machine or CI could reproduce, and a `yarn install` in any consumer silently put the last published
+build back. It is deleted (platform owner, 2026-08-30). An edit that a consumer needs is an edit worth a
+version number — publish it. A patch release costs nine steps and no consumer is ever left running a build
+that exists on one machine.
 
 ## Commands
 

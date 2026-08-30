@@ -36,12 +36,6 @@ Ahead of all of them each hook selects node by itself, reading `engines.node` an
 git runs each hook in its own process — the switch one hook makes is gone before the next one starts — and
 this machine's default node is older than the pin while yarn's engine check is a hard failure.
 
-`deploy-local.sh` selects node the same way and for the same reason, with one difference: it reads the
-version it asks nvm for from `.nvmrc` rather than from `engines.node`, because a script started by hand has
-to survive there being no node on PATH at all, and `node -p 'require(…).engines.node'` cannot. It still
-verifies the result against `engines.node` afterwards, so the two drifting apart blocks the deploy instead
-of surfacing as a `yarn build` failure.
-
 Coverage runs at commit time despite pre-push already gating it, because Qodana scores coverage from
 `coverage/lcov.info` and `qodana.sh` regenerates that with `yarn test:cov || true`, deliberately swallowing
 a threshold miss. The hook runs the suite itself with the exit code honoured, then hands the scan
