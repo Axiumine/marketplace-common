@@ -38,7 +38,7 @@ names the tests that should have failed, and it costs nobody the machine.
 ## The six models
 
 Six models, six collections in
-[`marketplace-db-setup`](https://github.com/Axiumine/marketplace-db-setup): `Admin` (platform operator),
+[`marketplace-db-setup`](https://github.com/Axiumine/marketplace-db-setup): `Admin` (platform admin),
 `ShopOwner` (the business owner), `Company` (the registered company a ShopOwner owns —
 `Company.idShopOwner` required ObjectId, `Company.deleted` optional date, soft delete like `ShopOwner`),
 `User` (the end customer), and the catalogue pair `Item` / `ItemCategory`.
@@ -76,7 +76,7 @@ hand with `auto: true`.
 
 ⚠️ **`defaultAddress` is enforced by MongoDB, not by this package.** The `user` collection validator is
 `$and: [ {$jsonSchema}, {$expr} ]` — a validator is a query expression, and `$jsonSchema` is only one
-operator you may put in one — and the second clause refuses a pointer that is neither absent nor present in
+admin you may put in one — and the second clause refuses a pointer that is neither absent nor present in
 `addresses[]._id`. Two consequences for every consumer: setting the default is a single atomic `$set` with
 no "clear the others first" window, and **removing the default address must `$unset` the pointer in the
 same update** or the write is rejected. See `marketplace-db-setup/lib/schemas/user.js` for the full

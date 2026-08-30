@@ -82,7 +82,7 @@ export const resolveSessionCapDays = (rememberMe: unknown): number =>
  * ⚠️ **One expression, two readers, and that is the point** (E15-S03). `resolveAuthorizationSession`
  * refuses a session past this instant; `indexSession` gives its index field a TTL that ends at it. Two
  * copies of the arithmetic could drift by a rounding, and the failure would be silent in the worse
- * direction — an index row outliving the session it names is a listing an operator cannot act on, and an
+ * direction — an index row outliving the session it names is a listing an admin cannot act on, and an
  * index row dying first is a live session listed nowhere.
  *
  * ⚠️ **`originalLogin`, never the current token's mint.** Rotation carries it forward untouched, which is

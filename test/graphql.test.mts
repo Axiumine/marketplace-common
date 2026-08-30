@@ -104,7 +104,7 @@ describe('GraphQLItemFrag', () => {
 	/*
 	 * ⚠️ `published` and `deleted` are tier-specific and deliberately absent.
 	 *
-	 * The owner and the operator need the flag to see a draft; the public tier never renders one,
+	 * The owner and the admin need the flag to see a draft; the public tier never renders one,
 	 * because an unpublished item is filtered out before a field resolver is ever reached. In the fragment they
 	 * would make the public type carry a field whose only possible value is `true` — and `deleted` a
 	 * field whose only possible value is null.
@@ -240,7 +240,7 @@ describe('GraphQLInputUserPersonalData', () => {
 	/*
 	 * ⚠️ Only the two names are NonNull, where **every** field of `GraphQLInputShopOwnerPersonalData`
 	 * is. The collection validator requires the same two and no more, and the difference is the tier: a
-	 * shop owner is onboarded by an operator collecting a full record, a customer types a name into a
+	 * shop owner is onboarded by an admin collecting a full record, a customer types a name into a
 	 * profile page and leaves the rest for later.
 	 */
 	it('requires the two names, carries no address, and resolves both nested inputs', () => {

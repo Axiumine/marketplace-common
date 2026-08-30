@@ -157,7 +157,7 @@ describe('the declared field map', () => {
 		expect(objects.every((spec) => spec.algorithm === ALGORITHM_RANDOM)).toBe(true)
 	})
 
-	it('declares the three fields the operator table sorts on nowhere', () => {
+	it('declares the three fields the admin table sorts on nowhere', () => {
 		// The single most consequential absence on the platform: encrypting any of these three does not
 		// slow `shopOwnersActiveTbl` down, it falsifies it — rows ordered by ciphertext and every
 		// `/^term/i` search answering nothing. ADR-029 records the trade.
@@ -455,7 +455,7 @@ describe('encryptAtNode', () => {
 
 describe('encryptDocument', () => {
 	// The seed shape the integration suites write with the raw driver: personal fields at three
-	// depths, and the three shopOwner fields that stay in the clear because the operator table sorts
+	// depths, and the three shopOwner fields that stay in the clear because the admin table sorts
 	// and prefix-searches them.
 	const seed = () => ({
 		_id: new ObjectId(),
@@ -467,7 +467,7 @@ describe('encryptDocument', () => {
 			address: { street: 'Via', postalCode: '24030', city: 'C', province: 'BG' },
 			contacts: { mobile: '333' }
 		},
-		notes: 'Operator note'
+		notes: 'Admin note'
 	})
 
 	it('encrypts every declared field and leaves everything else alone', async () => {
@@ -484,9 +484,9 @@ describe('encryptDocument', () => {
 		expect(plaintextOf(document.personalData.address.street)).toBe('Via')
 		expect(plaintextOf(document.personalData.address.postalCode)).toBe('24030')
 		expect(plaintextOf(document.personalData.contacts.mobile)).toBe('333')
-		expect(plaintextOf(document.notes)).toBe('Operator note')
+		expect(plaintextOf(document.notes)).toBe('Admin note')
 
-		// ⚠️ The three the operator table depends on, and the bcrypt hash. A helper that encrypted
+		// ⚠️ The three the admin table depends on, and the bcrypt hash. A helper that encrypted
 		// the whole document rather than the declared list would break `tbl_active_*` silently.
 		expect(document.personalData.firstName).toBe('M')
 		expect(document.personalData.lastName).toBe('R')
@@ -590,7 +590,7 @@ describe('encryptFilter', () => {
 	})
 
 	// All three are asserted through an encrypted field of their own. A branch carrying only ordinary
-	// fields would pass whether the operator was descended into or stepped over.
+	// fields would pass whether the admin was descended into or stepped over.
 	it('descends into $and, $or and $nor', async () => {
 		const filter = {
 			$and: [
@@ -608,7 +608,7 @@ describe('encryptFilter', () => {
 		expect(plaintextOf((filter.$nor[0] as Record<string, unknown>)['login.email'])).toBe('e@f.test')
 	})
 
-	it('ignores a logical operator whose operand is not an array', async () => {
+	it('ignores a logical admin whose operand is not an array', async () => {
 		const filter = { $and: 'nonsense' }
 
 		await encryptFilter(filter, root, KEY)
@@ -619,7 +619,7 @@ describe('encryptFilter', () => {
 	// `$expr`, `$text`, `$where`. An aggregation expression is not a filter tree, so walking into one
 	// with this walker would misread it — and none of them can name an encrypted field here anyway:
 	// the two `$expr` validators compare `_id`s and both text indexes are on public fields.
-	it('steps over a top-level operator it does not own', async () => {
+	it('steps over a top-level admin it does not own', async () => {
 		const filter = { $expr: { $in: ['$defaultAddress', { $map: { input: '$addresses', in: '$$this._id' } }] } }
 		const snapshot = structuredClone(filter)
 
@@ -639,8 +639,8 @@ describe('encryptFilter', () => {
 	})
 
 	// A plain object with no `$` key is a value, not an operand — `{ 'login.email': { a: 1 } }` asks
-	// for a field equal to that object rather than for an operator.
-	it('treats an operator-free object operand as a value', async () => {
+	// for a field equal to that object rather than for an admin.
+	it('treats an admin-free object operand as a value', async () => {
 		const filter: Record<string, unknown> = { 'login.email': { nested: 'value' }, 'emailVerify.newEmailTmp': {} }
 
 		await encryptFilter(filter, root, 'user')
@@ -667,14 +667,14 @@ describe('encryptFilter', () => {
 		)
 	})
 
-	it('refuses an operator on a random field', async () => {
+	it('refuses an admin on a random field', async () => {
 		await expectRejection(
 			encryptFilter({ 'personalData.contacts.mobile': { $eq: '+390000000' } }, root, KEY),
 			'Cannot query the encrypted field "personalData.contacts.mobile": it is random-encrypted, so "$eq" can never match (ADR-029)'
 		)
 	})
 
-	it('refuses an ordering or pattern operator on a deterministic field', async () => {
+	it('refuses an ordering or pattern admin on a deterministic field', async () => {
 		// Equal ciphertexts say nothing about the order of the plaintexts behind them, and a prefix of
 		// a ciphertext is a prefix of nothing.
 		await expectRejection(
@@ -824,7 +824,7 @@ describe('encryptUpdate', () => {
 
 	// `{ $unset: { notes: '' } }` names a field and discards the `''`. Encrypting the operand would
 	// turn a valid update into a rejected one.
-	it('steps over operators whose operand is not a value', async () => {
+	it('steps over admins whose operand is not a value', async () => {
 		const update = {
 			$unset: { 'personalData.contacts.landline': '' },
 			$inc: { 'login.loginCount': 1 },

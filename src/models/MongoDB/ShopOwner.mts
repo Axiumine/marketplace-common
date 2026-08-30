@@ -66,7 +66,7 @@ const ShopOwnerSchema: Schema<IShopOwnerModel> = new Schema(
 				// omission.** `shopOwnersActiveTbl` sorts on all three — `tbl_active_firstName`,
 				// `tbl_active_lastName_firstName`, `tbl_active_city` — and prefix-searches them with
 				// `/^term/i`. No CSFLE algorithm answers a sort or a regex, so encrypting them would
-				// not slow the operator table down, it would falsify it: the rows would still render,
+				// not slow the admin table down, it would falsify it: the rows would still render,
 				// ordered by ciphertext, and every search would return nothing. ADR-029 records the
 				// trade and what would have to change to reverse it. The same two names on `user` and
 				// `admin` ARE encrypted, because nothing sorts those.
@@ -89,7 +89,7 @@ const ShopOwnerSchema: Schema<IShopOwnerModel> = new Schema(
 				// The point is **not** required, unlike the company's. Every shopOwner in
 				// the collection predates the field, and a required path here would make each of
 				// them unsaveable through this model until someone re-picked their address from the
-				// autocomplete — an operator fixing a phone number would be stopped by the address.
+				// autocomplete — an admin fixing a phone number would be stopped by the address.
 				//
 				// The clone also re-declares three of the four inherited paths as encrypted.
 				// `BaseAddressSchema` itself must stay a plain-string schema: `company` spreads
@@ -136,7 +136,7 @@ const ShopOwnerSchema: Schema<IShopOwnerModel> = new Schema(
 		deleted: {
 			type: Date
 		},
-		// Which operator closed this account — an `admin._id`, and **absent when the account holder
+		// Which admin closed this account — an `admin._id`, and **absent when the account holder
 		// closed it themselves**. That absence is the whole encoding: no actor *type* sits beside it,
 		// because a field naming which collection an id came from is a `role` field by the back door and
 		// ADR-002 does not have one. In the clear: an id the server minted is not personal data.
@@ -146,13 +146,13 @@ const ShopOwnerSchema: Schema<IShopOwnerModel> = new Schema(
 		disabled: {
 			type: Boolean
 		},
-		// Which operator suspended this account — an `admin._id`, written with `disabled: true` and
+		// Which admin suspended this account — an `admin._id`, written with `disabled: true` and
 		// always present beside it. No self-service counterpart, unlike `deletedBy`: a person closes
 		// their own account, they never suspend it.
 		disabledBy: {
 			type: Schema.Types.ObjectId
 		},
-		// Why, in the operator's own words. **Mandatory whenever `disabled` is true** — enforced by the
+		// Why, in the admin's own words. **Mandatory whenever `disabled` is true** — enforced by the
 		// collection validator's `dependencies`, which can require the path's *presence* without being
 		// able to read what is in it.
 		//
@@ -176,7 +176,7 @@ const ShopOwnerSchema: Schema<IShopOwnerModel> = new Schema(
 		scrubbedAt: {
 			type: Date
 		},
-		// What an operator wrote about this account, not what the account declared about itself —
+		// What an admin wrote about this account, not what the account declared about itself —
 		// which is why it sits here and not in `personalData`. Only the Admin tier ever selects it;
 		// the ShopOwner-tier services do not load this model at all.
 		// Encrypted, and the one encrypted field here the subject never sees — the ShopOwner tier does

@@ -288,9 +288,9 @@
 			"import": "./dist/others/newSessionLineage.mjs",
 			"types": "./dist/others/newSessionLineage.d.mts"
 		},
-		"./others/operatorOnlyFields": {
-			"import": "./dist/others/operatorOnlyFields.mjs",
-			"types": "./dist/others/operatorOnlyFields.d.mts"
+		"./others/adminOnlyFields": {
+			"import": "./dist/others/adminOnlyFields.mjs",
+			"types": "./dist/others/adminOnlyFields.d.mts"
 		},
 		"./others/readKek": {
 			"import": "./dist/others/readKek.mjs",

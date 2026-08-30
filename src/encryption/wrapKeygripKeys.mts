@@ -31,7 +31,7 @@ export const KEYGRIP_TAG_BYTES = 16
  * ⚠️ **`kek` is a parameter, not a read of `process.env` here.** This function is also the definition of
  * the format for the one caller that cannot import it — `marketplace-db-setup`'s seed script is CommonJS
  * and duplicates these twenty lines against `node:crypto` — and a function that reached for its own key
- * would hide which key each call used at exactly the moment an operator is trying to work out why two
+ * would hide which key each call used at exactly the moment an admin is trying to work out why two
  * services disagree.
  *
  * The plaintext is `JSON.stringify` of the array as given: **order is preserved and load-bearing**, index

@@ -164,7 +164,7 @@ export const keygripKey = () => `${process.env.REDIS_KEY}keygrip`
  * shows the old one.
  *
  * Written at boot and again on every live swap. Nothing reads it at runtime: it exists for
- * `keygripStatus` (E01-S14) and for an operator with `redis-cli`.
+ * `keygripStatus` (E01-S14) and for an admin with `redis-cli`.
  */
 export const keygripHoldersKey = () => `${process.env.REDIS_KEY}keygrip:holders`
 
@@ -281,7 +281,7 @@ export async function retireAccessSession(store: Pick<ISessionKeyStore, 'hGet' |
  *
  * `mintedAt` is the *session's* mint, not the current token's: it is `originalLogin`, carried forward
  * unchanged by every rotation exactly as the refresh hash carries it. A rotating session must not look
- * freshly created every fifteen minutes — the row names a login, and the operator reading it is asking
+ * freshly created every fifteen minutes — the row names a login, and the admin reading it is asking
  * when that login happened.
  */
 export interface ISessionIndexEntry {
@@ -316,7 +316,7 @@ export const SESSION_INDEX_TTL_SECONDS = (SESSION_CAP_DAYS_REMEMBERED * MILLISEC
  * ⚠️ **The field carries its own TTL, and it is the session's absolute cap** (E15-S03). Rotation and
  * logout remove the field they supersede, but a session that simply expires passes through neither, so
  * without a per-field TTL the index would only ever grow — a slow leak, and a list of sessions that
- * cannot be used shown to an operator deciding which to end. The number is the remaining time to
+ * cannot be used shown to an admin deciding which to end. The number is the remaining time to
  * `originalLogin + sessionCapDays`, not the session key's 90-day physical TTL: after E14-S05 a session
  * key outlives the session it holds, so a field expiring with the key would keep naming a login nobody
  * can make. **Rotation therefore does not extend it** — the successor is written with the remainder its

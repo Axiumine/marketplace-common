@@ -237,7 +237,7 @@ describe('watchKeygrip', () => {
 	})
 
 	// The heartbeat has to follow the keys, not the boot: a service that adopted an hour ago and keeps
-	// reporting the fingerprint it started with reads on the operator's screen as one that never swapped.
+	// reporting the fingerprint it started with reads on the admin's screen as one that never swapped.
 	it('heartbeats under the new fingerprint once it has adopted', async () => {
 		vi.useFakeTimers()
 		const store = makeStore(record(3, KEYS_V3))

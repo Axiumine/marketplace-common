@@ -113,7 +113,7 @@ const UserSchema: Schema<IUserModel> = new Schema(
 		personalData: {
 			type: {
 				_id: false,
-				// Encrypted, unlike the shop owner's two — there is no operator table over this
+				// Encrypted, unlike the shop owner's two — there is no admin table over this
 				// collection, so nothing sorts or prefix-searches a customer's name.
 				firstName: encryptedPath({ plaintext: 'string', required: true }),
 				lastName: encryptedPath({ plaintext: 'string', required: true }),
@@ -147,7 +147,7 @@ const UserSchema: Schema<IUserModel> = new Schema(
 		deleted: {
 			type: Date
 		},
-		// Which operator closed this account — an `admin._id`, and **absent when the account holder
+		// Which admin closed this account — an `admin._id`, and **absent when the account holder
 		// closed it themselves**. That absence is the whole encoding: no actor *type* sits beside it,
 		// because a field naming which collection an id came from is a `role` field by the back door and
 		// ADR-002 does not have one. In the clear: an id the server minted is not personal data.
@@ -157,13 +157,13 @@ const UserSchema: Schema<IUserModel> = new Schema(
 		disabled: {
 			type: Boolean
 		},
-		// Which operator suspended this account — an `admin._id`, written with `disabled: true` and
+		// Which admin suspended this account — an `admin._id`, written with `disabled: true` and
 		// always present beside it. No self-service counterpart, unlike `deletedBy`: a person closes
 		// their own account, they never suspend it.
 		disabledBy: {
 			type: Schema.Types.ObjectId
 		},
-		// Why, in the operator's own words. **Mandatory whenever `disabled` is true** — enforced by the
+		// Why, in the admin's own words. **Mandatory whenever `disabled` is true** — enforced by the
 		// collection validator's `dependencies`, which can require the path's *presence* without being
 		// able to read what is in it.
 		//
@@ -184,7 +184,7 @@ const UserSchema: Schema<IUserModel> = new Schema(
 		scrubbedAt: {
 			type: Date
 		},
-		// No `waitApprov`: a shop owner waits for an operator to approve the account, a customer
+		// No `waitApprov`: a shop owner waits for an admin to approve the account, a customer
 		// self-serves. The only gate between registering and logging in is `emailVerify.valid`,
 		// which `loginUser` checks.
 		resetPwd: ResetPwdSubDocSchema,

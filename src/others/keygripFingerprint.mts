@@ -5,7 +5,7 @@ import { sha256Hex } from '@others/sha256Hex.mjs'
  * The public name of a key set: `sha256(ids joined by ':')`, first 12 hex characters (ADR-034).
  *
  * ⚠️ **Computed over the key *ids*, never over the key material.** A fingerprint is written into Redis in
- * the clear, returned by `keygripStatus` and read by an operator off a screen; a digest of the secrets
+ * the clear, returned by `keygripStatus` and read by an admin off a screen; a digest of the secrets
  * would be a digest of a value drawn from a 512-bit random space — unbreakable, but also one bad refactor
  * away from being a digest of something guessable, and there is no reason to take that shape at all. Two
  * services holding the same array agree on this string without either of them touching a key.

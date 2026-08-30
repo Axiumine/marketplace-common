@@ -6,7 +6,7 @@ import { GraphQLDate } from 'graphql-scalars'
  *
  * ⚠️ **Only `firstName` and `lastName` are NonNull, where every field of
  * `GraphQLInputShopOwnerPersonalData` is.** The collection validator requires the same two and no
- * more, and the difference is the tier: a shop owner is onboarded by an operator collecting a full
+ * more, and the difference is the tier: a shop owner is onboarded by an admin collecting a full
  * record, a customer types a name into a profile page and leaves the rest for later.
  *
  * ⚠️ **No `address` field.** A customer's addresses are a separate top-level array with its own

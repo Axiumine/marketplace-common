@@ -13,11 +13,25 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v2.0.3...HEAD)
 
+### Changed
+
+- ⚠️ **BREAKING — `exports`: `./others/operatorOnlyFields` is now `./others/adminOnlyFields`**, and the
+  exported `OPERATOR_ONLY_FIELDS_SHOP_OWNER` is now `ADMIN_ONLY_FIELDS_SHOP_OWNER`. The platform owner
+  ruled on 2026-08-29 that there are three human roles — admin, shop owner, customer — and that
+  "operator" names none of them; the word is gone from all sixteen repos. Nothing about the *set* of
+  fields changed: it is the same `notes` and `waitApprov` pair an admin may read and a shop owner may
+  not. Reaches `dist/`. **The next release is therefore a major, 3.0.0**, and every consumer's
+  `^2.0.0` range moves with it. Two test files import this subpath today
+  (`marketplace-dev-authenticated-authorization`, `marketplace-dev-public-authorization`).
+  ⚠️ A MongoDB *update operator* (`$set`, `$pull`) keeps the word — `src/encryption/` is untouched,
+  and the three deterministic-encryption messages that name a refused operator still say "operator",
+  because there they mean `$gt`, not a person.
+
 ### Added
 
 - **Four account-lifecycle paths on `shopOwner` and on `user`** (`ADR-041`, `ADR-044`, `ADR-045`):
   `deletedBy` and `disabledBy` (plain `ObjectId`, deliberately **without** `ref` — the actor is an `admin`
-  for an operator's decision and the account holder itself for a self-closure, and one path cannot point at
+  for an admin's decision and the account holder itself for a self-closure, and one path cannot point at
   two collections), `disabledReason` (**encrypted**, `ALGORITHM_RANDOM`) and `scrubbedAt` (plain `Date`).
   All four are optional here. Reaches `dist/`.
   ⚠️ **The five deterministic fields `ADR-029` pins are unchanged.** `ENCRYPTED_FIELDS_SHOP_OWNER` and
@@ -237,7 +251,7 @@ First published release: the whole shared library, extracted from the nine backe
   Role is which collection you authenticate against; there is no `role` field and no permission enum.
 - **Entry guards** used by the resource services: `checkShopOwnerApproval`,
   `checkShopOwnerEmailVerified`, `checkUserAuthorizationDisDel`, `assertTurnstile`,
-  `assertUnderRateLimit`, `isIntrospectionBypassAllowed`, `authBoundaryContract`, `operatorOnlyFields`.
+  `assertUnderRateLimit`, `isIntrospectionBypassAllowed`, `authBoundaryContract`, `adminOnlyFields`.
 - **Field-level encryption for PII**: a Mongoose plugin (`fieldEncryptionPlugin`, `setupFieldEncryption`)
   with document, filter and update paths, a trie over the declared encrypted fields, ciphertext detection,
   and keygrip key material handling — `loadKeygrip`, `readKeygrip`, `watchKeygrip`, `wrapKeygripKeys`,

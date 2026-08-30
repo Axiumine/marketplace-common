@@ -23,9 +23,9 @@ import { IEncryptedFieldSpec } from '@encryption/IEncryptedFieldSpec.mjs'
  */
 
 /**
- * `admin` — the platform operator.
+ * `admin` — the platform admin.
  *
- * Both names are encrypted, and unlike the shop owner's they cost nothing: there is no operator
+ * Both names are encrypted, and unlike the shop owner's they cost nothing: there is no admin
  * table over this collection, so nothing sorts or searches them.
  */
 export const ENCRYPTED_FIELDS_ADMIN: IEncryptedFieldSpec[] = [
@@ -61,10 +61,10 @@ export const ENCRYPTED_FIELDS_SHOP_OWNER: IEncryptedFieldSpec[] = [
 	{ path: 'personalData.contacts.mobile', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
 	{ path: 'personalData.contacts.landline', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
 	{ path: 'personalData.contacts.email', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	// What an operator wrote *about* this person, which is why these are the encrypted fields here
+	// What an admin wrote *about* this person, which is why these are the encrypted fields here
 	// that the subject never sees. The ShopOwner tier does not load this model at all.
 	{ path: 'notes', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	// Why an operator suspended the account. Random, not deterministic: nothing filters on it, and
+	// Why an admin suspended the account. Random, not deterministic: nothing filters on it, and
 	// deterministic would make two accounts suspended for the same reason visibly equal. The
 	// 1000-character cap it carries is a service-side rule — see the model, and ADR-044.
 	{ path: 'disabledReason', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }
@@ -75,7 +75,7 @@ export const ENCRYPTED_FIELDS_SHOP_OWNER: IEncryptedFieldSpec[] = [
  *
  * The whole of `personalData` and the whole of every address element, because nothing sorts,
  * searches or geo-queries any of it: a customer reads their own document by `_id`, and there is no
- * operator table over this collection.
+ * admin table over this collection.
  *
  * ⚠️ `addresses.[]._id` and `defaultAddress` stay in the clear and must. The collection validator is
  * `$and: [{ $jsonSchema }, { $expr }]`, and the `$expr` half `$map`s the `_id` of every element and
@@ -98,7 +98,7 @@ export const ENCRYPTED_FIELDS_USER: IEncryptedFieldSpec[] = [
 	{ path: 'addresses.[].city', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
 	{ path: 'addresses.[].province', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
 	{ path: 'addresses.[].position', algorithm: ALGORITHM_RANDOM, plaintext: 'object' },
-	// Why an operator suspended the account — the one field on `user` the subject never sees. Random:
+	// Why an admin suspended the account — the one field on `user` the subject never sees. Random:
 	// nothing filters on it, and deterministic would make two accounts suspended for the same reason
 	// visibly equal. Its 1000-character cap is a service-side rule, see ADR-044.
 	{ path: 'disabledReason', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }

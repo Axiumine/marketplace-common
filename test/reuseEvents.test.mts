@@ -78,10 +78,10 @@ describe('REUSE_EVENT_ACTIONS', () => {
 		expect(REUSE_EVENT_ACTIONS).toHaveLength(2)
 	})
 
-	// An operator's own revocation is not in the vocabulary, and E17's open question 4 is why. The assertion
+	// An admin's own revocation is not in the vocabulary, and E17's open question 4 is why. The assertion
 	// is here so that adding it is a deliberate act with a failing test in front of it, not a quiet append.
-	it('carries no value for an operator-initiated revocation', () => {
-		expect(REUSE_EVENT_ACTIONS).not.toContain('operatorRevoked')
+	it('carries no value for an admin-initiated revocation', () => {
+		expect(REUSE_EVENT_ACTIONS).not.toContain('adminRevoked')
 	})
 })
 
@@ -156,7 +156,7 @@ describe('recordReuseEvent', () => {
 	 * ⚠️ **The bound, proved against a list that actually stores what it is handed.** E17-S05 asks for a
 	 * stated bound on growth *and a test of it*: 60 appends leave 50 entries, the newest is first, and the
 	 * ten oldest are gone. Asserting the `lTrim` arguments alone would pass on an implementation that trims
-	 * the wrong end and answers an operator with the ten events furthest from the incident.
+	 * the wrong end and answers an admin with the ten events furthest from the incident.
 	 */
 	it('never lets one account trail exceed REUSE_EVENTS_MAX, keeping the newest', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)

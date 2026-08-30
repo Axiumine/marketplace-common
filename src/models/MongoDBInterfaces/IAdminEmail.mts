@@ -3,7 +3,7 @@ import { Types } from 'mongoose'
 
 /**
  * What the `admin` collection answers to the session projection `_id login.email deleted disabled`
- * — the shape the operator authorization service re-reads on every refresh, not the whole document.
+ * — the shape the admin authorization service re-reads on every refresh, not the whole document.
  *
  * ⚠️ It used to be declared inline in `tokenInfoAdmin.mts` inside
  * `marketplace-dev-admin-authenticated-authorization`, and it declared **only** `_id` and

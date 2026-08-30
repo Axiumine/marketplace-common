@@ -19,8 +19,8 @@ import { Types } from 'mongoose'
  * 4. **No `waitApprov`** — customers self-serve. The only gate between registering and logging in is
  *    the email confirmation, which `loginUser` checks against `emailVerify.valid`.
  *
- * There is also no `notes`: that field is what an operator wrote about a shop owner, and this tier
- * has no operator-facing surface.
+ * There is also no `notes`: that field is what an admin wrote about a shop owner, and this tier
+ * has no admin-facing surface.
  */
 export interface IUserSchema {
 	_id?: Types.ObjectId
@@ -49,7 +49,7 @@ export interface IUserSchema {
 	registeredAt: Date
 	deleted?: Date
 	/**
-	 * Which operator closed this account — an `admin._id` — and **absent when the account holder closed
+	 * Which admin closed this account — an `admin._id` — and **absent when the account holder closed
 	 * it themselves**. That absence is the whole encoding: there is no actor *type* beside it, because a
 	 * field naming which collection an id came from is a `role` field by the back door, and ADR-002 does
 	 * not have one. ADR-044.
@@ -57,13 +57,13 @@ export interface IUserSchema {
 	deletedBy?: Types.ObjectId
 	disabled?: boolean
 	/**
-	 * Which operator suspended this account — an `admin._id`, written with `disabled: true` and always
+	 * Which admin suspended this account — an `admin._id`, written with `disabled: true` and always
 	 * present beside it. No self-service counterpart, unlike `deletedBy`: a person closes their own
 	 * account, they never suspend it.
 	 */
 	disabledBy?: Types.ObjectId
 	/**
-	 * Why, in the operator's own words. **Mandatory whenever `disabled` is true**, which the collection
+	 * Why, in the admin's own words. **Mandatory whenever `disabled` is true**, which the collection
 	 * validator enforces through `dependencies` — presence, without being able to read the value.
 	 *
 	 * ⚠️ **The 1000-character cap lives in the service and nowhere else.** The field is encrypted, so

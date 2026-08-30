@@ -4,7 +4,7 @@
  * ⚠️ **The whole block is optional on `IUserSchema`, where `IShopOwnerPersonalData` is required.**
  * Registration on this tier is an email and a password and nothing else; the name and the contact
  * details are filled in afterwards, and an account that never fills them in still works. A shop
- * owner is onboarded by an operator who collects everything up front, which is why that side can
+ * owner is onboarded by an admin who collects everything up front, which is why that side can
  * demand it.
  *
  * ⚠️ **No `address` field, unlike the shop owner's.** A customer's addresses are a top-level array —

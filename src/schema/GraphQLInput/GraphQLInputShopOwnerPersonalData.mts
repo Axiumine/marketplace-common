@@ -42,7 +42,7 @@ const GraphQLInputAddressPosition = new GraphQLInputObjectType({
 /*
  * ⚠️ `position` is nullable here. Two reasons, and both have to hold: every shopOwner in the
  * collection was created before the field existed, and `shopOwnerAdd` is called with an address the
- * operator may have typed rather than picked. A NonNull here would turn both into a mutation the
+ * admin may have typed rather than picked. A NonNull here would turn both into a mutation the
  * client cannot send.
  *
  * Not added to `GraphQLAddressFrag`: that fragment is shared, and a consumer may declare its own

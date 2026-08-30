@@ -139,7 +139,7 @@ describe('rotateKeygripKeys', () => {
 	/*
 	 * ⚠️ Refused, not trimmed. Reaching the cap with nothing retirable means every key in the array is
 	 * still verifying somebody's cookie; the only way to fit a sixth is to log those customers out, and an
-	 * operator clicking "rotate" during an incident has not asked for that. The message says how long the
+	 * admin clicking "rotate" during an incident has not asked for that. The message says how long the
 	 * wait is.
 	 */
 	it('refuses a rotation that would exceed the cap while every key is still in its window', () => {

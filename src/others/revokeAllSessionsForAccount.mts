@@ -48,7 +48,7 @@ export interface IRevokeTarget {
  * Ends every session an account holds, and answers how many there were (E15-S04).
  *
  * The one routine the platform revokes through: a password change, a disable, a status change and an
- * operator's console call are four callers, and four hand-written versions of this would be four chances
+ * admin's console call are four callers, and four hand-written versions of this would be four chances
  * to get the command shape subtly wrong in a way that fails open.
  *
  * ⚠️ **The index key is deleted last, after every session it names.** The other order is the one that
@@ -77,7 +77,7 @@ export interface IRevokeTarget {
  * refresh session is indexed (see `indexSession`), and an access session key is the digest of a different
  * string — unreachable from the field this reads, and reachable from the session hash that field names,
  * which is why `retireAccessSession` runs while that hash is still there. Until this call read it, a
- * password change, a disable and an operator's "end session" all left a usable access token behind for up
+ * password change, a disable and an admin's "end session" all left a usable access token behind for up
  * to 91 minutes.
  *
  * ⚠️ **A session whose access half cannot be retired is still revoked.** A hash minted before `accessKey`

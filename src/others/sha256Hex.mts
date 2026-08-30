@@ -13,7 +13,7 @@ import { createHash } from 'node:crypto'
  * ⚠️ **This is pseudonymisation, not anonymisation, and nothing here may be described as the latter.**
  * An email address, a username or a token id is drawn from a guessable space, so a bare digest of one is
  * recoverable by dictionary attack against whoever holds the dump. What it removes is *casual*
- * disclosure — the operator running `KEYS`, the append-only file read by anyone who can read the volume,
+ * disclosure — the admin running `KEYS`, the append-only file read by anyone who can read the volume,
  * the support engineer looking at a slow log. The form that survives an attacker holding the dump is an
  * HMAC under a managed key, which needs key custody this platform does not have yet.
  *

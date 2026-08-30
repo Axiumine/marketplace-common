@@ -16,7 +16,7 @@ export const KEYGRIP_KEY_BYTES = 64
  * ⚠️ **This is a refusal, not a trim.** Five entries is a monthly rotation plus an emergency one inside
  * the same thirty-day window, which is the cadence this platform can actually need. A sixth would have to
  * come from retiring a key early, and every key demoted less than `SESSION_CAP_DAYS_REMEMBERED` days ago
- * is still verifying somebody's remembered cookie — so the trim an operator did not ask for would log
+ * is still verifying somebody's remembered cookie — so the trim an admin did not ask for would log
  * those customers out. Refusing gives them the choice; trimming makes it for them, silently.
  */
 export const KEYGRIP_MAX_KEYS = 5
@@ -88,7 +88,7 @@ const isTailRetirable = (keys: readonly IKeygripKeyMaterial[], now: Date) =>
  * no grace period at all, where the next rotation invalidates every cookie the moment it lands.
  *
  * ⚠️ **A full array of five keys, none of them retirable, is refused.** The alternative is retiring a key
- * younger than the longest session this platform issues, which is the one outcome an operator clicking
+ * younger than the longest session this platform issues, which is the one outcome an admin clicking
  * "rotate" cannot be assumed to want — they are usually rotating *because* something is wrong, and being
  * logged out mid-incident is not the help they asked for. `KEYGRIP_ROTATE_CAP` says how long the wait is.
  *

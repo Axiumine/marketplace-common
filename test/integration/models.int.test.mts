@@ -344,7 +344,7 @@ describe('ShopOwner.personalData survives a real round trip intact', () => {
 	 * `tbl_active_firstName`, `tbl_active_city` — and prefix-searches them with `/^term/i`. Neither
 	 * CSFLE algorithm survives that: random supports no comparison at all, deterministic supports
 	 * equality and nothing more, so neither answers a sort or a prefix match. Encrypting them would not
-	 * make the operator table slow, it would make it silently wrong. ADR-029 records the trade.
+	 * make the admin table slow, it would make it silently wrong. ADR-029 records the trade.
 	 *
 	 * The assertion is deliberately two-sided. A future change that encrypts them fails here and is
 	 * told where to look; a change that drops the three indexes and closes the hole updates this test

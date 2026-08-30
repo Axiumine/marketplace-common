@@ -35,7 +35,7 @@ export interface ISessionFamilyStore extends IReuseEventStore {
  * ⚠️ **The event is appended after the revocation, and the revocation does not depend on it** (E17-S05).
  * This is the request that discovered a theft: the sessions must die whatever the trail does. Recording
  * first would let a failed append leave a trail claiming a logout that did not happen — an explanation
- * that is wrong, which is worse for the operator than no explanation at all.
+ * that is wrong, which is worse for the admin than no explanation at all.
  *
  * ⚠️ **An unattributable revocation still revokes, and writes nothing.** `account` is `undefined` when the
  * tombstone that triggered this was written before E17-S05 put the account on it. Filing that event anyway

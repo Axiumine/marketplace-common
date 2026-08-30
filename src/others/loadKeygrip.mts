@@ -19,7 +19,7 @@ export type { IKeygripRecord }
  * record and started anyway is the exact failure this whole design exists to remove: it would sign
  * cookies with keys no sibling can verify, and the symptom — some requests authenticate, some do not,
  * depending on which service the edge picked — is one the platform has already paid for twice. The two
- * refusals, and what each one asks the operator to fix, are on `readKeygrip`.
+ * refusals, and what each one asks the admin to fix, are on `readKeygrip`.
  *
  * The holders write is not wrapped in a try: it goes to the client that answered the read one line
  * earlier, so a failure means Redis died between the two calls, and booting on a dead Redis is not

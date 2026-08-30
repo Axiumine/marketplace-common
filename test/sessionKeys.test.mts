@@ -113,7 +113,7 @@ describe('the session key builders', () => {
 
 	/*
 	 * ⚠️ The three keygrip names share one prefix on purpose: the record, the holders table and the
-	 * rotation channel are one namespace an operator can list, delete and reason about together (ADR-034).
+	 * rotation channel are one namespace an admin can list, delete and reason about together (ADR-034).
 	 * Asserted as literals because a service that read a *different* key from the one the seed script wrote
 	 * would report the record missing and refuse to boot — with nothing in the message hinting that the two
 	 * halves simply disagree about the name.
@@ -568,7 +568,7 @@ describe('the session index', () => {
 	 * ⚠️ **The field removed is the digest of the same prefixed string the write hashed.** `hDel` answers a
 	 * count nobody checks, so a prune aimed at the wrong field name is indistinguishable from one that
 	 * worked — the index would keep a row per rotation, growing for the life of every session that never
-	 * logs out, and the operator screen E17 renders would show one login as several.
+	 * logs out, and the admin screen E17 renders would show one login as several.
 	 */
 	it('prunes exactly the field the write created, from the key the write used', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)

@@ -30,7 +30,7 @@ import { hashSessionToken } from '@others/hashSessionToken.mjs'
  * Redis leg (R45) did not.
  *
  * ⚠️ **Both buckets are named `refresh:<something>` rather than one of them being bare `refresh`.** A bare
- * bucket would make `rl:refresh:` a prefix of `rl:refresh:family:`, so an operator counting one bucket
+ * bucket would make `rl:refresh:` a prefix of `rl:refresh:family:`, so an admin counting one bucket
  * would silently count both.
  */
 
