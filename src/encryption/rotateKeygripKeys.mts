@@ -105,6 +105,15 @@ export function rotateKeygripKeys(keys: readonly IKeygripKeyMaterial[], now: Dat
 
 	const next = [minted, ...keys]
 
+	// The floor is `>` and never `>=`, and the difference is unobservable rather than arbitrary: at two
+	// entries the key whose demotion instant `isTailRetirable` reads is `next[0]`, which is the key this
+	// call has just minted with `createdAt === now`, so the age it measures is zero and the second test
+	// is false whatever the first one says. `>=` would therefore pop nothing extra on any input — an
+	// equivalent mutant, and the only one on this line, which is why the annotation names one mutator
+	// rather than disabling the condition wholesale. The left test itself is live: handed an empty set
+	// the array holds one entry and `isTailRetirable` would read past its start, which is the case the
+	// suite covers.
+	// Stryker disable next-line EqualityOperator: at two entries the tail's demoting key is the one just minted, so the age test is false either way
 	while (next.length > KEYGRIP_MIN_KEYS && isTailRetirable(next, now)) next.pop()
 
 	if (next.length > KEYGRIP_MAX_KEYS)

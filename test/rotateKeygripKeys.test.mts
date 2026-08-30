@@ -57,6 +57,19 @@ describe('rotateKeygripKeys', () => {
 		expect(rotateKeygripKeys([aged('k2', 1), aged('k9-old', 40)], NOW)[0].id).toBe('k3')
 	})
 
+	/*
+	 * ⚠️ The two-key floor is a floor on **retirement**, not on the answer. Handed nothing — a platform
+	 * whose key set has not been seeded yet — a rotation mints the first key and stops: there is no entry
+	 * behind it whose demotion instant could be read, and the loop must not go looking for one. A guard
+	 * that asked only "is the tail retirable?" reads past the start of a one-entry array.
+	 */
+	it('mints the first key when handed an empty set, and looks for nothing behind it', () => {
+		const after = rotateKeygripKeys([], NOW)
+
+		expect(after.map((key) => key.id)).toEqual(['k1'])
+		expect(Buffer.from(after[0].material, 'base64')).toHaveLength(KEYGRIP_KEY_BYTES)
+	})
+
 	it('mints material nobody can predict — two rotations of the same array differ', () => {
 		const before = [aged('k2', 1), aged('k1', 4)]
 

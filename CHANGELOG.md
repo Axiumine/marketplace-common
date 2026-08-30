@@ -36,6 +36,11 @@ Nothing yet.
   and the three deterministic-encryption messages that name a refused operator still say "operator",
   because there they mean `$gt`, not a person.
 
+- **`rotateKeygripKeys` carries a one-line `Stryker disable` and the argument behind it.** The floor on
+  retirement is `>` and never `>=`: at two entries the key whose demotion instant the age test reads is
+  the one the same call has just minted, so its age is zero and the test is false whichever comparison
+  stands there. Reaches `dist/` — `removeComments` is off, so the comment ships. Behaviour unchanged.
+
 ### Added
 
 - **Four account-lifecycle paths on `shopOwner` and on `user`** (`ADR-041`, `ADR-044`, `ADR-045`):
