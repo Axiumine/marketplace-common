@@ -106,6 +106,23 @@ describe('the scrub covers every path both collections carry', () => {
 })
 
 describe('what the scrub writes', () => {
+	/*
+	 * ⚠️ Every placeholder is pinned to its literal value here, and nowhere else is. The assertions below
+	 * read a scrub back against the constant that wrote it, so they pass whatever the constant says —
+	 * including the empty string, which is the one value that breaks both collections: `personalData` on
+	 * `shopOwner` is all-or-nothing with a `minLength` on every member, the postal code and province carry
+	 * a fixed length, and a blank cell in the admin table says "never filled in" where the record has to
+	 * say "erased".
+	 */
+	it('writes the exact placeholders the validators and the admin table need', () => {
+		expect(SCRUBBED_EMAIL_HOST).toBe('invalid.local')
+		expect(SCRUBBED_FIRST_NAME).toBe('Deleted')
+		expect(SCRUBBED_LAST_NAME).toBe('User')
+		expect(SCRUBBED_TEXT).toBe('Deleted')
+		expect(SCRUBBED_POSTAL_CODE).toBe('00000')
+		expect(SCRUBBED_PROVINCE).toBe('XX')
+	})
+
 	it('moves the address to a per-account name under a host that can never resolve', () => {
 		expect(scrubbedEmail(ACCOUNT_ID)).toBe(`deleted-${ACCOUNT_ID}@${SCRUBBED_EMAIL_HOST}`)
 		expect(scrubbedEmail(ACCOUNT_ID)).not.toBe(scrubbedEmail('68b1a9c4d3e2f10123456780'))
