@@ -388,6 +388,10 @@
 			"import": "./dist/others/Tier.mjs",
 			"types": "./dist/others/Tier.d.mts"
 		},
+		"./others/unpublishOwnerStorefront": {
+			"import": "./dist/others/unpublishOwnerStorefront.mjs",
+			"types": "./dist/others/unpublishOwnerStorefront.d.mts"
+		},
 		"./others/watchKeygrip": {
 			"import": "./dist/others/watchKeygrip.mjs",
 			"types": "./dist/others/watchKeygrip.d.mts"
