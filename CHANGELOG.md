@@ -11,9 +11,18 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v2.0.3...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v3.0.0...HEAD)
+
+Nothing yet.
+
+## [3.0.0](https://github.com/Axiumine/marketplace-common/releases/tag/v3.0.0) - 2026-08-30
 
 ### Changed
+
+- **`deploy-local.sh` is deleted.** It built the package and copied the result into every consumer's
+  `node_modules`, which left twelve repos running a build that no version number and no lockfile named,
+  and that any `yarn install` silently reverted. A change consumers need is published, always — the
+  release flow in `CLAUDE.md` is the only route (platform owner, 2026-08-30). Ships no change to `dist/`.
 
 - ⚠️ **BREAKING — `exports`: `./others/operatorOnlyFields` is now `./others/adminOnlyFields`**, and the
   exported `OPERATOR_ONLY_FIELDS_SHOP_OWNER` is now `ADMIN_ONLY_FIELDS_SHOP_OWNER`. The platform owner
