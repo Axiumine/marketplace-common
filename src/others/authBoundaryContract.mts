@@ -27,8 +27,8 @@ export interface IAuthBoundaryCase {
 }
 
 /**
- * The eleven cases. Ordered from the ordinary path outward: accept, then the refusals a credential can
- * earn, then the three the introspection bypass adds, then the environment gate over all of them.
+ * The seven cases. Ordered from the ordinary path outward: accept, then the refusals a credential can
+ * earn, ending with the one only a token-minting service can fail.
  */
 export const AUTH_BOUNDARY_CASES: readonly IAuthBoundaryCase[] = [
 	{ id: 'AB-01', what: 'a valid credential is accepted and the session it resolves reaches ctx.state.user' },
@@ -37,15 +37,11 @@ export const AUTH_BOUNDARY_CASES: readonly IAuthBoundaryCase[] = [
 	{ id: 'AB-04', what: 'a request carrying no credential is refused' },
 	{ id: 'AB-05', what: 'a credential of the wrong shape is refused — a bad scheme, a broken signature' },
 	{ id: 'AB-06', what: 'a credential whose session is gone from Redis is refused' },
-	{ id: 'AB-07', what: 'a refresh token presented a second time is refused, and its family revoked with it' },
-	{ id: 'AB-08', what: 'a valid x-introspectioncode is accepted with no credential at all, and reads no session' },
-	{ id: 'AB-09', what: 'a wrong x-introspectioncode is refused' },
-	{ id: 'AB-10', what: 'no x-introspectioncode at all leaves the ordinary refusal exactly as it is' },
-	{ id: 'AB-11', what: 'a valid x-introspectioncode is refused outside the environment allowlist, indistinguishably from none' }
+	{ id: 'AB-07', what: 'a refresh token presented a second time is refused, and its family revoked with it' }
 ]
 
 /**
- * Which of the eleven each service owes, expressed as what it is **excused** from and why.
+ * Which of the seven each service owes, expressed as what it is **excused** from and why.
  *
  * ⚠️ **An exemption carries a reason, and the reason is the point.** "This service does not do that" has
  * to survive being read a year later by somebody deciding whether a missing test is a decision or a gap —

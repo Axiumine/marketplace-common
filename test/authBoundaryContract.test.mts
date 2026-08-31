@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { AUTH_BOUNDARY_CASES, AUTH_BOUNDARY_SERVICES, requiredAuthBoundaryCases } from '../src/others/authBoundaryContract.mts'
 
-const ALL_CASES = ['AB-01', 'AB-02', 'AB-03', 'AB-04', 'AB-05', 'AB-06', 'AB-07', 'AB-08', 'AB-09', 'AB-10', 'AB-11']
+const ALL_CASES = ['AB-01', 'AB-02', 'AB-03', 'AB-04', 'AB-05', 'AB-06', 'AB-07']
 
-const RESOURCE_CASES = ['AB-01', 'AB-02', 'AB-03', 'AB-04', 'AB-05', 'AB-06', 'AB-08', 'AB-09', 'AB-10', 'AB-11']
+const RESOURCE_CASES = ['AB-01', 'AB-02', 'AB-03', 'AB-04', 'AB-05', 'AB-06']
 
-const LOGOUT_CASES = ['AB-01', 'AB-04', 'AB-05', 'AB-06', 'AB-08', 'AB-09', 'AB-10', 'AB-11']
+const LOGOUT_CASES = ['AB-01', 'AB-04', 'AB-05', 'AB-06']
 
 describe('AUTH_BOUNDARY_CASES', () => {
-	it('is the eleven ids, in order, each with something written on it', () => {
+	it('is the seven ids, in order, each with something written on it', () => {
 		expect(AUTH_BOUNDARY_CASES.map(({ id }) => id)).toEqual(ALL_CASES)
 		expect(AUTH_BOUNDARY_CASES).toHaveLength(ALL_CASES.length)
 
@@ -39,7 +39,7 @@ describe('AUTH_BOUNDARY_SERVICES', () => {
 		for (const exemptions of Object.values(AUTH_BOUNDARY_SERVICES)) {
 			for (const [id, reason] of Object.entries(exemptions)) {
 				expect(ALL_CASES).toContain(id)
-				// An exemption is the only way to owe less than the eleven, so a blank reason is an
+				// An exemption is the only way to owe less than the seven, so a blank reason is an
 				// untested boundary with nothing behind it. See the module's own warning.
 				expect(reason).not.toBe('')
 			}
@@ -60,7 +60,7 @@ describe('requiredAuthBoundaryCases', () => {
 		['marketplace-dev-admin-authenticated-authorization'],
 		['marketplace-dev-authenticated-authorization'],
 		['marketplace-dev-user-authenticated-authorization']
-	])('holds %s to all eleven — it is the service that rotates', (service) => {
+	])('holds %s to all seven — it is the service that rotates', (service) => {
 		expect(requiredAuthBoundaryCases(service)).toEqual(ALL_CASES)
 	})
 

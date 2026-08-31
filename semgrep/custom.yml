@@ -5,15 +5,10 @@
 # holds only rules specific to the Marketplace platform's own conventions.
 #
 # This is a LIBRARY, not a running Koa service: `src/` has zero console/logger
-# call sites (grep confirms it) and no introspection-code handling of its own
-# — that lives in the seven backend services that consume this package. The
-# sibling services' custom.yml carries three rules; only one of them can ever
-# match anything here, so only that one is vendored:
+# call sites (grep confirms it). The sibling services' custom.yml carries two
+# rules; only one of them can ever match anything here, so only that one is
+# vendored:
 #
-#   - marketplace-no-log-introspection-code — DROPPED. This library has no concept
-#     of x-introspectioncode / INTROSPECTION_CODE anywhere in src/
-#     (`grep -ri introspection src` → no hits). An always-empty rule is noise,
-#     not a guard.
 #   - marketplace-no-log-auth-token — DROPPED. The Redis session DTOs this library
 #     defines (`src/others/Redis/IRedisData*`) carry `email`, `_id`,
 #     `onboardingStep` — never a token value; the opaque access/refresh
