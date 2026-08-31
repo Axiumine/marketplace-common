@@ -13,7 +13,27 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.0.0...HEAD)
 
-Nothing yet.
+### Added
+
+- **`others/assertRedisNamespace` — a boot probe that refuses a `REDIS_KEY` naming a namespace this
+  platform was never seeded into.** `REDIS_KEY` is a prefix, so no wrong value is one Redis will refuse:
+  the five services that call `loadKeygrip` already fail their boot on a wrong prefix, because the record
+  they need is not there, but the four **resource** services read no such record and a wrong prefix cost
+  them nothing — every session lookup missed in a namespace nobody writes, every request answered 401, and
+  the service reported itself healthy throughout.
+
+  Presence only: it reads `<REDIS_KEY>keygrip` through `keygripKey()` and asks whether `wrapped` is there.
+  It never reads the KEK and never unwraps anything, because three of its four callers hold no
+  `KEYGRIP_KEK` at all — they verify access tokens rather than cookies, and handing them key material to
+  answer a question about a *prefix* would widen what a resource service holds for no reason.
+  `readKeygrip` keeps the record's well-formedness on behalf of the services that open it.
+
+  It throws `readKeygrip`'s own `KEYGRIP_RECORD_MISSING` code, deliberately — one string to grep — with a
+  remedy line naming both causes, since from inside the process a wrong prefix and an unseeded platform are
+  indistinguishable. ⚠️ **It cannot see a fleet-wide wrong prefix and is not meant to**: a seed that ran
+  under the same wrong `REDIS_KEY` puts the record exactly where every service looks, which is the
+  provisioning failure `RISK_REGISTER` R04 names and which no check comparing the platform against itself
+  can catch.
 
 ## [4.0.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.0.0) - 2026-08-31
 
