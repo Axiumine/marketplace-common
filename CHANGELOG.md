@@ -11,9 +11,40 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.1.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.2.0...HEAD)
 
 Nothing yet.
+
+## [4.2.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.2.0) - 2026-08-31
+
+### Added
+
+- **`others/assertEnvShape` — a boot check that refuses an environment value of the wrong *kind*.** Every
+  service until now asked one question of its environment, `checkRequiredEnv`'s `if (!env[name])`, and a
+  string answers it. `4027x`, `true` where koa-utils compares against `'1'`, a `mongodb://` URI in the
+  Redis slot and a `redis://` URL in the Mongo one are all truthy, so all four booted a service that then
+  failed somewhere that does not name the cause — or, worse, did not fail at all. This is the shape half
+  of `RISK_REGISTER` R04, whose trigger is an `.env` provisioned by copy from an unrelated project.
+
+  Ten shapes, named for the format rather than for any deployment: `absolutePath`, `email`, `flag01`,
+  `hostname`, `keyPrefix`, `mongoUri`, `namespace`, `origin`, `port`, `redisUrl`. `new URL()` is the parser
+  for the four that are URLs, so an unspoken scheme is rejected by name instead of by an unreadable regex,
+  and the host is tested separately because `new URL('redis://')` parses and names no server.
+
+  ⚠️ **Shape and presence are two passes and stay two passes.** A name absent, or present and empty, is
+  skipped here — `checkRequiredEnv`'s own loop owns that question and answers it first. That separation is
+  what lets a *conditional* variable be shaped without being required: `REDIS_URL` is read on one Redis
+  branch and ignored on the other, and the committed `env` templates ship it empty for the branch that
+  ignores it.
+
+  Every fault is reported in one message, and **no value is ever printed** — provisioning a machine is when
+  this fires, one fault per restart turns that into a queue, and a boot log is the least protected place on
+  the platform. `KEYGRIP_KEK` carries no shape here on purpose: its length rule belongs to `readKek`, the
+  single decode site, and a second spelling of it is the drift that comment exists to prevent.
+
+  ⚠️ **It catches a value from somewhere else, not a value that is merely wrong.** The right-looking
+  password for the wrong server passes every check here and always will, because no predicate one process
+  can run knows what the rest of the fleet was pointed at. That residual is the open half of R04.
 
 ## [4.1.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.1.0) - 2026-08-31
 
