@@ -228,8 +228,7 @@ again in `@axiumine/koa-utils`, and two definitions of one allowlist can only ev
 release deletes the local implementation and forwards to the library's, which makes the library a
 **runtime** requirement of that subpath rather than a compile-time convenience — the reason this is a
 major and not a patch. Both halves of the change are the same breaking change, which is why they ship
-together rather than costing a major twice. Recorded as the two open items in
-`docs/report/dependency-tree-advisory-scan.md` §6.1.
+together rather than costing a major twice.
 
 ### Changed
 
