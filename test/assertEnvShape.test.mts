@@ -6,6 +6,25 @@ afterEach(() => {
 	vi.unstubAllEnvs()
 })
 
+/*
+ * The phrase each shape completes "<NAME> must be …" with, asserted verbatim by every rejection below.
+ * A boot message is the whole of what an admin has — the process is gone by the time they read it — so an
+ * `expected` emptied or reworded still throws, with a sentence that names no format and sends them to the
+ * source to find out what the check wanted.
+ */
+const EXPECTED: Readonly<Record<EnvShape, string>> = {
+	absolutePath: 'an absolute path beginning with "/"',
+	email: 'an email address',
+	flag01: 'exactly "0" or "1"',
+	hostname: 'a bare host name, not a URL',
+	keyPrefix: 'a key prefix ending in ":"',
+	mongoUri: 'a mongodb:// or mongodb+srv:// URI',
+	namespace: 'a "<database>.<collection>" namespace',
+	origin: 'an http(s) origin with no trailing slash',
+	port: 'a TCP port between 1 and 65535',
+	redisUrl: 'a redis:// or rediss:// URL'
+}
+
 /** Every case is `[shape, value, accepted]`, so a shape that starts accepting everything fails a row here. */
 const CASES: ReadonlyArray<readonly [EnvShape, string, boolean]> = [
 	// A port is the integer a TCP stack takes, both ends included, and nothing that merely starts like one.
@@ -42,6 +61,8 @@ const CASES: ReadonlyArray<readonly [EnvShape, string, boolean]> = [
 	['email', 'noreply@shop', false],
 	['email', 'no reply@shop.lan', false],
 	['email', 'noreply.shop.lan', false],
+	// Anchored at both ends: unanchored, this one matches its own first sixteen characters and passes.
+	['email', 'noreply@shop.lan and one more', false],
 
 	// Split at the first dot: a database name cannot hold one, a collection name may.
 	['namespace', 'dbMarketplaceDev.__keyVault', true],
@@ -78,7 +99,7 @@ describe('assertEnvShape', () => {
 			const run = () => assertEnvShape({ SOME_NAME: shape }, { SOME_NAME: value })
 
 			if (accepted) expect(run).not.toThrow()
-			else expect(run).toThrow(/^ENV_SHAPE_INVALID: SOME_NAME must be /)
+			else expect(run).toThrow(`ENV_SHAPE_INVALID: SOME_NAME must be ${EXPECTED[shape]}.`)
 		})
 	})
 

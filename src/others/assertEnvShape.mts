@@ -16,20 +16,24 @@ interface IEnvShapeCheck {
 }
 
 /**
- * `new URL()` is the parser, so a scheme this platform does not speak is rejected by name rather than by a
- * regex nobody can read. The host test is not redundant: `new URL('redis://')` parses and yields an empty
- * host, which is a string that looks like a server and names none.
+ * `URL` is the parser, so a scheme this platform does not speak is rejected by name rather than by a regex
+ * nobody can read. The host test is not redundant: `new URL('redis://')` parses and yields an empty host,
+ * which is a string that looks like a server and names none.
+ *
+ * ⚠️ `URL.canParse` rather than a `try`/`catch` around the constructor, deliberately. The two behave
+ * identically here, but a `catch { return false }` is a block whose *only* observable effect is a falsy
+ * value — emptying it returns `undefined`, which every caller below reads exactly as `false`. That is an
+ * equivalent mutant by construction: nothing a test can assert tells the two apart. A guard clause has a
+ * return value the suite can see.
  */
 const parsesAs =
 	(protocols: readonly string[]) =>
 	(value: string): boolean => {
-		try {
-			const url = new URL(value)
+		if (!URL.canParse(value)) return false
 
-			return protocols.includes(url.protocol) && url.host !== ''
-		} catch {
-			return false
-		}
+		const url = new URL(value)
+
+		return protocols.includes(url.protocol) && url.host !== ''
 	}
 
 const CHECKS: Readonly<Record<EnvShape, IEnvShapeCheck>> = {

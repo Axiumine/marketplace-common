@@ -27,9 +27,10 @@ Nothing yet.
   of `RISK_REGISTER` R04, whose trigger is an `.env` provisioned by copy from an unrelated project.
 
   Ten shapes, named for the format rather than for any deployment: `absolutePath`, `email`, `flag01`,
-  `hostname`, `keyPrefix`, `mongoUri`, `namespace`, `origin`, `port`, `redisUrl`. `new URL()` is the parser
-  for the four that are URLs, so an unspoken scheme is rejected by name instead of by an unreadable regex,
-  and the host is tested separately because `new URL('redis://')` parses and names no server.
+  `hostname`, `keyPrefix`, `mongoUri`, `namespace`, `origin`, `port`, `redisUrl`. `URL.canParse` plus the
+  `URL` constructor is the parser for the four that are URLs, so an unspoken scheme is rejected by name
+  instead of by an unreadable regex, and the host is tested separately because `new URL('redis://')` parses
+  and names no server.
 
   ⚠️ **Shape and presence are two passes and stay two passes.** A name absent, or present and empty, is
   skipped here — `checkRequiredEnv`'s own loop owns that question and answers it first. That separation is
