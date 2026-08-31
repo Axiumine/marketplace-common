@@ -212,6 +212,10 @@
 			"import": "./dist/others/accountScrub.mjs",
 			"types": "./dist/others/accountScrub.d.mts"
 		},
+		"./others/assertEnvShape": {
+			"import": "./dist/others/assertEnvShape.mjs",
+			"types": "./dist/others/assertEnvShape.d.mts"
+		},
 		"./others/assertHashFieldTTLSupport": {
 			"import": "./dist/others/assertHashFieldTTLSupport.mjs",
 			"types": "./dist/others/assertHashFieldTTLSupport.d.mts"
