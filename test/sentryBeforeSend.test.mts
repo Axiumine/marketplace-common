@@ -535,32 +535,32 @@ describe('sentryBeforeSend — events missing the parts it walks', () => {
  * it is `location.href` copied into six places by design, and `dataCollection` has no option that stops
  * any of them.
  */
-const RESET_LINK = '/reset-password/confirm?token=E12S24QUERYPROBE#/probe%40example.invalid/MKTS24HASHPROBE'
+const RESET_LINK = '/reset-password/confirm?token=TOKENQUERYPROBE#/probe%40example.invalid/HASHFRAGMENTPROBE'
 const RESET_ORIGIN_LINK = `https://marketplace-domain.com${RESET_LINK}`
 /** The one-time hash out of the fragment, and the address next to it. */
-const RESET_HASH = 'MKTS24HASHPROBE'
+const RESET_HASH = 'HASHFRAGMENTPROBE'
 const RESET_ADDRESS = 'probe%40example.invalid'
-const RESET_QUERY = 'E12S24QUERYPROBE'
+const RESET_QUERY = 'TOKENQUERYPROBE'
 
 /** An error thrown one navigation after the reset link was opened — the case that outlives the page. */
 function makeBrowserErrorEvent(): ISentryScrubbableEvent {
 	return {
 		contexts: { trace: { data: {} } } as ISentryScrubbableEvent['contexts'],
 		request: {
-			url: 'https://marketplace-domain.com/account/addresses?nav=E12S24QUERYPROBE#navfragmentprobe',
+			url: 'https://marketplace-domain.com/account/addresses?nav=TOKENQUERYPROBE#navfragmentprobe',
 			headers: { 'User-Agent': AGENT, Referer: RESET_ORIGIN_LINK }
 		} as ISentryScrubbableEvent['request'],
 		breadcrumbs: [
 			{
 				timestamp: 1786475440,
 				category: 'navigation',
-				data: { from: RESET_LINK, to: '/account/addresses?nav=E12S24QUERYPROBE#navfragmentprobe' }
+				data: { from: RESET_LINK, to: '/account/addresses?nav=TOKENQUERYPROBE#navfragmentprobe' }
 			},
 			{
 				timestamp: 1786475441,
 				category: 'fetch',
 				level: 'warning',
-				data: { method: 'POST', url: '/graphql-user-authorization?probeQuery=E12S24QUERYPROBE', status_code: 404 }
+				data: { method: 'POST', url: '/graphql-user-authorization?probeQuery=TOKENQUERYPROBE', status_code: 404 }
 			}
 		] as ISentryScrubbableEvent['breadcrumbs']
 	}

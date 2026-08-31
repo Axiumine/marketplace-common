@@ -97,7 +97,7 @@ const REMOVED_PREFIXES: readonly string[] = ['http.request.header.', 'http.respo
  * on the path, and `@sentry/core` `integrations/requestdata.js:58` says so in a comment — *"No
  * dataCollection equivalent — URL is always included"*. `urlQueryParams: false` gates
  * `event.request.query_string`, a field the browser never fills in. A captured error event carried
- * `.../reset-password/confirm?token=…&email=…#/probe%40example.invalid/MKTS24HASHPROBE` — query string and
+ * `.../reset-password/confirm?token=…&email=…#/probe%40example.invalid/HASHFRAGMENTPROBE` — query string and
  * fragment both — on `event.request.url`, on `contexts.trace.data['url.full']` and on the `description` of
  * every browser-metric span (`docs/report/sentry-event-capture.md` §9).
  *
