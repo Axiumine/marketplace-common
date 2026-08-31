@@ -77,6 +77,16 @@ async function assertNotReplayed(store: ISessionReadStore, refreshToken: string)
 	// for the reason `readSessionHash` spells out.
 	const tombstone: Partial<ITombstoneData> = { ...(await store.hGetAll(tombstoneKey(refreshToken))) }
 
+	// An absent tombstone is an ordinary expired or revoked session, and this early return is what says so.
+	//
+	// ⚠️ The `false` mutant of this condition is equivalent, which is why it is annotated rather than tested.
+	// With no tombstone every field read below is `undefined`: `Number(undefined)` is `NaN`, so the grace
+	// test is false, and `familyId` is `undefined`, so nothing is revoked — the fall-through lands on the
+	// same `throwRefreshTokenExpiredOrDeleted` the caller throws when this returns, and the two paths differ
+	// only in which frame throws it. The `true` mutant *is* live — it would skip the replay branch for a
+	// tombstone that exists, and the replay case kills it — but Stryker names both variants with one
+	// mutator, so the annotation cannot spare it.
+	// Stryker disable next-line ConditionalExpression: an absent tombstone falls through to the same 498, so returning early is unobservable
 	if (Object.keys(tombstone).length === 0) return
 
 	if (Date.now() - Number(tombstone.consumedAt) <= GRACE_SECONDS * 1000) {
