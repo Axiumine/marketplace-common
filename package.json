@@ -216,6 +216,10 @@
 			"import": "./dist/others/assertHashFieldTTLSupport.mjs",
 			"types": "./dist/others/assertHashFieldTTLSupport.d.mts"
 		},
+		"./others/assertRedisNamespace": {
+			"import": "./dist/others/assertRedisNamespace.mjs",
+			"types": "./dist/others/assertRedisNamespace.d.mts"
+		},
 		"./others/assertRefreshLineage": {
 			"import": "./dist/others/assertRefreshLineage.mjs",
 			"types": "./dist/others/assertRefreshLineage.d.mts"
