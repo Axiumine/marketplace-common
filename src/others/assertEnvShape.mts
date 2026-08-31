@@ -36,6 +36,9 @@ const parsesAs =
 		return protocols.includes(url.protocol) && url.host !== ''
 	}
 
+/** Matched by name rather than by `URL` — see `mongoUri` below for why that one cannot use the parser. */
+const MONGO_SCHEMES = ['mongodb://', 'mongodb+srv://'] as const
+
 const CHECKS: Readonly<Record<EnvShape, IEnvShapeCheck>> = {
 	/** A path resolved from nothing — a relative one resolves against the process's cwd, which differs per launcher. */
 	absolutePath: { expected: 'an absolute path beginning with "/"', accepts: (value) => value.startsWith('/') },
@@ -58,7 +61,32 @@ const CHECKS: Readonly<Record<EnvShape, IEnvShapeCheck>> = {
 	 * namespace nobody else writes, which is `assertRedisNamespace`'s failure arriving one layer earlier.
 	 */
 	keyPrefix: { expected: 'a key prefix ending in ":"', accepts: (value) => value.endsWith(':') && !/\s/.test(value) },
-	mongoUri: { expected: 'a mongodb:// or mongodb+srv:// URI', accepts: parsesAs(['mongodb:', 'mongodb+srv:']) },
+	/**
+	 * ⚠️ **Not `URL`, unlike every other URL shape here, and the exception is the driver's own grammar.** A
+	 * connection string names *every* member of a replica set, comma-separated —
+	 * `mongodb://a:27017,b:27017,c:27017/db?replicaSet=rs0` — and WHATWG `URL` refuses that string outright:
+	 * a port followed by a comma is not a port it can parse, so `URL.canParse` answers `false` for the exact
+	 * value a replica set is reached with. A check meant to catch a Redis URL in the Mongo slot would have
+	 * refused the correct value instead, on the one deployment shape this platform actually runs.
+	 *
+	 * So the scheme is matched by name and the server list is required to name something. `@` splits off the
+	 * optional `user:password` — what has to be non-empty is the part after it, because `mongodb://u:p@` is
+	 * a credential and no server.
+	 */
+	mongoUri: {
+		expected: 'a mongodb:// or mongodb+srv:// URI',
+		accepts: (value) => {
+			const scheme = MONGO_SCHEMES.find((candidate) => value.startsWith(candidate))
+
+			if (scheme === undefined) return false
+
+			// Everything before the database path or the option string: `[user:password@]host[,host…]`.
+			const authority = value.slice(scheme.length).split(/[/?]/)[0]
+			const hosts = authority.split('@').pop() as string
+
+			return hosts !== '' && !/\s/.test(hosts)
+		}
+	},
 	/**
 	 * `<database>.<collection>`, split at the FIRST dot: a database name cannot contain one, a collection
 	 * name can. Both halves must be non-empty, which is what a bare database name pasted here fails.
@@ -80,9 +108,17 @@ const CHECKS: Readonly<Record<EnvShape, IEnvShapeCheck>> = {
 		expected: 'an http(s) origin with no trailing slash',
 		accepts: (value) => parsesAs(['http:', 'https:'])(value) && !value.endsWith('/')
 	},
+	/**
+	 * ⚠️ **`0` is accepted, and it is not sloppiness.** `listen(0)` asks the kernel for a free port, which is
+	 * what every integration project in this workspace binds on so seven suites can run at once against a
+	 * machine already serving the dev fleet. Refusing it would refuse the harness rather than a
+	 * misconfiguration. There is no lower bound in the predicate for the same reason there is no negative
+	 * check: `\d+` already excludes everything below zero, and a bound that can never fail is a condition no
+	 * test can distinguish from `true`.
+	 */
 	port: {
-		expected: 'a TCP port between 1 and 65535',
-		accepts: (value) => /^\d+$/.test(value) && +value >= 1 && +value <= 65535
+		expected: 'a TCP port between 0 and 65535',
+		accepts: (value) => /^\d+$/.test(value) && +value <= 65535
 	},
 	redisUrl: { expected: 'a redis:// or rediss:// URL', accepts: parsesAs(['redis:', 'rediss:']) }
 }

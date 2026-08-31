@@ -21,18 +21,21 @@ const EXPECTED: Readonly<Record<EnvShape, string>> = {
 	mongoUri: 'a mongodb:// or mongodb+srv:// URI',
 	namespace: 'a "<database>.<collection>" namespace',
 	origin: 'an http(s) origin with no trailing slash',
-	port: 'a TCP port between 1 and 65535',
+	port: 'a TCP port between 0 and 65535',
 	redisUrl: 'a redis:// or rediss:// URL'
 }
 
 /** Every case is `[shape, value, accepted]`, so a shape that starts accepting everything fails a row here. */
 const CASES: ReadonlyArray<readonly [EnvShape, string, boolean]> = [
 	// A port is the integer a TCP stack takes, both ends included, and nothing that merely starts like one.
+	// `0` is in: it is the ephemeral port `listen(0)` asks the kernel for, and every integration suite here
+	// binds on it.
+	['port', '0', true],
 	['port', '1', true],
 	['port', '4027', true],
 	['port', '65535', true],
-	['port', '0', false],
 	['port', '65536', false],
+	['port', '-1', false],
 	['port', '4027x', false],
 	['port', ' 4027', false],
 	['port', '1e3', false],
@@ -81,9 +84,20 @@ const CASES: ReadonlyArray<readonly [EnvShape, string, boolean]> = [
 
 	['mongoUri', 'mongodb+srv://rs0.lan/dbMarketplaceDev', true],
 	['mongoUri', 'mongodb://rs0.lan:27017/dbMarketplaceDev', true],
+	// ⚠️ The replica set, spelled the way the driver spells one. `URL` cannot parse this — a port followed
+	// by a comma is not a port — which is why `mongoUri` matches the scheme by name instead.
+	['mongoUri', 'mongodb://db1:27017,db2:27017,db3:27017/dbMarketplaceDev?replicaSet=rs0', true],
+	['mongoUri', 'mongodb://owner:secret@db1:27017,db2:27017/dbMarketplaceDev', true],
+	['mongoUri', 'mongodb://rs0.lan', true],
 	['mongoUri', 'mongodb+srv://', false],
+	// A credential and no server: everything after the last `@` is the server list, and here there is none.
+	['mongoUri', 'mongodb://owner:secret@', false],
+	['mongoUri', 'mongodb://db1 db2/dbMarketplaceDev', false],
+	['mongoUri', 'mongodb://?replicaSet=rs0', false],
 	['mongoUri', 'redis://db1:6379', false],
 	['mongoUri', 'rs0.lan', false],
+	// ⚠️ The scheme is a PREFIX, not a suffix: a value ending in the scheme names nothing.
+	['mongoUri', 'db1:27017/mongodb://', false],
 
 	// The trailing slash survives concatenation as `//check/…` in a link that reaches an inbox.
 	['origin', 'https://shop.lan', true],
@@ -133,7 +147,7 @@ describe('assertEnvShape', () => {
 		const env = { PORT: 'four thousand', REDIS_KEY: 'marketplaceDev', MONGODB_URI: 'mongodb+srv://rs0.lan/db' }
 
 		expect(() => assertEnvShape(shapes, env)).toThrow(
-			'ENV_SHAPE_INVALID: PORT must be a TCP port between 1 and 65535; REDIS_KEY must be a key prefix ending in ":".'
+			'ENV_SHAPE_INVALID: PORT must be a TCP port between 0 and 65535; REDIS_KEY must be a key prefix ending in ":".'
 		)
 	})
 
