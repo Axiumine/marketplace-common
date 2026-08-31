@@ -11,9 +11,29 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.2.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.2.1...HEAD)
 
 Nothing yet.
+
+## [4.2.1](https://github.com/Axiumine/marketplace-common/releases/tag/v4.2.1) - 2026-08-31
+
+### Fixed
+
+- **`assertEnvShape`: two shapes from 4.2.0 refused values this platform is actually configured with.**
+  Both were found by wiring the check into the nine services, which is the first place the shapes met a
+  real environment rather than a table of examples.
+
+  - `mongoUri` was parsed with `URL`, and a MongoDB connection string names *every* member of a replica
+    set, comma-separated: `mongodb://db1:27017,db2:27017,db3:27017/db?replicaSet=rs0`. WHATWG `URL`
+    refuses that outright — a port followed by a comma is not a port it can parse — so `URL.canParse`
+    answered `false` for the exact string a replica set is reached with, and a check meant to catch a
+    Redis URL in the Mongo slot would have refused the correct value instead. The scheme is now matched
+    by name and the server list, after any `user:password@`, is required to name something.
+  - `port` refused `0`, which is the ephemeral port `listen(0)` asks the kernel for and the value every
+    integration project in the workspace binds on. The lower bound is gone rather than lowered: `\d+`
+    already excludes everything below zero, so a `>= 0` would be a condition no test could tell from
+    `true`. The phrase in the boot message reads **"a TCP port between 0 and 65535"** — a consumer
+    asserting the old wording sees a changed string.
 
 ## [4.2.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.2.0) - 2026-08-31
 
