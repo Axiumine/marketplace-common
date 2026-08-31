@@ -11,7 +11,11 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.0.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.1.0...HEAD)
+
+Nothing yet.
+
+## [4.1.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.1.0) - 2026-08-31
 
 ### Added
 
