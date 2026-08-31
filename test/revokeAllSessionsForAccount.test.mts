@@ -160,7 +160,7 @@ describe('revokeAllSessionsForAccount', () => {
 	/*
 	 * ⚠️ An empty index issues no command at all — **unlike `revokeSessionFamily`, which deletes its set key
 	 * regardless**, and the difference is deliberate. A family set has no per-field TTL and would otherwise
-	 * accumulate one dead set per login; an index hash has one on every field (E15-S03) and Redis drops the
+	 * accumulate one dead set per login; an index hash has one on every field and Redis drops the
 	 * hash itself the moment the last one goes. There is nothing left to tidy, so tidying it would be a
 	 * write issued on the strength of a guess.
 	 *
@@ -248,7 +248,7 @@ describe('revokeAllSessionsForAccount', () => {
 
 	/*
 	 * ⚠️ On exhaustion the index key survives, holding what was not reached. An index naming a live session is
-	 * recoverable — the next caller revokes it, and E15-S03's per-field TTL expires it regardless — while a
+	 * recoverable — the next caller revokes it, and the per-field TTL expires it regardless — while a
 	 * destroyed index is recoverable by nothing. The count answered is what was actually revoked, so a caller
 	 * reporting "N sessions ended" never names a session that is still open.
 	 *

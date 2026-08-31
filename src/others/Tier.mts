@@ -22,7 +22,7 @@ export type Tier = (typeof TIER)[keyof typeof TIER]
  *
  * ⚠️ **Not a substitute for `assertTier`, and never to be used as one.** That function answers "is this
  * session mine to serve", which is an authorisation decision; this one answers "is this string a tier at
- * all", which is a parsing decision. The one caller is E17-S05's reuse trail: a tombstone written before
+ * all", which is a parsing decision. The one caller is the reuse trail: a tombstone written before
  * the tier was stored there carries none, and an event filed under `undefined` would name a key no console
  * ever reads while claiming an account had been logged out.
  */

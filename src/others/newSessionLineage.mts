@@ -4,7 +4,7 @@ import { IRefreshData } from '@others/IRefreshData.mjs'
 import { resolveSessionCapDays } from '@others/sessionLifetime.mjs'
 
 /**
- * The lineage a login stamps on the session it is about to mint (E14-S01, E14-S07) — the three fields
+ * The lineage a login stamps on the session it is about to mint — the three fields
  * every later rotation carries forward unchanged and every later refresh is checked against.
  *
  * One helper rather than three copies, because the three tier writers in
@@ -15,7 +15,7 @@ import { resolveSessionCapDays } from '@others/sessionLifetime.mjs'
  * - **`familyId` is a fresh `randomUUID()` per login**, and never derived from either token. It is an
  *   opaque identifier, not a credential — presenting one grants nothing — which is exactly what lets a
  *   tombstone name it in the clear. Deriving it from a token would put a token back into a key name that
- *   is not a digest, undoing E13-S01 through the side door.
+ *   is not a digest, undoing the hashed namespace through the side door.
  * - **`originalLogin` is stamped once, here, and no rotation ever moves it.** That is the whole
  *   difference between an absolute cap and a long idle timeout: a session that could restamp it would
  *   live for ever one refresh at a time.

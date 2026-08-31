@@ -2,7 +2,7 @@ import { assertUnderRateLimit, IRateLimitStore } from '@others/assertUnderRateLi
 import { hashSessionToken } from '@others/hashSessionToken.mjs'
 
 /**
- * What one rotation attempt costs an attacker, in two buckets (E14-S08).
+ * What one rotation attempt costs an attacker, in two buckets.
  *
  * `refresh` was the one authenticated endpoint with no limiter of any kind: every other public auth path
  * had carried one since the rate limiter landed, while the mutation that mints credentials could be
@@ -14,7 +14,7 @@ import { hashSessionToken } from '@others/hashSessionToken.mjs'
  * digest and a family id. The per-address half is the edge's — `limit_req` on all three rotation
  * endpoints — under the standing decision that these services never see a client address (`app.proxy`
  * stays off). The residual that leaves, a flood of *distinct* garbage tokens each getting its own bucket,
- * is named and accepted in E14-S08 as closable only at the edge.
+ * is a known residual, accepted as closable only at the edge.
  *
  * ⚠️ **That hand-off assumed a boundary nobody had written down; one is written now.** The `limit_req`
  * rules exist and are tested; the host nginx runs on, and whether anything but nginx can reach these ports,
@@ -24,10 +24,10 @@ import { hashSessionToken } from '@others/hashSessionToken.mjs'
  *
  * ⚠️ **Neither bucket below is resized by that, by the new ADR's own requirement.** ADR-039 §5 narrows
  * the old standing rule rather than lifting it — a network boundary may be cited as a second layer and
- * never as the whole argument — and it names E14-S08 while keeping this limiter exactly as written. Both
+ * never as the whole argument — and it names these two buckets while keeping them exactly as written. Both
  * buckets stay sized to be worth having with the port open to anyone. Of the three findings once bounded
- * by that one unknown, only R46 closed with the ADR — the introspection bypass (E13-S11) and the plaintext
- * Redis leg (R45) did not.
+ * by that one unknown, only R46 closed with the ADR — the introspection bypass and the plaintext Redis leg
+ * (R45) did not.
  *
  * ⚠️ **Both buckets are named `refresh:<something>` rather than one of them being bare `refresh`.** A bare
  * bucket would make `rl:refresh:` a prefix of `rl:refresh:family:`, so an admin counting one bucket
@@ -79,9 +79,10 @@ export const REFRESH_FAMILY_WINDOW_SECONDS = 3600
  * read, with the refresh token the request presented.
  *
  * ⚠️ **The identity is `hashSessionToken(token)`, not the token.** The ban on passing a raw token to
- * `assertUnderRateLimit` is absolute — see its docstring — and the digest is E13-S01's helper rather than
- * a second hashing call site, so the two never disagree about the algorithm. The limiter hashes what it
- * is given a second time to build the key; that is one `sha256` and changes nothing.
+ * `assertUnderRateLimit` is absolute — see its docstring — and the digest comes from the same helper every
+ * session key is built with rather than a second hashing call site, so the two never disagree about the
+ * algorithm. The limiter hashes what it is given a second time to build the key; that is one `sha256` and
+ * changes nothing.
  *
  * ⚠️ **It takes the store as a parameter and the services pass `redisClient`**, exactly as
  * `guardPublicLogin` does. It is not folded into `resolveAuthorizationSession`: that would put a write
@@ -101,7 +102,7 @@ export const guardRefreshAttempt = (store: IRateLimitStore, refreshToken: string
  * with the lineage the session being rotated belongs to.
  *
  * ⚠️ **What this bucket does not buy, so it is not over-trusted.** A replayed tombstoned token triggers
- * E14-S03's family revocation on the first hit, so this limiter never sees sustained replay — the
+ * the family revocation on the first hit, so this limiter never sees sustained replay — the
  * detection path gets there first. Its value is bounding write load and rotation churn, not stopping an
  * attacker who already holds a valid token. `guardRefreshAttempt` is the one carrying weight.
  */

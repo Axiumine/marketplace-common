@@ -68,7 +68,7 @@ self-serves with nothing to approve, so the only gate is `emailVerify.valid`. A 
 self-serves through `shopOwnerRegister` carries both gates; one an Admin created carries neither.
 
 ⚠️ **`personalData` used to be the fourth and is not one any more.** It is optional on both models since
-2026-08-12 (E03-S08): both sign-up paths take an email and a password and nothing else. What still differs
+2026-08-12: both sign-up paths take an email and a password and nothing else. What still differs
 is what happens next — a customer may never fill it in, a shop owner is expected to before they trade.
 
 ⚠️ **`UserAddressSubDocSchema` is the one address schema here that keeps its `_id`.** Every other one is
@@ -182,7 +182,7 @@ Four design points that look like accidents otherwise:
   from koa-utils would drag the `redis` types in and make a Redis install a precondition for importing a
   Mongoose model.
 
-  The set has grown before and will again: E14 added the family `sAdd`, the reuse tombstone (reusing the
+  The set has grown before and will again: the session lineage added the family `sAdd`, the reuse tombstone (reusing the
   existing `hSet`/`expire`), and the mint-rate `incr`/`ttl`. Treat any number stated here as a snapshot, not
   a fact — re-read the interface declarations above before relying on a count.
 - **`TAuthorizationSession<TAccountData>` is the declared type of `ctx.state.user` in all three services.**

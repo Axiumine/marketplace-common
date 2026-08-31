@@ -44,8 +44,8 @@ const digest = (value: string | string[] | undefined) =>
  * literal `'undefined'` rather than the empty string when the variable is unset.
  *
  * ⚠️ **What this does not fix.** The code is still accepted from anywhere the port is reachable (a
- * topology problem, E13-S09), and constant time on a JIT runtime is best-effort — this removes the
- * algorithmic leak, not every microarchitectural one. E13-S11's environment gate additionally stops the
+ * topology problem), and constant time on a JIT runtime is best-effort — this removes the
+ * algorithmic leak, not every microarchitectural one. The environment allowlist additionally stops the
  * comparison running in production at all; this stays regardless, because development machines are
  * reachable too and a gate whose failure mode is "the timing leak comes back" is not one to rely on
  * alone.

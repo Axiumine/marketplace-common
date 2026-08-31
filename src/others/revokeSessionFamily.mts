@@ -17,7 +17,7 @@ export interface ISessionFamilyStore extends IReuseEventStore {
 }
 
 /**
- * Destroys every session key descended from one login (E14-S03), and records why (E17-S05).
+ * Destroys every session key descended from one login, and records why.
  *
  * The set at `family:<familyId>` names **fully-qualified Redis keys** — the digests `sessionKey` built, not
  * the tokens they were built from. That is what lets this walk `del` its members directly: a set of tokens
@@ -32,13 +32,13 @@ export interface ISessionFamilyStore extends IReuseEventStore {
  * turns a mid-way failure into a lineage nobody can finish revoking. Reversed, the retry has nothing to
  * read.
  *
- * ⚠️ **The event is appended after the revocation, and the revocation does not depend on it** (E17-S05).
+ * ⚠️ **The event is appended after the revocation, and the revocation does not depend on it.**
  * This is the request that discovered a theft: the sessions must die whatever the trail does. Recording
  * first would let a failed append leave a trail claiming a logout that did not happen — an explanation
  * that is wrong, which is worse for the admin than no explanation at all.
  *
  * ⚠️ **An unattributable revocation still revokes, and writes nothing.** `account` is `undefined` when the
- * tombstone that triggered this was written before E17-S05 put the account on it. Filing that event anyway
+ * tombstone that triggered this was written before the account was put on it. Filing that event anyway
  * would need an account id invented here, and an invented one names a trail key no console reads. The
  * security action never degrades; only its explanation does, and only for tombstones older than the deploy.
  *
@@ -54,7 +54,7 @@ export async function revokeSessionFamily({
 }: {
 	store: ISessionFamilyStore
 	familyId: string
-	/** Whose lineage this was, or `undefined` when the record that named it predates E17-S05. */
+	/** Whose lineage this was, or `undefined` when the record that named it predates the reuse trail. */
 	account: IReuseEventAccount | undefined
 	action: ReuseEventAction
 }) {

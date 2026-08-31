@@ -19,17 +19,17 @@ import { Types } from 'mongoose'
  * hashed session key. Everything else below belongs to a path that has already found something wrong:
  *
  * - a miss reads the reuse tombstone with a second `hGetAll`, and `incr`s the grace counter when the
- *   token turns out to have been consumed seconds ago (E14-S04);
+ *   token turns out to have been consumed seconds ago;
  * - a replay past the grace window, and a session past its absolute age cap, both delegate to
  *   `revokeSessionFamily`, which costs `sMembers` plus one `del` per member plus one for the set —
- *   1 + N commands, on the request that discovered a theft rather than on the auth path (E14-S03/S05) —
+ *   1 + N commands, on the request that discovered a theft rather than on the auth path —
  *   and, when the revocation can be attributed to an account, three more (`lPush`, `lTrim`, `expire`) to
- *   append the reuse event that explains it (E17-S05).
+ *   append the reuse event that explains it.
  *
  * ⚠️ **Keep this list and the interface below in step.** It once read "the single Redis command this
  * resolver issues", written when there was one and left alone when there stopped being one — which is
- * how a docstring becomes a claim a reader sizes the auth path by and is wrong. Every story that adds a
- * command here (E15's session index) widens the interface, and the widening is the moment to rewrite
+ * how a docstring becomes a claim a reader sizes the auth path by and is wrong. Anything that adds a
+ * command here — the session index did — widens the interface, and the widening is the moment to rewrite
  * this paragraph rather than append to it.
  *
  * ⚠️ The client is a **parameter, not an import**, for the same reason `assertUnderRateLimit` takes
@@ -51,7 +51,7 @@ export interface ISessionReadStore extends ISessionFamilyStore {
 }
 
 /**
- * Answers a refresh token that no live session backs, when a tombstone says it was consumed (E14-S02).
+ * Answers a refresh token that no live session backs, when a tombstone says it was consumed.
  *
  * Runs **only on a miss**, so the resolving path pays nothing for it. Three outcomes:
  *
@@ -68,7 +68,7 @@ export interface ISessionReadStore extends ISessionFamilyStore {
  * replay branch — the fail-closed direction. One missing `familyId` is all that is skipped there: there
  * is no lineage to name, so there is nothing to revoke, and the token is still refused.
  *
- * ⚠️ **The account is read off the tombstone, and a tombstone that carries none still revokes** (E17-S05).
+ * ⚠️ **The account is read off the tombstone, and a tombstone that carries none still revokes.**
  * By the time a replay is detected the session hash the token named is gone — the rotation that wrote this
  * marker deleted it — so `_id` and `tier` are recoverable from nowhere else. A marker written before those
  * fields existed, or one whose `tier` is not one of the three constants, therefore loses its reuse event
@@ -104,7 +104,7 @@ export interface IResolveAuthorizationSessionInput<TAccountData extends object> 
 	store: ISessionReadStore
 	/**
 	 * The refresh token as `verifySignedRefreshToken` returned it — which carries the `refresh:` prefix
-	 * already, and must, because that prefix is hashed *into* every key built from it (E13-S01).
+	 * already, and must, because that prefix is hashed *into* every key built from it.
 	 */
 	refreshToken: string
 	/** The tier *this* service serves. A session minted for any other one is refused. */
@@ -128,9 +128,9 @@ export type TAuthorizationSession<TAccountData extends object> = TAccountData & 
  * This is the body all three `*-authenticated-authorization` services carried a copy of. What is
  * shared is the *order* of the steps, and every one of them is load-bearing:
  *
- * - **The session is read through `readSessionHash`, never with a key built here** (E13-S01). The key is
+ * - **The session is read through `readSessionHash`, never with a key built here.** The key is
  *   the digest of the prefixed refresh token, and it is the only shape a session has: the raw-key
- *   fallback that once sat behind this helper was removed by E13-S10, so a token that misses the digest
+ *   fallback that once sat behind this helper is gone, so a token that misses the digest
  *   is a token with no session.
  * - **The tier is asserted before the `_id` is looked up.** All nine services share one `REDIS_KEY`
  *   prefix — deliberately, because the single logout service finds a session by token content and
@@ -141,16 +141,16 @@ export type TAuthorizationSession<TAccountData extends object> = TAccountData & 
  * - **`tier` is stamped here, from the service's own constant**, not copied out of the hash and not
  *   supplied by the reader. The value that goes into the new session is the one this service just
  *   asserted against, so a reader cannot mislabel a session even by mistake.
- * - **A miss consults the reuse tombstone before anything else** (E14-S02/S04). A token that no live
+ * - **A miss consults the reuse tombstone before anything else.** A token that no live
  *   session backs is either expired, revoked, or *consumed seconds ago* — and only the tombstone can
  *   tell the third case from the first two. Inside the grace window it is a lost multi-tab race and the
  *   client is told to retry; outside it, it is a replay, and the whole lineage dies before the caller
  *   gets its 498. See `assertNotReplayed`.
- * - **The lineage is asserted, and a session without one is refused rather than defaulted**
- *   (E14-S01). A session minted before those fields existed cannot be filed into a family, and
+ * - **The lineage is asserted, and a session without one is refused rather than defaulted.**
+ *   A session minted before those fields existed cannot be filed into a family, and
  *   inventing one would file every such session into the *same* family — where a single reuse event
  *   revokes unrelated accounts. See `assertRefreshLineage`.
- * - **The absolute age cap is checked before the account is read** (E14-S05), and it is measured from
+ * - **The absolute age cap is checked before the account is read**, and it is measured from
  *   `originalLogin`, which no rotation ever moves — that is what makes the cap absolute rather than a
  *   long idle timeout. A session past it takes its whole family down with it, because a session this
  *   old is the shape a quietly stolen refresh token has.
@@ -161,8 +161,8 @@ export type TAuthorizationSession<TAccountData extends object> = TAccountData & 
  * - **`isIntrospectionBypassAllowed()` is evaluated before the comparison**, so outside
  *   `development` and `test` the configured code is never read and a caller cannot tell a wrong code
  *   from a disabled feature: both take the same `throwRefreshTokenExpiredOrDeleted` exit as a
- *   request that sent no header at all (E13-S11).
- * - **The comparison itself is `constantTimeEquals`, never `===`** (E13-S03). String equality stops at
+ *   request that sent no header at all.
+ * - **The comparison itself is `constantTimeEquals`, never `===`.** String equality stops at
  *   the first differing character, which turns a few thousand requests into the configured value one
  *   character at a time; a caller that reaches this line has already been let through by everything
  *   upstream, so the timing gradient was the last thing between it and the code.
@@ -201,7 +201,7 @@ export async function resolveAuthorizationSession<TAccountData extends object>({
 
 	const { familyId, originalLogin, sessionCapDays } = redData
 
-	// The same deadline the index field's TTL is set to (E15-S03), from the same expression, so the row
+	// The same deadline the index field's TTL is set to, from the same expression, so the row
 	// that names a session cannot outlive the session or predecease it.
 	if (Date.now() > sessionCapDeadline(originalLogin, sessionCapDays)) {
 		// `tier` rather than `redData.tier`: the two were just asserted equal, and the one this service was

@@ -23,7 +23,7 @@ const ID = '68b0f2c1a2b3c4d5e6f70819'
 const FAMILY_ID = '4b1a4a5e-0d3a-4a2f-9a5a-2f0f6a1b8c3d'
 
 /**
- * The key a session lives under since E13-S01: the shared prefix plus the digest of the token. The digest
+ * The key a session lives under: the shared prefix plus the digest of the token. The digest
  * itself is pinned against known SHA-256 literals in `sessionKeys.test.mts`; here it is computed, because
  * what these suites are about is *which* value gets hashed and *when*, not the algorithm.
  */
@@ -59,7 +59,7 @@ describe('resolveAuthorizationSession', () => {
 	const FAMILY_KEY = familyKeyFor(FAMILY_ID)
 	const MEMBERS = [`${REDIS_KEY}${'a'.repeat(64)}`, `${REDIS_KEY}${'b'.repeat(64)}`]
 
-	/** The lineage a session minted since E14-S01 carries. One day old by default, well inside every cap. */
+	/** The lineage a session carries. One day old by default, well inside every cap. */
 	const LINEAGE = { familyId: FAMILY_ID, originalLogin: `${NOW - 1000}`, sessionCapDays: '1' }
 
 	/** The smallest hash that resolves: identity, tier, lineage. Anything less is refused on purpose. */
@@ -81,7 +81,7 @@ describe('resolveAuthorizationSession', () => {
 	/** The reuse trail a revocation on this path writes to, once it knows whose lineage it just ended. */
 	const trailKeyFor = (tier: string, accountId: string) => `${REDIS_KEY}reuse:${tier}:${accountId}`
 
-	/** A tombstone of the shape E17-S05 writes: the lineage, when it was consumed, and whose it was. */
+	/** A tombstone of the shape a rotation writes: the lineage, when it was consumed, and whose it was. */
 	const TOMBSTONE = { familyId: FAMILY_ID, consumedAt: `${NOW - GRACE_MS - 1}`, _id: ID, tier: TIER.shopOwner }
 
 	const readSessionData = vi.fn<(_id: Types.ObjectId) => Promise<{ email: string }>>(async () => ({
@@ -115,7 +115,7 @@ describe('resolveAuthorizationSession', () => {
 	 * finds a session by exactly this key, so a service that built the key differently would mint sessions
 	 * nothing could ever revoke.
 	 *
-	 * ⚠️ The key **body is the digest of the token, never the token** (E13-S01), and the second assertion
+	 * ⚠️ The key **body is the digest of the token, never the token**, and the second assertion
 	 * is the one worth keeping: it fails on any reconstruction of the old shape, including a hash of the
 	 * wrong value that happens to be prefixed correctly.
 	 */
@@ -131,7 +131,8 @@ describe('resolveAuthorizationSession', () => {
 
 	/*
 	 * ⚠️ **The resolving path still costs one command**, and this is the assertion that keeps it that way.
-	 * Everything E14 added — the tombstone read, the family walk, the grace counter — hangs off a miss, so a
+	 * Everything the lineage added — the tombstone read, the family walk, the grace counter — hangs off a
+	 * miss, so a
 	 * refactor that hoisted any of it above the hit would multiply the whole platform's auth traffic by
 	 * three without failing a single behavioural test.
 	 */
@@ -148,7 +149,7 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * ⚠️ **The inverted E13-S02 test, at the site that carries the whole platform's traffic** (E13-S10).
+	 * ⚠️ **The inverted dual-read test, at the site that carries the whole platform's traffic.**
 	 * The fixture is unchanged — a Redis holding a perfectly valid session under the old raw-token key —
 	 * and the expected answer is now the opposite one: 498, because nothing on this path names that key
 	 * any more. Both preconditions for flipping it are recorded in the commit; the short version is that
@@ -192,7 +193,8 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * E13-S11, at the site the three `*-authenticated-authorization` services all reach. The bypass is a
+	 * The environment allowlist, at the site the three `*-authenticated-authorization` services all reach.
+	 * The bypass is a
 	 * development convenience, so outside `development` and `test` it does not exist: the correct code
 	 * takes the **same 498 exit, with the same message**, as a request that carried no header at all,
 	 * which is what stops a caller distinguishing a wrong code from a disabled feature by the response.
@@ -332,7 +334,7 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * E14-S01. A hash that predates these fields is refused rather than defaulted, and refused **before** the
+	 * A hash that predates these fields is refused rather than defaulted, and refused **before** the
 	 * account read — the behaviour itself is `assertRefreshLineage`'s own suite, so what is pinned here is
 	 * that the resolver calls it at all, and calls it early.
 	 */
@@ -349,10 +351,10 @@ describe('resolveAuthorizationSession', () => {
 	)
 
 	/*
-	 * E14-S02, the ordinary miss. A token whose session expired has no tombstone, and the resolver has to
+	 * The ordinary miss. A token whose session expired has no tombstone, and the resolver has to
 	 * come out the other side into the introspection check exactly as it did before any of this existed —
-	 * the second `hGetAll` is the only thing an expired session now pays for. It was a third until E13-S10
-	 * deleted the raw-key read that sat between the two.
+	 * the second `hGetAll` is the only thing an expired session now pays for. It was a third until the
+	 * raw-key read that sat between the two was deleted.
 	 */
 	it('walks past a miss with no tombstone without touching the family', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
@@ -366,14 +368,14 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * E14-S04, the case rotation-on-every-refresh created. Two tabs refresh with the same cookie; the second
+	 * The case rotation-on-every-refresh created. Two tabs refresh with the same cookie; the second
 	 * arrives after the first consumed the token, holding a cookie the browser has already replaced. It is a
 	 * lost race, not a theft.
 	 *
 	 * ⚠️ **409 and no revocation.** Answering the 498 a replay gets would log a legitimate user out of every
 	 * session they have for opening two tabs, and answering with the winner's new token would hand a live
 	 * credential to whoever asked second. The counter is what makes the window's size an observation rather
-	 * than a guess (E14-S09).
+	 * than a guess.
 	 */
 	it('tells the loser of a refresh race to retry, counts it, and revokes nothing', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
@@ -404,7 +406,7 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * E14-S03, the whole point of the tombstone. A refresh token presented after its rotation is a token
+	 * The whole point of the tombstone. A refresh token presented after its rotation is a token
 	 * someone kept a copy of, and neither side of that can be told apart from the other — so every session
 	 * the lineage owns dies, the legitimate holder included. That is the trade the reuse detection makes.
 	 *
@@ -423,7 +425,7 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * E17-S05. The mass logout the line above performs is the one an admin eventually has to explain, so
+	 * The mass logout the line above performs is the one an admin eventually has to explain, so
 	 * this path files the reason under the account that lost the sessions.
 	 *
 	 * ⚠️ **The account comes off the tombstone, and it has to.** By this point the session hash the token
@@ -463,8 +465,9 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * ⚠️ **An unattributable replay still revokes, and writes nothing.** A tombstone predating E17-S05 carries
-	 * no account, and a `tier` that is not one of the three constants is a corrupt marker rather than a fourth
+	 * ⚠️ **An unattributable replay still revokes, and writes nothing.** A tombstone written before the
+	 * account was stored carries none, and a `tier` that is not one of the three constants is a corrupt marker
+	 * rather than a fourth
 	 * collection — both lose the trail entry and keep the revocation. The security action never depends on the
 	 * explanation, which is the whole reason `isTier` exists rather than a cast.
 	 */
@@ -502,7 +505,7 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * E14-S05. The cap is measured from `originalLogin`, which no rotation moves, so a session cannot refresh
+	 * The cap is measured from `originalLogin`, which no rotation moves, so a session cannot refresh
 	 * its way past it — that is the difference between this and the idle timeout the refresh TTL already is.
 	 * A session this old is the shape a quietly stolen token has, so it takes its family with it.
 	 *
@@ -534,7 +537,7 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * E17-S05's second call site. A session ended by its own age cap is the other way a lineage dies without
+	 * The trail's second call site. A session ended by its own age cap is the other way a lineage dies without
 	 * anybody asking, so it gets the other action — an admin reading "sessionCapReached" is looking at a
 	 * policy expiry, and reading "refreshTokenReplayed" at a suspected theft. One vocabulary, two meanings,
 	 * and confusing them would send an incident response after a session that simply got old.
@@ -640,10 +643,10 @@ describe('refreshSessionTokens', () => {
 	const PRESENTED_ACCESS = 'access:access-token-1'
 	const OLD_TOMBSTONE_KEY = tombstoneKeyFor(OLD_REFRESH)
 	const FAMILY_KEY = familyKeyFor(FAMILY_ID)
-	/** The account's session index (E15-S02) — one hash per account, named by tier *and* id. */
+	/** The account's session index — one hash per account, named by tier *and* id. */
 	const INDEX_KEY = indexKeyFor(TIER.shopOwner, ID)
 	/*
-	 * The per-family mint bucket (E14-S08). The digest is `sha256(FAMILY_ID)`, written out as a literal
+	 * The per-family mint bucket. The digest is `sha256(FAMILY_ID)`, written out as a literal
 	 * rather than computed here: a test that hashed the id itself would agree with the implementation about
 	 * any algorithm, including a mutated one.
 	 *
@@ -670,7 +673,7 @@ describe('refreshSessionTokens', () => {
 	 */
 	const BOUND_ACCESS_KEY = hashedKey('access:access-token-bound')
 
-	/** A session minted after E14-S06's residual was closed: it knows the key of its own access token. */
+	/** A session minted after the residual was closed: it knows the key of its own access token. */
 	const boundSession: TAuthorizationSession<{ email: string; onboardingStep: string }> = {
 		...session,
 		accessKey: BOUND_ACCESS_KEY
@@ -683,11 +686,11 @@ describe('refreshSessionTokens', () => {
 		expire: vi.fn(async () => 1),
 		del: vi.fn(async () => 1),
 		sAdd: vi.fn(async () => 1),
-		// The two the per-family mint limiter needs (E14-S08). `incr` answering 1 and `ttl` answering -1 is
+		// The two the per-family mint limiter needs. `incr` answering 1 and `ttl` answering -1 is
 		// the first call of a fresh window: under the limit, and the window still to be armed.
 		incr: vi.fn(async () => 1),
 		ttl: vi.fn(async () => -1),
-		// The two the index prune needs (E15-S03): a TTL on the successor's field, and the removal of the
+		// The two the index prune needs: a TTL on the successor's field, and the removal of the
 		// predecessor's. `hExpire` answers an array — one status per field asked about — and 1 is "set".
 		hExpire: vi.fn(async () => [1]),
 		hDel: vi.fn(async () => 1),
@@ -723,7 +726,7 @@ describe('refreshSessionTokens', () => {
 	 * this call arrived with — without that last one the function re-issues rather than rotates, and a
 	 * stolen refresh token stays valid for its whole 90 days.
 	 *
-	 * ⚠️ The two prefixes are inside the digest, not around it (E13-S01): `access:` and `refresh:` are what
+	 * ⚠️ The two prefixes are inside the digest, not around it: `access:` and `refresh:` are what
 	 * tell the two hashes apart, so they have to be part of the value hashed rather than a readable
 	 * fragment of the key. That is also why the old token is dropped in **both** shapes — the session being
 	 * rotated may predate the cutover, and a rotation that leaves the old refresh key alive is exactly the
@@ -765,7 +768,7 @@ describe('refreshSessionTokens', () => {
 		])
 		expect(store.del).toHaveBeenCalledExactlyOnceWith(OLD_KEY)
 		/*
-		 * E15-S03, both halves of it. The successor's field gets the *remaining* cap — this session logged in
+		 * Both halves of the index write. The successor's field gets the *remaining* cap — this session logged in
 		 * a day ago under a thirty-day cap, so twenty-nine days, not a fresh thirty — and the predecessor's
 		 * field is removed, so one session is one row however many times it rotates.
 		 *
@@ -778,14 +781,15 @@ describe('refreshSessionTokens', () => {
 	})
 
 	/*
-	 * E14-S02, the two records a rotation leaves behind besides the pair itself.
+	 * The two records a rotation leaves behind besides the pair itself.
 	 *
 	 * ⚠️ **The tombstone value names a family, a time and an account, and holds no token of any kind.** The
 	 * design this replaced stored the successor token under the consumed one so the loser of a race could be
-	 * handed it — which would have put a live credential into a Redis *value*, exactly the thing E13-S01 took
-	 * out of the keys. `Object.keys` is asserted whole so a fifth field cannot be added without this failing.
+	 * handed it — which would have put a live credential into a Redis *value*, exactly the thing the hashed
+	 * namespace took out of the keys. `Object.keys` is asserted whole so a fifth field cannot be added without
+	 * this failing.
 	 *
-	 * ⚠️ **`_id` and `tier` are the E17-S05 pair, and neither is a credential**: a tier is one of three
+	 * ⚠️ **`_id` and `tier` are the pair the trail needs, and neither is a credential**: a tier is one of three
 	 * constants and an account id is what every resource query already carries. They are here because a replay
 	 * is detected *after* this rotation deleted the session hash, so by then the account is readable nowhere
 	 * else — the reuse trail would have nothing to file the mass logout under.
@@ -808,7 +812,7 @@ describe('refreshSessionTokens', () => {
 	})
 
 	/*
-	 * ⚠️ **The account written here is the *session's*, not one supplied by the caller** (E17-S05). A rotation
+	 * ⚠️ **The account written here is the *session's*, not one supplied by the caller.** A rotation
 	 * is reached with a session the middleware already tier-asserted, so the marker names the account the
 	 * consumed token actually belonged to — which is what makes the replay path's trail entry trustworthy.
 	 * Copying the serving service's own tier in would mislabel every session the shared logout service rotates.
@@ -831,7 +835,7 @@ describe('refreshSessionTokens', () => {
 	})
 
 	/*
-	 * E14-S03. The set is what a reuse event walks, so it has to name the pair this rotation just minted —
+	 * The set is what a reuse event walks, so it has to name the pair this rotation just minted —
 	 * both halves, since revoking a lineage that left its access tokens alive would leave the thief up to an
 	 * hour of working credentials.
 	 *
@@ -856,13 +860,14 @@ describe('refreshSessionTokens', () => {
 	/*
 	 * ⚠️ **The lineage is propagated, never re-minted.** A rotation that stamped a fresh `originalLogin` would
 	 * reset the absolute cap on every refresh, and a session would live for ever an hour at a time — the exact
-	 * hole E14-S05 exists to close. A fresh `familyId` would be worse: each rotation would start a lineage of
+	 * hole the absolute cap exists to close. A fresh `familyId` would be worse: each rotation would start a
+	 * lineage of
 	 * one, and a reuse event would revoke the replayed token alone while the thief's own chain carried on.
 	 */
 	/*
-	 * E15-S02, from the rotation side. Three properties, each of which is a silent failure alone:
+	 * The session index, from the rotation side. Three properties, each of which is a silent failure alone:
 	 *
-	 * - **the field is the digest of the successor's refresh key**, so E15-S04 can rebuild the key to delete
+	 * - **the field is the digest of the successor's refresh key**, so a revocation can rebuild the key to delete
 	 *   as `${REDIS_KEY}${field}` without holding a token. Asserted as the *body of `keyRefresh`* rather than
 	 *   as a shape: a field that merely looked like a digest would pass `/^[0-9a-f]{64}$/` while naming a key
 	 *   nothing can revoke;
@@ -913,14 +918,14 @@ describe('refreshSessionTokens', () => {
 	 *   whose TTL has not been armed yet — the reverse would arm a TTL on a key that does not exist;
 	 * - **the index before the deletes**: the rollback removes the two session keys and nothing else, so an
 	 *   index write that fails has to fail while the old refresh token is still alive — the client keeps a
-	 *   working session instead of one whose successor was never recorded (E15-S02);
+	 *   working session instead of one whose successor was never recorded;
 	 * - **the family before the tombstone**: a pair filed after its own tombstone could be replayed against a
 	 *   family that does not yet name it, and the revocation would miss the very keys the thief holds;
 	 * - **the tombstone before the delete**: delete-then-tombstone leaves a window in which a consumed token
 	 *   has no marker, and a replay of it then looks exactly like ordinary expiry;
 	 * - **the cookie before the deletes**: a client whose old token was dropped before its new one reached it
 	 *   holds nothing at all, and the rollback cannot give it back;
-	 * - **the prune last, after the delete of the token it names** (E15-S03): unfile-then-delete leaves a
+	 * - **the prune last, after the delete of the token it names**: unfile-then-delete leaves a
 	 *   still-usable refresh token listed nowhere, which is exactly the session a revocation misses, while
 	 *   delete-then-unfile leaves a row naming a key that is already gone — and the field's own TTL removes
 	 *   that row even if this last command never runs.
@@ -979,7 +984,7 @@ describe('refreshSessionTokens', () => {
 	})
 
 	/*
-	 * E14-S08, the per-family mint limiter. Three things are policy rather than mechanism and each is
+	 * The per-family mint limiter. Three things are policy rather than mechanism and each is
 	 * asserted here so that changing one is a failing test rather than a silent loosening: the bucket the
 	 * counter lives in, the identity it counts (the lineage, never an address), and the window.
 	 *
@@ -1041,7 +1046,7 @@ describe('refreshSessionTokens', () => {
 	})
 
 	/*
-	 * E14-S06. Without this delete the access token the call arrived with lives out its remaining 30–91
+	 * Without this delete the access token the call arrived with lives out its remaining 30–91
 	 * minutes alongside its own successor, so a stolen pair keeps working straight through the rotation the
 	 * legitimate client made — the rotation that was supposed to be what invalidated it.
 	 *

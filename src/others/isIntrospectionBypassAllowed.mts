@@ -5,15 +5,16 @@
  *
  * The bypass exists so a service-to-service caller — and a developer pointing a GraphQL client at a
  * port — can reach the schema with no cookie and no `Authorization` header at all. That is a
- * development convenience, and until E13-S11 nothing in the code said so: the production hardening in
- * each service's `index.mts` adds `NoSchemaIntrospectionCustomRule` under `NODE_ENV === 'production'`,
- * which refuses the introspection *query* while leaving the *authentication* bypass fully live. The
+ * development convenience, and until this predicate landed nothing in the code said so: the production
+ * hardening in each service's `index.mts` adds `NoSchemaIntrospectionCustomRule` under
+ * `NODE_ENV === 'production'`, which refuses the introspection *query* while leaving the *authentication*
+ * bypass fully live. The
  * header was therefore a production credential, whatever it was meant to be.
  *
  * ⚠️ **Re-exported, not reimplemented.** The predicate itself is
  * `@axiumine/koa-utils/lib/isIntrospectionBypassAllowed`, added in `6.0.0`, where
  * `verifyIntrospectionCode` evaluates it as its own first statement. This platform kept a second copy
- * of the same allowlist from E13-S11 until `2.0.0` of this package; two definitions of one security
+ * of the same allowlist until `2.0.0` of this package; two definitions of one security
  * predicate can only ever agree by luck, so the copy is gone and this module forwards. Its doc there
  * carries the reason the allowlist must never become `NODE_ENV !== 'production'` — the negated form
  * fails **open** on an unset, empty, `Production` or `staging` value, which is the ordinary failure of
@@ -33,10 +34,10 @@
  * host on a private segment the platform owner declares trusted.
  *
  * ⚠️ **That changes nothing in this file, by the new ADR's own requirement.** ADR-039 §5 keeps this
- * allowlist unconditional and names E13-S11 while doing it, because it narrows the old standing rule
+ * allowlist unconditional and names it while doing it, because it narrows the old standing rule
  * rather than lifting it: a network boundary may be cited as a second layer and never as the whole
  * argument. So this gate stays written to hold with the port open, which is why it is an environment
  * check rather than an allowlist of peers. Of the three findings once bounded by that one unknown, only
- * R46 closed with the ADR — the `refresh` flood (E14-S08) and the plaintext Redis leg (R45) did not.
+ * R46 closed with the ADR — the `refresh` flood and the plaintext Redis leg (R45) did not.
  */
 export { isIntrospectionBypassAllowed } from '@axiumine/koa-utils/lib/isIntrospectionBypassAllowed'

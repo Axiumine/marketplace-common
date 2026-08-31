@@ -22,7 +22,7 @@ the layer that sees the merge commit anyway. Bypass for a Docker or network outa
 `VulnerableLibrariesLocal`, an offline heuristic that queries no advisory feed and answers zero on every
 repo here; the class that does query one is in the image and in no profile. This repo is the one whose
 advisories reach every other — nine services install it by package name — so an unchecked transitive
-dependency here is an unchecked dependency fleet-wide. E18-S11.
+dependency here is an unchecked dependency fleet-wide.
 
 `.githooks/pre-commit` is four gates, cheapest first: the secret guard (staged secret paths, staged
 high-entropy values), `yarn lint:check`, `yarn test:cov`, then a full Qodana scan. The last three run

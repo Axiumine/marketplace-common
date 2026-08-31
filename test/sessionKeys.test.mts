@@ -50,7 +50,8 @@ afterEach(() => {
 })
 
 describe('hashSessionToken', () => {
-	// ⚠️ The whole point of E13-S01, as an assertion: the key body is a digest, and the token does not
+	// ⚠️ The whole point of the hashed namespace, as an assertion: the key body is a digest, and the token
+	// does not
 	// appear in it. A dump, an AOF file or a MONITOR transcript used to be a list of live credentials in
 	// plain text.
 	it('digests the prefixed token to the known SHA-256, and never carries it through', () => {
@@ -83,7 +84,7 @@ describe('the session key builders', () => {
 	})
 
 	/*
-	 * ⚠️ **The digest is the only shape a session key has** (E13-S10). There is no builder for the raw-token
+	 * ⚠️ **The digest is the only shape a session key has.** There is no builder for the raw-token
 	 * shape any more, and this asserts the property that made removing it safe: nothing this module can
 	 * build ever contains the credential the caller presented.
 	 *
@@ -99,7 +100,8 @@ describe('the session key builders', () => {
 
 	/*
 	 * ⚠️ The counter is a count and nothing else — no key, no token, no identifier. Putting a session key in
-	 * its name would undo E13-S01: the raw key *is* the credential, and a diagnostic that recorded it would
+	 * its name would undo the hashed namespace: the raw key *is* the credential, and a diagnostic that
+	 * recorded it would
 	 * put back into Redis exactly what hashing took out.
 	 *
 	 * It is also not confusable with a session: a digest is 64 hex characters and this is a word.
@@ -138,9 +140,9 @@ describe('the session key builders', () => {
 
 	/*
 	 * ⚠️ The tombstone is keyed by the same digest as the session it replaces, under its own namespace. The
-	 * digest is asserted twice — once as the literal, once as the shape after the prefix — because E13-S01
-	 * is undone the moment a *new* key shape carries a token in the clear, and this is the first new shape
-	 * added since it landed.
+	 * digest is asserted twice — once as the literal, once as the shape after the prefix — because the hashed
+	 * namespace is undone the moment a *new* key shape carries a token in the clear, and this is the first new
+	 * shape added since it landed.
 	 */
 	it('builds the tombstone key from the prefix, the word and the digest', () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
@@ -167,7 +169,7 @@ describe('the session key builders', () => {
 	})
 
 	/*
-	 * ⚠️ Tier-segmented for the same reason `sessionIndexKey` is (E17-S05): the three collections mint ids
+	 * ⚠️ Tier-segmented for the same reason `sessionIndexKey` is: the three collections mint ids
 	 * independently, so an `admin` and a `user` whose ids collided would share one trail — and the console
 	 * would show one account another account's revocations.
 	 */
@@ -192,7 +194,7 @@ describe('the session key builders', () => {
 describe('readSessionHash', () => {
 	const hash = { _id: '68b0f2c1a2b3c4d5e6f70819', tier: 'shopOwner' }
 
-	// The only state there is since E13-S10: one round trip, to the hashed key, and the raw key is never
+	// The only state there is: one round trip, to the hashed key, and the raw key is never
 	// named at all.
 	it('reads the hashed key, once, and stops there', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
@@ -204,9 +206,9 @@ describe('readSessionHash', () => {
 	})
 
 	/*
-	 * ⚠️ **The inverted E13-S02 test** (E13-S10). It used to seed an old-shape session and prove it still
+	 * ⚠️ **The inverted dual-read test.** It used to seed an old-shape session and prove it still
 	 * authenticated across the cutover; the same fixture now proves the opposite, which is the whole
-	 * behavioural change this story makes. A store that answers on the raw key and nowhere else is a
+	 * behavioural change removing the fallback made. A store that answers on the raw key and nowhere else is a
 	 * pre-cutover session, and it must read as no session at all.
 	 *
 	 * Kept rather than deleted because the assertion that matters is not "the fallback is gone from the
@@ -280,7 +282,7 @@ describe('readSessionField', () => {
 		expect(s.hGet).toHaveBeenCalledExactlyOnceWith(`${REDIS_KEY}${DIGEST}`, '_id')
 	})
 
-	// The field-level half of the inverted E13-S02 test: a store holding the field under the raw key and
+	// The field-level half of the inverted dual-read test: a store holding the field under the raw key and
 	// nothing under the digest answers `null`, because the raw key is never asked.
 	it('does not read the raw key, so an old-shape field no longer resolves', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
@@ -305,8 +307,8 @@ describe('readSessionField', () => {
 
 describe('deleteSession', () => {
 	/*
-	 * ⚠️ **One key, one command** (E13-S10). The second `del` this used to issue named the raw-token shape,
-	 * which nothing has written since E13-S01 and nothing can read since this story; issuing it now would
+	 * ⚠️ **One key, one command.** The second `del` this used to issue named the raw-token shape, which
+	 * nothing has written since the cutover and nothing can read since the fallback went; issuing it now would
 	 * be a round trip per logout and per rotation against a key that cannot exist.
 	 *
 	 * The call is still asserted as a single-key `del` rather than a multi-key one (BCON-08) — the shape
@@ -411,7 +413,7 @@ describe('the session index', () => {
 	/*
 	 * ⚠️ The tier is part of the key name, not decoration. The three collections mint ids independently and
 	 * nothing stops two of them producing the same string; without the segment, an `admin` and a `user` who
-	 * collided would share one index and E15-S04 would revoke a stranger's sessions.
+	 * collided would share one index and a revocation would take a stranger's sessions with it.
 	 */
 	it('names one hash per account, per tier', () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
@@ -422,7 +424,7 @@ describe('the session index', () => {
 	})
 
 	/*
-	 * ⚠️ **The inverse of the field name, and it must stay exactly that** (E15-S04). `sessionKeyFromIndexField`
+	 * ⚠️ **The inverse of the field name, and it must stay exactly that.** `sessionKeyFromIndexField`
 	 * is what a revocation rebuilds a key with, so the round trip is the contract: the field `indexSession`
 	 * writes, prefixed, is the key `sessionKey` built for the same token. Anything applied to the field on the
 	 * way back out — a second digest, a namespace word — names a key that has never existed, and the
@@ -436,7 +438,7 @@ describe('the session index', () => {
 	})
 
 	/*
-	 * ⚠️ **The field is the digest of the session key body, and that is the whole contract with E15-S04.**
+	 * ⚠️ **The field is the digest of the session key body, and that is the whole contract with revocation.**
 	 * Revocation rebuilds the key to delete as `${REDIS_KEY}${field}` and never sees a token; a field hashed
 	 * from the bare uuid would still be 64 hex characters, still pass a shape check, and name a key that
 	 * does not exist — an index of sessions nothing can revoke, failing silently at the one moment it
@@ -457,8 +459,8 @@ describe('the session index', () => {
 
 	/*
 	 * ⚠️ The value describes the session to a human and carries nothing that could be presented as one.
-	 * `Object.keys` is asserted whole so a fourth field cannot arrive without this failing — E17 renders
-	 * this list, and the difference between a row and a credential is exactly this key set.
+	 * `Object.keys` is asserted whole so a fourth field cannot arrive without this failing — the admin session
+	 * console renders this list, and the difference between a row and a credential is exactly this key set.
 	 */
 	it('stores the tier and the original login, and nothing else', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
@@ -476,7 +478,7 @@ describe('the session index', () => {
 	 * ⚠️ **The longer cap, unconditionally, and reissued on every write.** The session written here carries
 	 * `sessionCapDays: '1'` and the key still gets thirty days: a one-day login landing after a remembered
 	 * one must not pull the key's TTL down and orphan the thirty-day session, which would then be live and
-	 * listed nowhere — silently missed by E15-S04's revocation. The seconds are a literal for the same
+	 * listed nowhere — silently missed by any revocation. The seconds are a literal for the same
 	 * reason every other window in these suites is: computing it from the constant the implementation
 	 * multiplies would move both sides of the assertion at once.
 	 */
@@ -509,7 +511,7 @@ describe('the session index', () => {
 	})
 
 	/*
-	 * E15-S03. **The field's TTL is the session's cap, and the key's is thirty days — two different numbers
+	 * **The field's TTL is the session's cap, and the key's is thirty days — two different numbers
 	 * on the same write, and swapping them breaks the index in one direction each.** Give the field the
 	 * key's thirty days and a one-day session is listed for twenty-nine days after it stopped working;
 	 * give the key the field's cap and one short-lived login takes the whole account's index down with it.
@@ -534,7 +536,7 @@ describe('the session index', () => {
 	 * lineage rotation carries forward is the predecessor's, unchanged. The successor's field therefore
 	 * expires an hour earlier than the original's did, not thirty days after the rotation. Were it
 	 * otherwise, a client refreshing every fifteen minutes would hold a row that never ages out, and the
-	 * absolute cap E14-S05 exists to enforce would be listed as if it were a sliding one.
+	 * absolute cap would be listed as if it were a sliding one.
 	 */
 	it('does not extend the field TTL when the same lineage is re-filed', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
@@ -568,7 +570,7 @@ describe('the session index', () => {
 	 * ⚠️ **The field removed is the digest of the same prefixed string the write hashed.** `hDel` answers a
 	 * count nobody checks, so a prune aimed at the wrong field name is indistinguishable from one that
 	 * worked — the index would keep a row per rotation, growing for the life of every session that never
-	 * logs out, and the admin screen E17 renders would show one login as several.
+	 * logs out, and the admin session console would show one login as several.
 	 */
 	it('prunes exactly the field the write created, from the key the write used', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)

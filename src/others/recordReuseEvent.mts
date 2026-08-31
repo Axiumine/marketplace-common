@@ -30,10 +30,10 @@ export const REUSE_EVENTS_MAX = 50
  * How long a trail survives its last event.
  *
  * ⚠️ **Thirty days from the last append, not from the first** — `expire` is reissued on every event, so a
- * trail that is still being written to does not age out mid-incident. E17's open question 2 asked for a
- * retention long enough to investigate and short enough not to become its own data-protection surface;
- * thirty days is E15's own session-index figure, reused rather than reinvented so that a trail cannot
- * outlive the sessions it describes by an interval nobody chose.
+ * trail that is still being written to does not age out mid-incident. The retention has to be long enough to
+ * investigate and short enough not to become its own data-protection surface; thirty days is the session
+ * index's own figure, reused rather than reinvented so that a trail cannot outlive the sessions it describes
+ * by an interval nobody chose.
  */
 export const REUSE_EVENTS_TTL_SECONDS = SESSION_INDEX_TTL_SECONDS
 
@@ -49,7 +49,7 @@ export interface IReuseEventAccount {
  * ⚠️ **No token, no digest of one, no prefix of one, and nothing network-derived.** The four fields are the
  * whole contract: a lineage id that grants nothing, the action from the shared vocabulary, when it happened,
  * and — through the key it is filed under — whose it was. A dump of this store must stay useless to whoever
- * reads it, which is the same rule E13 imposed on session keys and E14-S04 on tombstones.
+ * reads it, which is the same rule session keys and tombstones are held to.
  *
  * `at` is epoch millis written out as a string, because a Redis value is a string and a number here would
  * be a number in this process and a string in the next one.
@@ -63,7 +63,7 @@ export interface IReuseEvent {
 }
 
 /**
- * Appends one event to an account's trail (E17-S05).
+ * Appends one event to an account's trail.
  *
  * Three commands, in the only order that keeps the bound true at every instant: push, trim, then re-arm the
  * expiry. Trimming before pushing would leave the list one over its bound for the width of a round trip,

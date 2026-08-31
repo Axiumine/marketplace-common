@@ -3,7 +3,7 @@ import { keygripHoldersKey } from '@others/sessionKeys.mjs'
 /**
  * How long a holders row outlives the heartbeat that wrote it, in seconds. One hour.
  *
- * ⚠️ **This is what makes the table self-cleaning** (ADR-034, E01-S14). Every row is rewritten on
+ * ⚠️ **This is what makes the table self-cleaning** (ADR-034). Every row is rewritten on
  * `watchKeygrip`'s five-minute poll, so a live service refreshes its own expiry twelve times over before
  * it lapses. A service that is decommissioned — or renamed, or moved to another port — stops refreshing,
  * and its row leaves the table within the hour instead of sitting there forever as a permanent "has not

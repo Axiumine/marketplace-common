@@ -38,8 +38,8 @@ describe('Constants', () => {
 })
 
 /*
- * The three session-lifetime numbers, asserted as exact values (E14-S04, E14-S05). They are policy, not
- * implementation: each one is a decision recorded in E14 with its reasoning, and a silent edit here is a
+ * The three session-lifetime numbers, asserted as exact values. They are policy, not implementation:
+ * each one is a decision written down with its reasoning where it is declared, and a silent edit here is a
  * silent change to how long a stolen token is worth something. The `toBe` is the whole point — a
  * `toBeGreaterThan` would let 30 become 300 and still pass.
  */
@@ -80,7 +80,7 @@ describe('sessionLifetime', () => {
 })
 
 /*
- * The lineage a login stamps (E14-S01, E14-S07). One helper for the three tier writers, because a lineage
+ * The lineage a login stamps. One helper for the three tier writers, because a lineage
  * stamped differently in one of them would be a session capped differently from the other two, and nothing
  * downstream could tell.
  */
@@ -109,7 +109,8 @@ describe('newSessionLineage', () => {
 		expect(lineage.familyId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
 	})
 
-	// The three inputs E14-S07 names, at the writer's own boundary rather than only at `resolveSessionCapDays`.
+	// The three inputs the helper takes, at the writer's own boundary rather than only at
+	// `resolveSessionCapDays`.
 	it.each([
 		[true, '30'],
 		[false, '1'],
@@ -121,7 +122,7 @@ describe('newSessionLineage', () => {
 	/*
 	 * ⚠️ A fresh family per login, never a value derived from a token. Two logins sharing a `familyId` would
 	 * make one reuse event revoke both, and a `familyId` derived from a token would put that token back into
-	 * a key name that is not a digest — undoing E13-S01 through the side door.
+	 * a key name that is not a digest — undoing the hashed namespace through the side door.
 	 */
 	it('mints a family per login, shared by nothing', () => {
 		expect(newSessionLineage(true).familyId).not.toBe(newSessionLineage(true).familyId)
@@ -157,7 +158,7 @@ describe('checkUserAuthorizationDisDel', () => {
 })
 
 /*
- * BC-03's approval gate, which until E01-S10 was written by the Admin tier and read by nothing at all
+ * BC-03's approval gate, which was once written by the Admin tier and read by nothing at all
  * — a shop owner parked pending review could log in and keep working. Both BC-01 services call this
  * now, so the two states below are the whole contract: raised refuses, absent serves.
  *
@@ -224,7 +225,7 @@ describe('TIER', () => {
 })
 
 /*
- * The parsing half of the tier vocabulary (E17-S05), and only that.
+ * The parsing half of the tier vocabulary, and only that.
  *
  * ⚠️ **Not an authorisation decision and never to be used as one** — `assertTier` below answers "is this
  * session mine to serve"; this answers "is this string a tier at all". Its one caller reads a tombstone
@@ -290,7 +291,7 @@ describe('assertTier', () => {
 })
 
 /*
- * The environment allowlist, in one place because the predicate is (E13-S11). What the cases below are
+ * The environment allowlist, in one place because the predicate is. What the cases below are
  * really asserting is the *polarity*: every value in the refusing list would be admitted by the
  * `NODE_ENV !== 'production'` form this replaced, and every one of them is a shape a real deploy
  * produces — a container runtime that exports nothing, a shell that exports an empty string, a capital
@@ -475,7 +476,8 @@ describe('assertUnderRateLimit', () => {
 	})
 
 	/*
-	 * E14-S08's pre-lookup half: what one *attempt* at a rotation costs, whether or not the token behind it
+	 * The pre-lookup half of the limiter: what one *attempt* at a rotation costs, whether or not the token
+	 * behind it
 	 * exists. It is the only identity available before the session read, and the only limiter that ever sees
 	 * a token that resolves to no family at all — garbage, expired, tombstoned.
 	 *
@@ -489,7 +491,7 @@ describe('assertUnderRateLimit', () => {
 		 * first is `sha256('refresh:old-refresh-token')`, the second is `sha256` of *that string*.
 		 *
 		 * ⚠️ The double hash is not an oversight. `assertUnderRateLimit` bans a raw token as an identity, so
-		 * what is handed to it is already E13-S01's digest; the limiter then builds its own key from that.
+		 * what is handed to it is already a session-key digest; the limiter then builds its own key from that.
 		 * One extra `sha256` per attempt, and no live credential is ever an argument to the limiter.
 		 */
 		const REFRESH_KEY = 'test:rl:refresh:token:8ba1ddeaec9dc556437fdc381e377aa10e2d7d0e4cb66e857982b31b28da8d40'
@@ -506,7 +508,8 @@ describe('assertUnderRateLimit', () => {
 		})
 
 		// ⚠️ Neither the token nor its session-key digest may appear in the counter's key. The first would be
-		// a live credential in a key name — the thing E13-S01 removed — and the second would let anyone who
+		// a live credential in a key name — the thing the hashed namespace removed — and the second would let
+		// anyone who
 		// could read the rate-limit keyspace derive the session keyspace from it.
 		it('carries neither the token nor its session key', async () => {
 			vi.stubEnv('REDIS_KEY', 'test:')
@@ -715,7 +718,7 @@ describe('assertTurnstile', () => {
 })
 
 /*
- * The constant-time comparison (E13-S03). The cases below are ordinary equality cases on purpose: what
+ * The constant-time comparison. The cases below are ordinary equality cases on purpose: what
  * is being asserted is that removing the timing gradient did not change *which* pairs are equal. The
  * timing property itself is not measurable from a unit test on a JIT runtime — it is a property of the
  * construction (two fixed-width HMAC digests, no size check, no early exit), and the test that guards it
@@ -787,13 +790,13 @@ describe('constantTimeEquals', () => {
 })
 
 /*
- * E12-S11 left exactly one `createHash` call in this package — `sha256Hex`, the pseudonymisation
- * primitive. E13-S03 added a *comparison* primitive next to it, and the natural way to write that one is
+ * Exactly one `createHash` call is left in this package — `sha256Hex`, the pseudonymisation primitive.
+ * `constantTimeEquals` added a *comparison* primitive next to it, and the natural way to write that one is
  * a second `createHash`. This asserts the count rather than trusting a review to notice: a bare digest of
  * a caller-supplied candidate is precomputable, which is the whole reason `constantTimeEquals` keys its
  * hash.
  *
- * ⚠️ It counts `createHash(` — the **call** — rather than the bare word E13-S03's grep names. The word
+ * ⚠️ It counts `createHash(` — the **call** — rather than the bare word a grep would name. The word
  * also appears in `sha256Hex.mts`'s import and in two docstrings that exist to say which primitive
  * belongs where, and a check that forbade *writing about* the distinction would be deleted by the first
  * person who documented it correctly.
@@ -820,7 +823,7 @@ describe('the hashing primitives', () => {
 })
 
 /*
- * The admin-only field list, held to the model it names (E01-S10).
+ * The admin-only field list, held to the model it names.
  *
  * Two assertions, and the second is the one that matters. The list is the input to three
  * `no-restricted-syntax` blocks in three service repos, and an eslint selector matching `notes`

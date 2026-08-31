@@ -7,7 +7,7 @@
  * drops straight into `Sentry.init({ beforeSend })` with no cast at the call site.
  *
  * ⚠️ The same structural declaration is what lets the three frontends wire this function into
- * `@sentry/react` (E12-S24). It walks plain object bags and imports nothing, so the module is
+ * `@sentry/react`. It walks plain object bags and imports nothing, so the module is
  * browser-safe, and `./others/sentryBeforeSend` is a subpath export — a frontend bundle that imports it
  * pulls in this file and no other part of this package.
  */
@@ -44,7 +44,7 @@ export interface ISentryScrubbableEvent {
  *   `dataCollection` machinery, plus the `user-agent` / `user_agent` spellings it is copied from. An agent
  *   string is a fingerprinting input next to an address, and removing one spelling of a value while another
  *   bag of the same event still carries it removes nothing — the two-spelling rule above, applied to the one
- *   key E12-S02 had left in.
+ *   key the first pass had left in.
  * - **the client address elsewhere** — `ip_address` on `event.user`, `remote_addr` in `event.request.env`.
  * - **the key-encryption key** — `keygrip_kek`. The odd one out: it is an environment variable name, not
  *   a header or a span attribute, and it is here because `event.request.env` is a bag the SDK fills from
@@ -113,8 +113,8 @@ const URL_VALUED_KEYS: ReadonlySet<string> = new Set(['url', 'url.full', 'http.u
 /**
  * Everything from the first `?` or `#` onwards, removed.
  *
- * Both, and not the fragment alone: a fragment is what a reset link carries **since E12-S26**, a query
- * string is what a link built before it carries, and the SDK copies `location.href` whole either way.
+ * Both, and not the fragment alone: a fragment is what a reset link carries **now**, a query string is what
+ * a link built before that change carries, and the SDK copies `location.href` whole either way.
  * Non-strings pass through — a `url` attribute is a string in every capture taken so far, and a scrubber
  * that throws on the first event holding something else loses that event and the error under it.
  */

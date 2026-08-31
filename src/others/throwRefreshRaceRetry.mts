@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql'
 
 /**
- * The error code a client matches on to decide that a `refresh` is worth retrying (E14-S04).
+ * The error code a client matches on to decide that a `refresh` is worth retrying.
  *
  * ⚠️ **The three SPAs branch on this string.** Changing it silently turns every lost refresh race into a
  * logout, in three repos at once, with nothing failing anywhere — so it is a constant with a name rather
@@ -20,8 +20,8 @@ export const REFRESH_RACE_RETRY_CODE = 'REFRESH_RACE_RETRY'
  *
  * ⚠️ **Nothing is minted on this path, deliberately.** An earlier design cached the winner's new pair and
  * replayed it to the loser; that stored a directly replayable credential as a Redis *value*, which is
- * precisely what E13 removed from this platform. The retry needs no such cache: by the time the client
- * retries, the winner's `Set-Cookie` has landed in the jar both tabs share.
+ * precisely what the hashed namespace removed from this platform. The retry needs no such cache: by the time
+ * the client retries, the winner's `Set-Cookie` has landed in the jar both tabs share.
  */
 export const throwRefreshRaceRetry = (): never => {
 	throw new GraphQLError('Refresh In Progress', {

@@ -7,7 +7,7 @@
  *
  * ⚠️ **`material` is the secret itself**, base64 of 64 random bytes, and it exists in the clear only
  * inside a process that already holds `KEYGRIP_KEK`. It is never logged, never returned by a resolver and
- * never written to Redis unwrapped; `keygripStatus` (E01-S14) answers with `id` and `createdAt` and the
+ * never written to Redis unwrapped; `keygripStatus` answers with `id` and `createdAt` and the
  * record fingerprint, which is the whole reason this interface separates them.
  *
  * `id` is a short opaque label — `k1`, `k7` — and is what the fingerprint is computed over, so two

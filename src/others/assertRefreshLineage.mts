@@ -18,9 +18,9 @@ import { IRefreshData } from '@others/IRefreshData.mjs'
 const isStoredInteger = (value: string | undefined) => /^\d+$/.test(`${value}`)
 
 /**
- * Refuses a refresh session that does not carry its lineage (E14-S01).
+ * Refuses a refresh session that does not carry its lineage.
  *
- * ⚠️ **A missing field is invalid, not a default.** Sessions minted before E14 landed carry none of these
+ * ⚠️ **A missing field is invalid, not a default.** Sessions minted before the lineage landed carry none of these
  * three. Defaulting `familyId` would file every one of them into a single shared `family:undefined` set,
  * and the first reuse event anywhere on the platform would then revoke unrelated accounts across every
  * tier at once. Refusing structurally turns that into a one-time forced re-login for sessions older than

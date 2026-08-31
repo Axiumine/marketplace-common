@@ -79,7 +79,7 @@ describe('revokeSessionFamily', () => {
 	})
 
 	// The members are the keys themselves, digests included, never the tokens they were built from: a set of
-	// tokens would be a list of live credentials sitting in the store E13-S01 took them out of.
+	// tokens would be a list of live credentials sitting in the store the hashed namespace took them out of.
 	it('deletes the members verbatim, hashing nothing again', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
 		const s = store()
@@ -117,7 +117,7 @@ describe('revokeSessionFamily', () => {
 
 	/*
 	 * ⚠️ The trail carries the lineage, the account, the action and the time — and no token, no digest of one
-	 * and nothing network-derived (E17-S05). The stored line is parsed and compared whole, key count
+	 * and nothing network-derived. The stored line is parsed and compared whole, key count
 	 * included, so a sixth field cannot appear here without this failing.
 	 */
 	it('appends one event naming the lineage, the account, the action and the time', async () => {
@@ -159,7 +159,7 @@ describe('revokeSessionFamily', () => {
 
 	/*
 	 * ⚠️ **A revocation the trail cannot attribute still revokes.** `account` is `undefined` when the
-	 * tombstone that named this lineage was written before E17-S05 put the account on it. Filing the event
+	 * tombstone that named this lineage was written before the account was put on it. Filing the event
 	 * anyway would need an account id invented here, and an invented one names a key no console reads: the
 	 * security action never degrades, only its explanation does.
 	 */

@@ -179,10 +179,10 @@ the topology was owed. A patch and not a `docs:` no-op purely because the tarbal
   by `ADR-032` now records `ADR-039`: Cloudflare at the edge, one application host behind a default-deny
   cloud security group, datastores on a separate host on a private segment the platform owner declares
   trusted. It then states what did **not** change — the `NODE_ENV` allowlist stays unconditional, which
-  ADR-039 §5 requires by name (E13-S11) — so the new boundary cannot be read as a licence to relax it.
+  ADR-039 §5 requires by name — so the new boundary cannot be read as a licence to relax it.
   Reaches `dist/`.
 - **`others/refreshRateLimit` — JSDoc only.** Same substitution on the hand-off paragraph, plus the same
-  explicit *nothing is resized* clause for both buckets (E14-S08, named in ADR-039 §5). Reaches `dist/`.
+  explicit *nothing is resized* clause for both buckets (named in ADR-039 §5). Reaches `dist/`.
 - Of the three findings those two blocks named as bounded by one unknown, **only `R46` closed** with the
   ADR. `R45` — the Redis leg is still cleartext — is re-scored 🟢 Low and stays **open**, blocked on
   `@axiumine/koa-utils` hardcoding `redis://` in `createCluster`. Both blocks now say so, because a
@@ -196,10 +196,7 @@ release deletes the local implementation and forwards to the library's, which ma
 **runtime** requirement of that subpath rather than a compile-time convenience — the reason this is a
 major and not a patch. Both halves of the change are the same breaking change, which is why they ship
 together rather than costing a major twice. Recorded as the two open items in
-`docs/devprotocol/phase5/epics/E13.md` §7 — that record was deleted on 2026-08-28 and distributed
-rather than moved; both items now read in `docs/report/dependency-tree-advisory-scan.md` §6.1. The
-sentence above is left as it was written, with the redirect appended, because a released entry is
-not rewritten here.
+`docs/report/dependency-tree-advisory-scan.md` §6.1.
 
 ### Changed
 
@@ -230,8 +227,8 @@ not rewritten here.
   `x-introspectioncode` authentication bypass reachable in production through the library's own
   middlewares. This platform was never exposed by it — no service here mounts those middlewares
   (`grep -rn "koa-utils/koa/middleware" BEs/*/src BEs/dev/*/src` finds only `verifySignedRefreshToken`)
-  and its six comparison sites were gated by E13-S11 — so this closes the hole for the **next**
-  consumer, and for a service here that later swaps its handler for the published one.
+  and its six comparison sites were gated by the environment allowlist — so this closes the hole for
+  the **next** consumer, and for a service here that later swaps its handler for the published one.
 
 ## [1.0.1](https://github.com/Axiumine/marketplace-common/releases/tag/v1.0.1) - 2026-08-27
 
