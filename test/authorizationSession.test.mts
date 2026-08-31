@@ -88,12 +88,11 @@ describe('resolveAuthorizationSession', () => {
 		email: 'mark@rivers.test'
 	}))
 
-	const resolve = (store: ISessionReadStore, introspectionCode?: string | string[]) =>
+	const resolve = (store: ISessionReadStore) =>
 		resolveAuthorizationSession({
 			store,
 			refreshToken: TOKEN,
 			tier: TIER.shopOwner,
-			introspectionCode,
 			readSessionData
 		})
 
@@ -173,83 +172,10 @@ describe('resolveAuthorizationSession', () => {
 	// 498, the token-specific status: the cookie's signature was valid, the session behind it is not.
 	it('refuses a session that is no longer there, and never asks the database about it', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
-		vi.stubEnv('INTROSPECTION_CODE', 'introspect-me')
 		const s = readStore({})
 
-		expectStatus(await rejection(() => resolve(s, 'wrong-code')), 498, 'Invalid Token')
+		expectStatus(await rejection(() => resolve(s)), 498, 'Invalid Token')
 		expect(readSessionData).not.toHaveBeenCalled()
-	})
-
-	/*
-	 * The service-to-service bypass. It answers `null` rather than a session because there is no
-	 * account behind it — an introspection query carries no identity and must not be handed one.
-	 */
-	it('answers null to a caller holding the introspection code, with no session to build', async () => {
-		vi.stubEnv('REDIS_KEY', REDIS_KEY)
-		vi.stubEnv('INTROSPECTION_CODE', 'introspect-me')
-
-		await expect(resolve(readStore({}), 'introspect-me')).resolves.toBeNull()
-		expect(readSessionData).not.toHaveBeenCalled()
-	})
-
-	/*
-	 * The environment allowlist, at the site the three `*-authenticated-authorization` services all reach.
-	 * The bypass is a
-	 * development convenience, so outside `development` and `test` it does not exist: the correct code
-	 * takes the **same 498 exit, with the same message**, as a request that carried no header at all,
-	 * which is what stops a caller distinguishing a wrong code from a disabled feature by the response.
-	 *
-	 * The list is the polarity argument written as cases. `NODE_ENV !== 'production'` would admit every
-	 * value below but the first — an unset variable, a capitalised one, a staging box — and those are
-	 * exactly the ones a broken deploy produces.
-	 */
-	it.each([['production'], ['staging'], ['Production'], [''], [undefined]])(
-		'refuses the correct code under NODE_ENV=%o, with the error a caller sending nothing gets',
-		async (environment) => {
-			vi.stubEnv('REDIS_KEY', REDIS_KEY)
-			vi.stubEnv('INTROSPECTION_CODE', 'introspect-me')
-			vi.stubEnv('NODE_ENV', environment)
-
-			const withCode = await rejection(() => resolve(readStore({}), 'introspect-me'))
-			const withNothing = await rejection(() => resolve(readStore({}), undefined))
-
-			expectStatus(withCode, 498, 'Invalid Token')
-			expect(withCode.message).toBe(withNothing.message)
-			expect(withCode.extensions.http).toEqual(withNothing.extensions.http)
-			expect(readSessionData).not.toHaveBeenCalled()
-		}
-	)
-
-	// The other half of the allowlist: a developer's own machine is where the bypass is meant to work.
-	it('answers null to the code under NODE_ENV=development', async () => {
-		vi.stubEnv('REDIS_KEY', REDIS_KEY)
-		vi.stubEnv('INTROSPECTION_CODE', 'introspect-me')
-		vi.stubEnv('NODE_ENV', 'development')
-
-		await expect(resolve(readStore({}), 'introspect-me')).resolves.toBeNull()
-	})
-
-	/*
-	 * ⚠️ The hazard, asserted rather than described. The comparison goes through a template literal, so
-	 * an **unset** `INTROSPECTION_CODE` stringifies to `'undefined'` and a caller sending that literal
-	 * string is let through. This is why the variable sits in every consuming service's
-	 * `REQUIRED_ENV_VARS`: the service refuses to boot without it rather than serving a bypass whose
-	 * secret is seven well-known characters.
-	 */
-	it('accepts the literal string "undefined" when the variable is unset, which is why boot requires it', async () => {
-		vi.stubEnv('REDIS_KEY', REDIS_KEY)
-		vi.stubEnv('INTROSPECTION_CODE', undefined)
-
-		await expect(resolve(readStore({}), 'undefined')).resolves.toBeNull()
-	})
-
-	// A repeated header arrives as an array, and an array is never the code — Node hands the raw header
-	// value through, so the comparison has to refuse the shape as well as the value.
-	it('refuses the code sent twice, because an array is not a string', async () => {
-		vi.stubEnv('REDIS_KEY', REDIS_KEY)
-		vi.stubEnv('INTROSPECTION_CODE', 'introspect-me')
-
-		expectStatus(await rejection(() => resolve(readStore({}), ['introspect-me', 'introspect-me'])), 498, 'Invalid Token')
 	})
 
 	/*
@@ -351,17 +277,16 @@ describe('resolveAuthorizationSession', () => {
 	)
 
 	/*
-	 * The ordinary miss. A token whose session expired has no tombstone, and the resolver has to
-	 * come out the other side into the introspection check exactly as it did before any of this existed —
-	 * the second `hGetAll` is the only thing an expired session now pays for. It was a third until the
-	 * raw-key read that sat between the two was deleted.
+	 * The ordinary miss. A token whose session expired has no tombstone, and the resolver has to refuse it
+	 * on the way out exactly as it did before any of this existed — the second `hGetAll` is the only thing
+	 * an expired session now pays for. It was a third until the raw-key read that sat between the two was
+	 * deleted.
 	 */
 	it('walks past a miss with no tombstone without touching the family', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
-		vi.stubEnv('INTROSPECTION_CODE', 'introspect-me')
 		const s = readStore({})
 
-		expectStatus(await rejection(() => resolve(s, 'wrong-code')), 498, 'Invalid Token')
+		expectStatus(await rejection(() => resolve(s)), 498, 'Invalid Token')
 		expect(s.hGetAll.mock.calls).toEqual([[SESSION_KEY], [TOMBSTONE_KEY]])
 		expect(s.sMembers).not.toHaveBeenCalled()
 		expect(s.del).not.toHaveBeenCalled()

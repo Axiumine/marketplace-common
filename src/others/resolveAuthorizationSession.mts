@@ -1,9 +1,7 @@
 import { throwRefreshTokenExpiredOrDeleted } from '@axiumine/koa-utils/graphQL/throw/throwRefreshTokenExpiredOrDeleted'
 import { assertRefreshLineage } from '@others/assertRefreshLineage.mjs'
 import { assertTier } from '@others/assertTier.mjs'
-import { constantTimeEquals } from '@others/constantTimeEquals.mjs'
 import { IRefreshData } from '@others/IRefreshData.mjs'
-import { isIntrospectionBypassAllowed } from '@others/isIntrospectionBypassAllowed.mjs'
 import { ITombstoneData } from '@others/ITombstoneData.mjs'
 import { ISessionFamilyStore, revokeSessionFamily } from '@others/revokeSessionFamily.mjs'
 import { graceHitsKey, readSessionHash, tombstoneKey } from '@others/sessionKeys.mjs'
@@ -55,8 +53,8 @@ export interface ISessionReadStore extends ISessionFamilyStore {
  *
  * Runs **only on a miss**, so the resolving path pays nothing for it. Three outcomes:
  *
- * - **no tombstone** — an ordinary expired or revoked session; this returns and the caller carries on to
- *   the introspection check exactly as before;
+ * - **no tombstone** — an ordinary expired or revoked session; this returns and the caller refuses the
+ *   token with the 498 an expired session earns;
  * - **consumed within `GRACE_SECONDS`** — the loser of an ordinary multi-tab race. It is counted and told
  *   to retry, and **the family is not touched**: revoking here would log a legitimate user out of every
  *   session they have because two tabs loaded at the same moment;
@@ -109,8 +107,6 @@ export interface IResolveAuthorizationSessionInput<TAccountData extends object> 
 	refreshToken: string
 	/** The tier *this* service serves. A session minted for any other one is refused. */
 	tier: Tier
-	/** `x-introspectioncode` exactly as the request carried it, or `undefined` if it carried none. */
-	introspectionCode: string | string[] | undefined
 	/** Re-reads the account and returns whatever this tier's access-token hash carries besides `_id` and `tier`. */
 	readSessionData: (_id: Types.ObjectId) => Promise<TAccountData>
 }
@@ -122,8 +118,8 @@ export type TAuthorizationSession<TAccountData extends object> = TAccountData & 
 } & Pick<IRefreshData, 'familyId' | 'originalLogin' | 'sessionCapDays' | 'accessKey'>
 
 /**
- * Turns a verified refresh token into the session an authorization service puts on `ctx.state.user`,
- * or `null` when the introspection bypass applied and there is no session to put there.
+ * Turns a verified refresh token into the session an authorization service puts on `ctx.state.user`.
+ * There is no outcome in which it answers without one: a token no live session backs is refused.
  *
  * This is the body all three `*-authenticated-authorization` services carried a copy of. What is
  * shared is the *order* of the steps, and every one of them is load-bearing:
@@ -154,42 +150,23 @@ export type TAuthorizationSession<TAccountData extends object> = TAccountData & 
  *   `originalLogin`, which no rotation ever moves — that is what makes the cap absolute rather than a
  *   long idle timeout. A session past it takes its whole family down with it, because a session this
  *   old is the shape a quietly stolen refresh token has.
- * - **The introspection code is consulted only when no session was found**, and only *after* the
- *   caller's cookie signature has already been verified by `verifySignedRefreshToken` upstream. The
- *   code therefore stands in for an expired *session*, never for the signature, and a leaked code
- *   alone cannot be replayed.
- * - **`isIntrospectionBypassAllowed()` is evaluated before the comparison**, so outside
- *   `development` and `test` the configured code is never read and a caller cannot tell a wrong code
- *   from a disabled feature: both take the same `throwRefreshTokenExpiredOrDeleted` exit as a
- *   request that sent no header at all.
- * - **The comparison itself is `constantTimeEquals`, never `===`.** String equality stops at
- *   the first differing character, which turns a few thousand requests into the configured value one
- *   character at a time; a caller that reaches this line has already been let through by everything
- *   upstream, so the timing gradient was the last thing between it and the code.
- *
- * ⚠️ `INTROSPECTION_CODE` is compared through a template literal, so an **unset** variable
- * stringifies to `'undefined'` and a caller sending that literal string passes. The variable is
- * listed in every consuming service's `REQUIRED_ENV_VARS` for exactly this reason — the service
- * refuses to start without it rather than serving a bypass anyone can guess. The environment gate
- * does not make that listing redundant: two independent things must be wrong before the bypass
- * opens, and this is the second.
+ * - **A miss is the end of the road.** Once the tombstone has been consulted there is nothing else a
+ *   token with no live session behind it can be: it is refused with `throwRefreshTokenExpiredOrDeleted`,
+ *   the same 498 an expired session earns, so a caller learns nothing from the response about which of
+ *   the two it was holding.
  */
 export async function resolveAuthorizationSession<TAccountData extends object>({
 	store,
 	refreshToken,
 	tier,
-	introspectionCode,
 	readSessionData
-}: IResolveAuthorizationSessionInput<TAccountData>): Promise<TAuthorizationSession<TAccountData> | null> {
+}: IResolveAuthorizationSessionInput<TAccountData>): Promise<TAuthorizationSession<TAccountData>> {
 	const redSession = await readSessionHash(store, refreshToken)
 
 	if (Object.keys(redSession).length === 0) {
 		await assertNotReplayed(store, refreshToken)
 
-		if (!isIntrospectionBypassAllowed() || !constantTimeEquals(introspectionCode, `${process.env.INTROSPECTION_CODE}`)) {
-			throw throwRefreshTokenExpiredOrDeleted()
-		}
-		return null
+		throw throwRefreshTokenExpiredOrDeleted()
 	}
 
 	// Redis returns an object with no Object.prototype in its prototype chain; spreading it gives an

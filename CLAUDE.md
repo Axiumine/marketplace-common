@@ -192,9 +192,9 @@ Four design points that look like accidents otherwise:
 - **`ISessionAccountModel<TAccount>` is structural, not `Model<TAccount>`.** `Model<T>` is invariant in `T`,
   so one generic typed against it would take none of the three document types without a cast per call site.
   `PromiseLike`, not `Promise`: mongoose returns a `Query`, a thenable with no `[Symbol.toStringTag]`.
-- **`resolveAuthorizationSession` returns `null` for the introspection bypass**, rather than throwing or
-  inventing an empty session. `null` means a verified service-to-service call with no account behind it, and
-  the middleware leaves `ctx.state.user` unset — what every downstream resolver already expects.
+- **`resolveAuthorizationSession` never answers without a session.** Its return type is
+  `TAuthorizationSession<TAccountData>` and not a union with `null`: a refresh token that resolves to no live
+  session is refused with the 498 an expired one earns, so a caller has no empty-session case to handle.
 
 ⚠️ **A consumer's `vitest.mutation.config.mts` must inline this package *and* `@axiumine/koa-utils`.** An
 externalised dependency is loaded by Node's own resolver, which never consults vitest's mock registry — so a

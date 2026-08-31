@@ -11,9 +11,42 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v3.1.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.0.0...HEAD)
 
 Nothing yet.
+
+## [4.0.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.0.0) - 2026-08-31
+
+### Removed
+
+- **BREAKING — the `x-introspectioncode` request bypass is gone, and with it the
+  `others/isIntrospectionBypassAllowed` `exports` entry.** The header let a caller holding a shared secret
+  reach the resolvers with no session at all; it was never a read-only introspection switch, and nothing in
+  the platform consumed it. Schema introspection itself is unaffected — it is refused in production by
+  `NoSchemaIntrospectionCustomRule` in each service's validation rules, which is a separate control and
+  stays exactly as it is.
+
+  A consumer upgrading deletes the header read from its authorization middleware, drops
+  `INTROSPECTION_CODE` from `REQUIRED_ENV_VARS` and from its `env` template, and removes any import of the
+  predicate. Leaving the variable set is harmless — nothing reads it — but a service that still lists it in
+  `REQUIRED_ENV_VARS` will refuse to boot without a value it no longer has a use for.
+
+### Changed
+
+- **BREAKING — `resolveAuthorizationSession` no longer takes `introspectionCode`, and no longer answers
+  `null`.** Its return type narrows from `TAuthorizationSession<TAccountData> | null` to
+  `TAuthorizationSession<TAccountData>`: a refresh token that resolves to no live session is now refused
+  with the same 498 it earned before, in every case, so the caller has no empty-session branch left to
+  write. A consumer that narrowed the union — an `if (!session)`, a non-null assertion, a `?? ` fallback —
+  can delete that code; TypeScript flags what is now unreachable.
+- **BREAKING — `AUTH_BOUNDARY_CASES` is seven cases, not eleven.** `AB-08`, `AB-09`, `AB-10` and `AB-11`
+  described the removed bypass and are gone. `AB-01`..`AB-07` keep their ids and their wording, so a suite
+  proving those needs no edit; a suite carrying one of the four retired ids in a comment should drop that
+  test with the marker. `requiredAuthBoundaryCases` and the exemption map are otherwise unchanged.
+- **`constantTimeEquals` stays, with its documentation rewritten.** It is the timing-safe comparison
+  primitive, not a piece of the removed feature, and it keeps its own tests. The docblock no longer names a
+  particular caller, and it now states plainly the trap a call site inherits: two absent operands compare
+  equal, so comparing against a secret read from configuration requires checking that the secret exists.
 
 ## [3.1.0](https://github.com/Axiumine/marketplace-common/releases/tag/v3.1.0) - 2026-08-30
 

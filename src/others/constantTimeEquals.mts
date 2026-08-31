@@ -38,17 +38,15 @@ const digest = (value: string | string[] | undefined) =>
  * `others.test.mts` pins the count so the two cannot quietly merge.
  *
  * An absent operand and a repeated HTTP header (which arrives as an array) both fold to the empty string
- * rather than being rejected up front, so a request carrying no header at all takes exactly the path a
- * request carrying a wrong one takes. The consequence is that two absent operands compare equal; every
- * call site passes a configured value as the second one, and `${process.env.INTROSPECTION_CODE}` is the
- * literal `'undefined'` rather than the empty string when the variable is unset.
+ * rather than being rejected up front, so a caller sending nothing takes exactly the path a caller
+ * sending a wrong value takes. The consequence a call site has to know is that **two absent operands
+ * compare equal**: comparing a candidate against a secret that is unset, and so folds to the empty
+ * string too, answers `true` for a caller who sent nothing at all. A call site that reads its secret
+ * from configuration owes a check that the secret exists, and this function will not make it for it.
  *
- * ⚠️ **What this does not fix.** The code is still accepted from anywhere the port is reachable (a
- * topology problem), and constant time on a JIT runtime is best-effort — this removes the
- * algorithmic leak, not every microarchitectural one. The environment allowlist additionally stops the
- * comparison running in production at all; this stays regardless, because development machines are
- * reachable too and a gate whose failure mode is "the timing leak comes back" is not one to rely on
- * alone.
+ * ⚠️ **What this does not fix.** Constant time on a JIT runtime is best-effort — this removes the
+ * algorithmic leak, not every microarchitectural one — and nothing here decides who may reach the
+ * comparison in the first place. It is the comparison primitive, never an access control.
  */
 export function constantTimeEquals(a: string | string[] | undefined, b: string | string[] | undefined) {
 	return timingSafeEqual(digest(a), digest(b))

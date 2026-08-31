@@ -26,14 +26,13 @@ Output is written as your own UID (`-u`), so no root-owned files.
 The yarn scripts pass `--config semgrep/`, which loads every rule file in this
 directory (custom + vendored) in one shot.
 
-`custom.yml` carries **one** of the three custom rules the backend services
-ship, not all three — this package is a library with no running service, no
-introspection-code handling, and no console/logger call sites at all
+`custom.yml` carries **one** of the two custom rules the backend services
+ship, not both — this package is a library with no running service and no
+console/logger call sites at all
 (`grep -rn "console\.\|logger\." src` finds nothing):
 
 | Rule | Kept? | Why |
 |---|---|---|
-| `marketplace-no-log-introspection-code` | No | `INTROSPECTION_CODE` / `x-introspectioncode` is a service-to-service header the authorization/resource services handle; this package never sees it. Always-empty here. |
 | `marketplace-no-log-auth-token` | No | The Redis session DTOs this package defines (`src/others/Redis/IRedisData*`) carry `email` / `_id` / `onboardingStep`, never a token value. Always-empty here. |
 | `marketplace-no-log-reset-secret` | **Yes** | This package owns the reset-password shape end to end — `src/models/MongoDBInterfaces/sub/IResetPwdSubDocSchema.mts` and `src/models/MongoDB/sub/ResetPwdSubDocSchema.mts` define `resetHash` / `resetDateReq`, embedded into both `ShopOwner` and `Admin`. The flow built on top of these types (in the public-facing services) is written so that no response distinguishes a registered address from an unknown one; a log line carrying the reset hash would hand out both the link secret and the enumeration signal. |
 

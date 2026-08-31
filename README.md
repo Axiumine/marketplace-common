@@ -18,7 +18,7 @@ Node `^24.18.0`, ESM only.
 | Interfaces | `models/MongoDBInterfaces/*` | `IXxxModel` (a `Document`, with methods) and `IXxxSchema` (the plain data shape), split per model |
 | GraphQL | `schema/types/fragments/*`, `schema/GraphQLInput/*` | field-config objects meant to be **spread** into a consumer's own `GraphQLObjectType` — not standalone types |
 | Redis DTOs | `others/Redis/*` | `IRedisData…Common` → `…ForNode` / `IRedisData…`, the session payload shapes |
-| Auth helpers | `others/*` | `resolveAuthorizationSession`, `findAccountForSession`, `refreshSessionTokens`, `assertTier`, `checkUserAuthorizationDisDel`, `assertTurnstile`, `assertUnderRateLimit`, `sha256Hex`, `constantTimeEquals`, `isIntrospectionBypassAllowed`, `TIER` |
+| Auth helpers | `others/*` | `resolveAuthorizationSession`, `findAccountForSession`, `refreshSessionTokens`, `assertTier`, `checkUserAuthorizationDisDel`, `assertTurnstile`, `assertUnderRateLimit`, `sha256Hex`, `constantTimeEquals`, `TIER` |
 | Session keys | `others/sessionKeys`, `others/hashSessionToken` | `sessionKey` — the one shape a session key has — plus the `readSessionHash`, `readSessionField` and `deleteSession` helpers every service builds a Redis session key through, never a template literal of its own |
 
 ## Importing

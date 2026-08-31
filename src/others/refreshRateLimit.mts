@@ -25,9 +25,8 @@ import { hashSessionToken } from '@others/hashSessionToken.mjs'
  * ⚠️ **Neither bucket below is resized by that, by the new ADR's own requirement.** ADR-039 §5 narrows
  * the old standing rule rather than lifting it — a network boundary may be cited as a second layer and
  * never as the whole argument — and it names these two buckets while keeping them exactly as written. Both
- * buckets stay sized to be worth having with the port open to anyone. Of the three findings once bounded
- * by that one unknown, only R46 closed with the ADR — the introspection bypass and the plaintext Redis leg
- * (R45) did not.
+ * buckets stay sized to be worth having with the port open to anyone. Of the two findings once bounded
+ * by that one unknown, only R46 closed with the ADR — the plaintext Redis leg (R45) did not.
  *
  * ⚠️ **Both buckets are named `refresh:<something>` rather than one of them being bare `refresh`.** A bare
  * bucket would make `rl:refresh:` a prefix of `rl:refresh:family:`, so an admin counting one bucket

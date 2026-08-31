@@ -14,7 +14,6 @@ import { checkShopOwnerEmailVerified } from '../src/others/checkShopOwnerEmailVe
 import { checkUserAuthorizationDisDel } from '../src/others/checkUserAuthorizationDisDel.mts'
 import { EMAIL_CHECK_LINK, SALT_ROUNDS } from '../src/others/Constants.mts'
 import { constantTimeEquals } from '../src/others/constantTimeEquals.mts'
-import { isIntrospectionBypassAllowed } from '../src/others/isIntrospectionBypassAllowed.mts'
 import { newSessionLineage } from '../src/others/newSessionLineage.mts'
 import { guardRefreshAttempt } from '../src/others/refreshRateLimit.mts'
 import {
@@ -288,34 +287,6 @@ describe('assertTier', () => {
 		expect(error.extensions.http).toEqual({ status: 403 })
 		expect(error.extensions.http).not.toEqual({ status: 401 })
 	})
-})
-
-/*
- * The environment allowlist, in one place because the predicate is. What the cases below are
- * really asserting is the *polarity*: every value in the refusing list would be admitted by the
- * `NODE_ENV !== 'production'` form this replaced, and every one of them is a shape a real deploy
- * produces — a container runtime that exports nothing, a shell that exports an empty string, a capital
- * letter, a staging box nobody classified.
- */
-describe('isIntrospectionBypassAllowed', () => {
-	afterEach(() => {
-		vi.unstubAllEnvs()
-	})
-
-	it.each([['development'], ['test']])('allows the bypass under NODE_ENV=%o', (environment) => {
-		vi.stubEnv('NODE_ENV', environment)
-
-		expect(isIntrospectionBypassAllowed()).toBe(true)
-	})
-
-	it.each([['production'], ['staging'], ['Production'], ['DEVELOPMENT'], ['testing'], ['dev'], [''], [undefined]])(
-		'refuses the bypass under NODE_ENV=%o',
-		(environment) => {
-			vi.stubEnv('NODE_ENV', environment)
-
-			expect(isIntrospectionBypassAllowed()).toBe(false)
-		}
-	)
 })
 
 describe('sha256Hex', () => {
