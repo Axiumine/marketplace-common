@@ -18,7 +18,7 @@
  * the code as it happened to be written, checked by nothing. `phase2/BOUNDED_CONTEXT.md` §6 called
  * that row a gap rather than a protection for exactly that reason.
  *
- * Two independent locks enforce it, and this list is the input to both (E01-S10):
+ * Two independent locks enforce it, and this list is the input to both:
  *
  * 1. A `no-restricted-syntax` block in `eslint.config.js` of each of the three BC-01/ShopOwner-tier
  *    services — `marketplace-dev-public-authorization` (login),

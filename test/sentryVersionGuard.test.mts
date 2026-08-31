@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { sentryBeforeSend } from '../src/others/sentryBeforeSend.mts'
 
 /*
- * E12-S05 — the guard that fires when the Sentry SDK moves under this configuration.
+ * The guard that fires when the Sentry SDK moves under this configuration.
  *
  * Everything `src/instrument.mts` asserts about the SDK was read out of `node_modules` at 10.69.0:
  * that supplying `dataCollection` at all swaps the base for the fully permissive `DEFAULTS`, that `[]`
@@ -27,7 +27,7 @@ import { sentryBeforeSend } from '../src/others/sentryBeforeSend.mts'
 const PINNED = '10.69.0'
 
 const MIGRATION =
-	'E12-S05: the Sentry SDK moved off 10.69.0. Re-read `resolveDataCollectionOptions` and `httpServerSpansIntegration` before trusting `src/instrument.mts`, then update the observability section of `docs/architecture.md`, which records what each `dataCollection` category replaced. v11 removes the blanket PII flag that mapping starts from.'
+	'The Sentry SDK moved off 10.69.0. Re-read `resolveDataCollectionOptions` and `httpServerSpansIntegration` before trusting `src/instrument.mts`, then update the observability section of `docs/architecture.md`, which records what each `dataCollection` category replaced. v11 removes the blanket PII flag that mapping starts from.'
 
 const installedVersion = async (name: string): Promise<string> => {
 	const manifest = await readFile(new URL(`../node_modules/@sentry/${name}/package.json`, import.meta.url), 'utf8')

@@ -30,7 +30,8 @@ describe('readKeygrip', () => {
 	 * ⚠️ The one thing this has that `loadKeygrip` does not is the *absence* of the holders write, and it is
 	 * the reason the function exists: the admin service that rotates the keys holds the KEK to reseal the
 	 * record, never to sign a cookie. A row it wrote would sit in the holders table with no heartbeat behind
-	 * it, and E01-S14 reads that table to tell a service that has not adopted a rotation from one that is
+	 * it, and `keygripStatus` reads that table to tell a service that has not adopted a rotation from one
+	 * that is
 	 * dead — a permanently stale row is indistinguishable from the second.
 	 *
 	 * Every refusal this shares with `loadKeygrip` is proved through it, in `loadKeygrip.test.mts`: they are

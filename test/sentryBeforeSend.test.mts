@@ -8,7 +8,7 @@ import { ISentryScrubbableEvent, sentryBeforeSend } from '../src/others/sentryBe
  * ⚠️ The transaction fixture below is not hand-written. `contexts.trace.data` holds the twenty-eight
  * attribute names a real transaction carried into a local collector, in the order they were captured —
  * `docs/report/sentry-event-capture.md` §6 — with the four measured values transcribed and the rest given
- * plausible ones. E12-S02's original fixture guessed that shape and guessed two things wrong: the
+ * plausible ones. The original fixture guessed that shape and guessed two things wrong: the
  * network-derived keys live in `contexts.trace.data` **only**, child spans carry none of them, and on an
  * error event under the shipped configuration all three attribute bags are empty. A suite written against
  * the guess passed while `http.user_agent`, `net.peer.ip` and `net.host.ip` shipped unredacted.
@@ -248,7 +248,7 @@ describe('sentryBeforeSend — the captured transaction', () => {
 })
 
 describe('sentryBeforeSend — the request body', () => {
-	// 🔴 E12-S21. `dataCollection.httpBodies: []` gates the span attribute only; `include.data` is
+	// 🔴 `dataCollection.httpBodies: []` gates the span attribute only; `include.data` is
 	// hard-wired `true` for events, so the whole GraphQL envelope arrives on `event.request.data`.
 	it.each([
 		['an error event', makeErrorEvent],
@@ -523,7 +523,7 @@ describe('sentryBeforeSend — events missing the parts it walks', () => {
 })
 
 /*
- * 🔴 E12-S24. The second capture, from a browser: `docs/report/sentry-event-capture.md` §9.
+ * 🔴 The second capture, from a browser: `docs/report/sentry-event-capture.md` §9.
  *
  * ⚠️ The two fixtures below are transcribed from real envelopes a production build of `marketplace-user`
  * sent through the real `@sentry/react` transport into a local collector, trimmed to the bags this

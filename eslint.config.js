@@ -65,7 +65,7 @@ export default [
 			'simple-import-sort/exports': 'error'
 		}
 	},
-	// E12-S04 — neither setting this audit removed can come back by accident.
+	// Neither setting this audit removed can come back by accident.
 	//
 	// Core `no-restricted-syntax`, in this file rather than in `@axiumine/eslint-config-be`: the shared
 	// package is a repo outside these sixteen and ships to unrelated consumers, so a Sentry-specific rule
@@ -87,32 +87,32 @@ export default [
 				{
 					selector: "AssignmentExpression[left.property.name='rejectUnauthorized']",
 					message:
-						'E12-S04: certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
+						'Certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
 				},
 				{
 					selector: "Property[key.name='rejectUnauthorized']",
 					message:
-						'E12-S04: certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
+						'Certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
 				},
 				{
 					selector: "Property[key.value='rejectUnauthorized']",
 					message:
-						'E12-S04: certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
+						'Certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
 				},
 				{
 					selector: "Property[key.name='sendDefaultPii']",
 					message:
-						'E12-S04: the blanket Sentry PII flag is absent by decision, not set to false. Name the individual dataCollection categories instead — the observability section of docs/architecture.md says which, and why.'
+						'The blanket Sentry PII flag is absent by decision, not set to false. Name the individual dataCollection categories instead — the observability section of docs/architecture.md says which, and why.'
 				},
 				{
 					selector: "MemberExpression[property.name='NODE_TLS_REJECT_UNAUTHORIZED']",
 					message:
-						'E12-S04: certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
+						'Certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
 				},
 				{
 					selector: "Literal[value='NODE_TLS_REJECT_UNAUTHORIZED']",
 					message:
-						'E12-S04: certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
+						'Certificate verification stays on. Trust the collector CA from outside the process — NODE_EXTRA_CA_CERTS=/path/to/ca.pem — as the parent workspace SETUP.md §7 describes.'
 				}
 			]
 		}

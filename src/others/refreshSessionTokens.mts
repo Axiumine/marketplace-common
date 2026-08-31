@@ -18,17 +18,17 @@ import { GraphQLError } from 'graphql'
  * The six Redis commands the rotation issues, and nothing else. A parameter rather than an
  * import, for the reason spelled out on `ISessionReadStore`.
  *
- * `sAdd` arrived with E14-S02: every rotation files the pair it mints into the lineage's set, which is
- * what `revokeSessionFamily` walks when a consumed token is replayed. It is one key with two members,
- * not a multi-key command — BCON-08 is about the keys.
+ * `sAdd` arrived with the reuse tombstone: every rotation files the pair it mints into the lineage's set,
+ * which is what `revokeSessionFamily` walks when a consumed token is replayed. It is one key with two
+ * members, not a multi-key command — BCON-08 is about the keys.
  *
- * `incr` and `ttl` arrived with E14-S08, and they are the reason this interface is not `Pick`ed down per
- * call site: with those two present it satisfies `IRateLimitStore` structurally, so the per-family mint
- * limiter needs no second injection point and a unit test passes one stub for both roles.
+ * `incr` and `ttl` arrived with the mint limiter, and they are the reason this interface is not `Pick`ed
+ * down per call site: with those two present it satisfies `IRateLimitStore` structurally, so the
+ * per-family mint limiter needs no second injection point and a unit test passes one stub for both roles.
  *
- * `hExpire` and `hDel` arrived with E15-S03: the index field the successor is written under carries the
- * session's absolute cap, and the predecessor's field is removed once the token it names is gone. Both
- * address one key.
+ * `hExpire` and `hDel` arrived with the per-field TTL: the index field the successor is written under
+ * carries the session's absolute cap, and the predecessor's field is removed once the token it names is
+ * gone. Both address one key.
  */
 export interface ISessionWriteStore {
 	hSet(key: string, value: Record<string, string>): Promise<unknown>
@@ -49,7 +49,7 @@ export interface IRefreshSessionTokensInput<TAccountData extends object> {
 	session: TAuthorizationSession<TAccountData>
 	/**
 	 * The access token the call arrived with, `access:` prefix included — `ctx.request.header.authorization`
-	 * with `Bearer ` stripped, exactly as `authorizationLogoutHandler` reads it (E14-S06).
+	 * with `Bearer ` stripped, exactly as `authorizationLogoutHandler` reads it.
 	 *
 	 * Optional, and tolerated when absent: a client refreshing after its access token expired has none to
 	 * send, which is the ordinary case rather than an error.
@@ -70,7 +70,7 @@ export interface IRefreshSessionTokensInput<TAccountData extends object> {
  * the comments. Three properties are worth stating once here rather than three times there:
  *
  * - **It rotates, it does not re-issue.** Both old keys are deleted on the way out — the refresh key
- *   and, since E14-S06, the access token that pair carried — so a stolen pair is worthless the
+ *   and the access token that pair carried — so a stolen pair is worthless the
  *   moment the legitimate client refreshes, rather than half-worthless for another hour. The access half
  *   is found through the key the session records and no longer only through the `Authorization` header,
  *   which is what makes a headerless refresh — the ordinary page reload — rotate both halves instead of
@@ -87,10 +87,10 @@ export interface IRefreshSessionTokensInput<TAccountData extends object> {
  *   it. The tier is carried because the *next* refresh asserts it before it queries anything — and the
  *   value propagated here is the one the middleware already checked, not one re-derived from the hash.
  * - **The old token is tombstoned before it is deleted, and the new pair is filed into the family
- *   first** (E14-S02). Both orderings are load-bearing and both are asserted: a marker written after
+ *   first**. Both orderings are load-bearing and both are asserted: a marker written after
  *   the delete can be lost to a process death, and a pair filed after its own tombstone could be
  *   replayed against a family that does not yet name it.
- * - **The lineage is metered before anything is minted** (E14-S08). Twenty pairs an hour per family,
+ * - **The lineage is metered before anything is minted.** Twenty pairs an hour per family,
  *   counted on entry so that only real mints count — see `guardFamilyMintRate` for why a request that
  *   mints nothing must not.
  *
@@ -113,7 +113,7 @@ export async function refreshSessionTokens<TAccountData extends object>({
 	presentedAccessToken,
 	captureException
 }: IRefreshSessionTokensInput<TAccountData>): Promise<{ status: boolean; accessToken: string }> {
-	// ⚠️ **First statement in the function, and that is the point** (E14-S08). This is the mint path — the
+	// ⚠️ **First statement in the function, and that is the point.** This is the mint path — the
 	// grace branch and every rejection throw inside `resolveAuthorizationSession` and never arrive here —
 	// so counting on entry counts mints and nothing else. It also runs before a single token is generated
 	// or a single key written, so a refused rotation costs one `INCR` and leaves no state to unwind.
@@ -130,11 +130,11 @@ export async function refreshSessionTokens<TAccountData extends object>({
 
 	let accessToken = generateAccessToken()
 	const refreshToken = generateRefreshToken()
-	// Digests, not tokens (E13-S01), and of the **prefixed** value: `access:…` and `refresh:…` are what
+	// Digests, not tokens, and of the **prefixed** value: `access:…` and `refresh:…` are what
 	// every reader presents, so hashing the bare uuid here would mint a session nothing can ever find.
 	const keyAccess = sessionKey(`access:${accessToken}`)
 	// Built once and kept: `sessionKey` and the account index both take the prefixed value, and the index
-	// field has to be the digest of *this* string or it names a key nothing can rebuild (E15-S02).
+	// field has to be the digest of *this* string or it names a key nothing can rebuild.
 	const prefixedRefresh = `refresh:${refreshToken}`
 	const keyRefresh = sessionKey(prefixedRefresh)
 
@@ -182,7 +182,7 @@ export async function refreshSessionTokens<TAccountData extends object>({
 
 	const keyFamily = familyKey(familyId)
 	const keyTombstone = tombstoneKey(oldRefresh)
-	// The account goes onto the marker with the lineage (E17-S05). It is read from the session this
+	// The account goes onto the marker with the lineage. It is read from the session this
 	// rotation is consuming, which the middleware has already tier-asserted — so the tombstone names the
 	// account the *token* belonged to, not the account whichever service later reads it happens to serve.
 	const tombstoneData: ITombstoneData = {
@@ -202,13 +202,13 @@ export async function refreshSessionTokens<TAccountData extends object>({
 
 		await Promise.all([store.expire(keyAccess, accTokenExp), store.expire(keyRefresh, REFRESH_TOKEN_EXPIRY)])
 
-		// File the successor under its account (E15-S02). The lineage carried in `refreshTokenData` is the
+		// File the successor under its account. The lineage carried in `refreshTokenData` is the
 		// predecessor's, unchanged — so the entry keeps naming the login this chain started from rather than
 		// the moment of this rotation.
 		//
 		// ⚠️ The rollback below does not remove this field, deliberately, and for the same reason it leaves
 		// the tombstone alone: it names two keys the rollback has just deleted, so it grants nothing — and
-		// the field's own TTL (E15-S03) bounds it whatever happens next.
+		// the field's own TTL bounds it whatever happens next.
 		//
 		// ⚠️ **The field TTL is not extended by this call**, because `refreshTokenData` carries the
 		// predecessor's `originalLogin` and `sessionCapDays` unchanged: the successor's field expires when
@@ -222,8 +222,8 @@ export async function refreshSessionTokens<TAccountData extends object>({
 		await store.sAdd(keyFamily, [keyAccess, keyRefresh])
 		await store.expire(keyFamily, REFRESH_TOKEN_EXPIRY)
 
-		// ⚠️ **The tombstone goes down before the old key comes up, and the order is the whole control**
-		// (E14-S02). Delete-then-tombstone leaves a window in which a process death produces a consumed
+		// ⚠️ **The tombstone goes down before the old key comes up, and the order is the whole control.**
+		// Delete-then-tombstone leaves a window in which a process death produces a consumed
 		// token with no marker, and a later replay of it then looks exactly like ordinary expiry. Written
 		// first, the marker is simply invisible until the delete lands: the old key still resolves, and
 		// `resolveAuthorizationSession` consults a tombstone only after a miss.
@@ -232,7 +232,7 @@ export async function refreshSessionTokens<TAccountData extends object>({
 
 		setLoginCookies(ctx, refreshToken)
 
-		// Retire the access token this rotation supersedes (E14-S06). Without it the old access token lives
+		// Retire the access token this rotation supersedes. Without it the old access token lives
 		// out its remaining 30–91 minutes in parallel with its successor, so a stolen pair keeps working
 		// through a rotation the legitimate client made.
 		//
@@ -254,12 +254,12 @@ export async function refreshSessionTokens<TAccountData extends object>({
 
 		await Promise.all([...accessKeysToRetire].map((key) => store.del(key)))
 
-		// Delete the refresh token this call was made with. One key, one shape, since E13-S10 — a rotation
+		// Delete the refresh token this call was made with. One key, one shape — a rotation
 		// that leaves the old refresh key alive is exactly the replay this function rotates to prevent, and
 		// the digest is now the only name that key has ever had.
 		await deleteSession(store, oldRefresh)
 
-		// Unfile the token that has just been deleted (E15-S03), so one session is one row rather than one
+		// Unfile the token that has just been deleted, so one session is one row rather than one
 		// row per rotation. **After the delete, never before**: between the two commands there is a window,
 		// and only this order makes it harmless — the reverse leaves a still-usable refresh token listed
 		// nowhere, which is precisely the session a revocation would miss.

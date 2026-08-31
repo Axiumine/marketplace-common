@@ -22,8 +22,7 @@ export interface ISessionRevokeStore {
 }
 
 /**
- * How many times the routine will re-read the index and revoke what appeared while it was working
- * (E17-S04).
+ * How many times the routine will re-read the index and revoke what appeared while it was working.
  *
  * Three, and the number matters less than the fact that there is one: each round is a full revoke of
  * whatever the previous round did not know about, so a login has to land inside the round *and* the round
@@ -45,7 +44,7 @@ export interface IRevokeTarget {
 }
 
 /**
- * Ends every session an account holds, and answers how many there were (E15-S04).
+ * Ends every session an account holds, and answers how many there were.
  *
  * The one routine the platform revokes through: a password change, a disable, a status change and an
  * admin's console call are four callers, and four hand-written versions of this would be four chances
@@ -57,7 +56,7 @@ export interface IRevokeTarget {
  * that are already gone, which the next call cleans up and which grants nobody anything. A revocation
  * that is interrupted is therefore safe to simply run again.
  *
- * ⚠️ **The index is re-read before it is deleted, and deleted only if nothing appeared** (E17-S04). A login
+ * ⚠️ **The index is re-read before it is deleted, and deleted only if nothing appeared.** A login
  * landing between the `hKeys` and the `del` would otherwise have its index field destroyed while its session
  * stayed live: an **invisible session** — not listable, not revocable, and alive until its own cap, which is
  * the one outcome strictly worse than not revoking at all. When the re-read finds newcomers, the routine

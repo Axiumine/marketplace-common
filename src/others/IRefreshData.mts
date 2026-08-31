@@ -9,9 +9,9 @@ import { Tier } from '@others/Tier.mjs'
  * *its own* collection, so a foreign token used to fail only by accident — because that id happened
  * not to exist there. It is now refused on purpose, before any query runs.
  *
- * ⚠️ **Every *lineage* field here is required, and the three E14 fields are required for a reason that is
- * not tidiness.** A session minted before E14 landed carries none of them. Were `familyId` optional, the
- * first rotation after the deploy would write every such session into one shared `family:undefined`
+ * ⚠️ **Every *lineage* field here is required, and the three of them are required for a reason that is
+ * not tidiness.** A session minted before the lineage landed carries none of them. Were `familyId` optional,
+ * the first rotation after the deploy would write every such session into one shared `family:undefined`
  * set, and a single reuse event would then mass-revoke unrelated accounts across every tier. Refusing
  * structurally converts that into a one-time forced re-login for sessions older than the deploy —
  * loud, bounded and correct — instead of a silent cross-account blast radius. `assertRefreshLineage`
@@ -48,7 +48,8 @@ export interface IRefreshData {
 	 *
 	 * ⚠️ **A key, never a token.** It is the digest `sessionKey` already produced, so this stores nothing that
 	 * could be presented as a credential — the same reason the session index stores field names and not
-	 * tokens. Anything that puts a raw `access:…` value here undoes E13-S01 through the side door.
+	 * tokens. Anything that puts a raw `access:…` value here undoes the hashed namespace through the side
+	 * door.
 	 *
 	 * ⚠️ **The one optional field, and the option is a migration rather than a choice.** A session minted
 	 * before this landed carries none, and absent must mean *nothing to retire* — which is exactly the

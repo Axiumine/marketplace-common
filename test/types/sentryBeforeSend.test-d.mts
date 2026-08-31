@@ -26,7 +26,7 @@ describe('sentryBeforeSend drops into Sentry.init with no cast at the call site'
 		expectTypeOf(sentryBeforeSend).toExtend<NonNullable<NodeOptions['beforeSend']>>()
 	})
 
-	// E12-S22. The SDK routes transaction events to the second hook only, and the four network-derived
+	// The SDK routes transaction events to the second hook only, and the four network-derived
 	// attributes the scrubber exists for are on the transaction. One function, both hooks — proved here so
 	// that a widening of the interface for the transaction shape cannot quietly stop fitting either.
 	test("the SDK's own transaction event satisfies the structural constraint", () => {

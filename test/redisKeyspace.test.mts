@@ -21,13 +21,12 @@ import {
 import { Tier } from '../src/others/Tier.mts'
 
 /*
- * E18-S08 — the Redis keyspace, enumerated once and asserted from two directions.
+ * The Redis keyspace, enumerated once and asserted from two directions.
  *
- * Three of the mechanical checks the phase-5 backlog introduced meet here, because all three are
- * questions about the same list: *no raw token as a Redis key* (E13-S01), *no network-derived value in a
- * bucket key* (E14-S08, E16, E17-S05) and *no undocumented key shape* (BCON-03). Each of them was
- * answered by reading the source, once, by hand — which is how the audit that found them was run and
- * exactly what E18-S08 exists to stop repeating.
+ * Three mechanical checks meet here, because all three are questions about the same list: *no raw token as
+ * a Redis key*, *no network-derived value in a bucket key* and *no undocumented key shape* (BCON-03). Each
+ * of them was answered by reading the source, once, by hand — which is how the audit that found them was
+ * run and exactly what this registry exists to stop repeating.
  *
  * The registry below is the list. It is duplicated, on purpose, from the table in
  * `docs/data-model.md` §Key shapes — the docs live in the parent workspace and no test on this platform
@@ -41,7 +40,7 @@ import { Tier } from '../src/others/Tier.mts'
  * the registry is what makes a new key shape impossible to add quietly, whether it is exported, inlined
  * in a function body, or written into a file that never built a key before.
  *
- * ⚠️ **Two rows left this registry with the dual-read fallback** (E13-S10): `legacySessionKey`, the last
+ * ⚠️ **Two rows left this registry with the dual-read fallback**: `legacySessionKey`, the last
  * raw-token key shape on the platform, and `dualReadHitsKey`, the counter that measured it. The count
  * assertion above is what turned their removal into a failing test rather than a thing to remember —
  * `sessionKeys.mts` dropped from twelve interpolations to ten in the same commit.

@@ -1,10 +1,10 @@
 /**
- * What every authenticated service's auth-boundary suite has to prove, in one place (E18-S02).
+ * What every authenticated service's auth-boundary suite has to prove, in one place.
  *
  * ⚠️ **This is data for tests and nothing imports it at runtime — deliberately.** It lives here because
  * it is the only place all seven authenticated services can read the same list from: each of them is its
  * own repo with its own gates, so a contract written down in seven copies is a contract that drifts, and
- * the drift is exactly the defect this exists to prevent. E18-S01 found three resource services testing
+ * the drift is exactly the defect this exists to prevent. Three resource services were once found testing
  * their boundary three different ways, and the reason was that nothing said what the suite must contain.
  *
  * How a service satisfies it: its boundary suite carries the case id in a comment directly above the test
@@ -49,7 +49,7 @@ export const AUTH_BOUNDARY_CASES: readonly IAuthBoundaryCase[] = [
  *
  * ⚠️ **An exemption carries a reason, and the reason is the point.** "This service does not do that" has
  * to survive being read a year later by somebody deciding whether a missing test is a decision or a gap —
- * which is the question E18-S01 had to answer by archaeology. `requiredAuthBoundaryCases` subtracts these
+ * which is a question that once had to be answered by archaeology. `requiredAuthBoundaryCases` subtracts these
  * from the full list, so an exemption is the only way to owe less, and adding one is a visible edit.
  */
 export const AUTH_BOUNDARY_SERVICES: Readonly<Record<string, Readonly<Record<string, string>>>> = {

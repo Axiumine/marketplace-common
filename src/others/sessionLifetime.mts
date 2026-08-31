@@ -12,7 +12,7 @@
  */
 
 /**
- * The absolute age cap, in days, of a session whose login left "remember me" unchecked (E14-S05).
+ * The absolute age cap, in days, of a session whose login left "remember me" unchecked.
  *
  * An unchecked login is a shared-device login and dies overnight. This is the cap that applies when the
  * argument is absent or is not a boolean as well — see `resolveSessionCapDays`.
@@ -20,13 +20,12 @@
 export const SESSION_CAP_DAYS_DEFAULT = 1
 
 /**
- * The absolute age cap, in days, of a session whose login ticked "remember me" (E14-S05).
+ * The absolute age cap, in days, of a session whose login ticked "remember me".
  *
  * Not an estimate: it is the promise all three login forms have been making since they were written,
- * enforced server-side for the first time. It is also the widest exposure this epic leaves open — a
- * remembered session survives thirty days of pure inactivity, which is thirty days of useful life for a
- * refresh token whose theft is never noticed. That is what E14-S02's tombstone and E14-S03's family
- * revocation are carrying.
+ * enforced server-side for the first time. It is also the widest exposure left open here — a remembered
+ * session survives thirty days of pure inactivity, which is thirty days of useful life for a refresh token
+ * whose theft is never noticed. That is what the reuse tombstone and the family revocation are carrying.
  *
  * ⚠️ **30 < 90 deliberately.** `REFRESH_TOKEN_EXPIRY` in `@axiumine/koa-utils` stays the physical Redis
  * TTL and remains the safety net under both caps, never the binding limit. Raising this past 90 would
@@ -36,7 +35,7 @@ export const SESSION_CAP_DAYS_REMEMBERED = 30
 
 /**
  * How long after a refresh token is consumed a second presentation of it is treated as a lost race
- * rather than as theft (E14-S04), in seconds.
+ * rather than as theft, in seconds.
  *
  * The race is bounded by one request round trip, not by how long a tab sits idle: the refresh token is a
  * root-scoped `HttpOnly` cookie, so every tab shares one cookie jar and a tab waking an hour later sends
@@ -50,8 +49,8 @@ export const SESSION_CAP_DAYS_REMEMBERED = 30
  * the revocation; they gain no tokens either way, because the grace branch mints nothing. A wide window
  * costs *detection*, a narrow one costs *the user*.
  *
- * ⚠️ **E14-S09 may lower this; raising it needs a written reason.** Past roughly a minute the tombstone
- * stops functioning as reuse detection at all.
+ * ⚠️ **The grace-hit counter may justify lowering this; raising it needs a written reason.** Past roughly
+ * a minute the tombstone stops functioning as reuse detection at all.
  */
 export const GRACE_SECONDS = 10
 
@@ -79,7 +78,7 @@ export const resolveSessionCapDays = (rememberMe: unknown): number =>
  * The instant a session stops being usable, in epoch milliseconds: the login it descends from plus its
  * cap. Both arguments are the strings Redis stores them as.
  *
- * ⚠️ **One expression, two readers, and that is the point** (E15-S03). `resolveAuthorizationSession`
+ * ⚠️ **One expression, two readers, and that is the point.** `resolveAuthorizationSession`
  * refuses a session past this instant; `indexSession` gives its index field a TTL that ends at it. Two
  * copies of the arithmetic could drift by a rounding, and the failure would be silent in the worse
  * direction — an index row outliving the session it names is a listing an admin cannot act on, and an
@@ -95,7 +94,7 @@ export const sessionCapDeadline = (originalLogin: string, sessionCapDays: string
  * How much of a session's absolute cap is left, in whole seconds, floored at one.
  *
  * ⚠️ **Rounded up, never down.** A field that expires half a second early is a live session listed
- * nowhere — the exact orphan E15-S02's key TTL exists to prevent — while one that expires half a second
+ * nowhere — the exact orphan the index key's TTL exists to prevent — while one that expires half a second
  * late is a row naming a session that has just stopped working. The first is a revocation that misses;
  * the second is a stale line on a screen.
  *

@@ -7,7 +7,7 @@ import { expectStatus, rejection } from './graphQLErrors.mts'
 const LINEAGE = { familyId: '4b1a4a5e-0d3a-4a2f-9a5a-2f0f6a1b8c3d', originalLogin: '1754784000000', sessionCapDays: '1' }
 
 describe('assertRefreshLineage', () => {
-	// The ordinary case: a session minted since E14 landed carries all three and passes silently.
+	// The ordinary case: a session minted since the lineage landed carries all three and passes silently.
 	it('accepts a session that carries its whole lineage', () => {
 		expect(() => assertRefreshLineage(LINEAGE)).not.toThrow()
 	})
@@ -31,7 +31,8 @@ describe('assertRefreshLineage', () => {
 	 * ⚠️ **The malformed-number cases are the fail-open this guard exists to close.** `Number('later')` is
 	 * `NaN`, and every comparison against `NaN` is false — so a session whose `originalLogin` is not a
 	 * number would answer "not older than the cap" for ever, which is precisely the unbounded session
-	 * E14-S05 refuses to allow. An empty string is worse still: `Number('')` is `0`, an epoch in 1970.
+	 * the absolute cap refuses to allow. An empty string is worse still: `Number('')` is `0`, an epoch in
+	 * 1970.
 	 *
 	 * `'12abc'` and `'1.5'` are the anchors and the character class asserted: without `$` the first would
 	 * pass, and without `\d` the second would.

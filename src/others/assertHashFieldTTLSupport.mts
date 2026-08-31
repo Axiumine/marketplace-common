@@ -22,7 +22,7 @@ export const HASH_FIELD_TTL_PROBE_KEY = () => `${process.env.REDIS_KEY}hash-fiel
 const UNKNOWN_COMMAND = /unknown command/i
 
 /**
- * Refuses to boot on a Redis that has no hash-field TTLs (E15-S03).
+ * Refuses to boot on a Redis that has no hash-field TTLs.
  *
  * ⚠️ **This exists because Redis does not check commands at startup — it checks them at first use.**
  * Without this, a platform pointed at a 7.2 server boots cleanly, serves every read, and then fails the

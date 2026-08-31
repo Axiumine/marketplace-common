@@ -18,8 +18,8 @@ import { describe, expect, it } from 'vitest'
 
 const FIXTURES = new URL('./fixtures/restrictedSyntax/', import.meta.url)
 
-const TLS_MESSAGE = 'E12-S04: certificate verification stays on.'
-const PII_MESSAGE = 'E12-S04: the blanket Sentry PII flag is absent by decision, not set to false.'
+const TLS_MESSAGE = 'Certificate verification stays on.'
+const PII_MESSAGE = 'The blanket Sentry PII flag is absent by decision, not set to false.'
 
 const lintFixture = async (name: string) => {
 	const code = await readFile(new URL(`${name}.mts.fixture`, FIXTURES), 'utf8')

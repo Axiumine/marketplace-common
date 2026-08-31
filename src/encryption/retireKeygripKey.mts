@@ -12,7 +12,7 @@ export const KEYGRIP_RETIRE_CURRENT = 'KEYGRIP_RETIRE_CURRENT'
 export const KEYGRIP_RETIRE_UNKNOWN = 'KEYGRIP_RETIRE_UNKNOWN'
 
 /**
- * The key array with one named key removed (ADR-034, E16-S04).
+ * The key array with one named key removed (ADR-034).
  *
  * This is the operation for a *suspected compromise*, and it is the only one on this platform that drops a
  * key before its age says it may go. `rotateKeygripKeys` retires from the old end and only once

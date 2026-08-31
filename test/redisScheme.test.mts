@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 /*
- * E13-S05 — the assertion that keeps the Redis TLS position honest.
+ * The assertion that keeps the Redis TLS position honest.
  *
  * Redis carries session material: the hash holds `_id`, `email` and `tier`, and every request reads one.
  *
@@ -28,7 +28,7 @@ import { describe, expect, it } from 'vitest'
  */
 
 const MIGRATION =
-	'E13-S05: the Redis TLS surface of @axiumine/koa-utils changed shape again. Re-read `dist/dataSources/Redis.mjs` and `dist/private/dataSources/`, then update R45 in `docs/devprotocol/phase5/RISK_REGISTER.md`, the auth-model section of `docs/architecture.md` and ADR-039 §Context before touching this test.'
+	'The Redis TLS surface of @axiumine/koa-utils changed shape again. Re-read `dist/dataSources/Redis.mjs` and `dist/private/dataSources/`, then update R45 in `docs/devprotocol/phase5/RISK_REGISTER.md`, the auth-model section of `docs/architecture.md` and ADR-039 §Context before touching this test.'
 
 const installed = async (path: string) =>
 	readFile(new URL(`../node_modules/@axiumine/koa-utils/dist/${path}`, import.meta.url), 'utf8')

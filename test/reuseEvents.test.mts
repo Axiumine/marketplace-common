@@ -69,8 +69,8 @@ afterEach(() => {
 
 describe('REUSE_EVENT_ACTIONS', () => {
 	/*
-	 * ⚠️ The exact list, asserted as a list. E17-S01 has `marketplace-admin`'s generated GraphQL enum
-	 * asserted equal to this constant, so a value added here without a schema change fails there — which is
+	 * ⚠️ The exact list, asserted as a list. `marketplace-admin` has its generated GraphQL enum asserted
+	 * equal to this constant, so a value added here without a schema change fails there — which is
 	 * only true while this test pins the membership rather than a count or an inclusion.
 	 */
 	it('is exactly the two actions the two revocation call sites file', () => {
@@ -78,7 +78,7 @@ describe('REUSE_EVENT_ACTIONS', () => {
 		expect(REUSE_EVENT_ACTIONS).toHaveLength(2)
 	})
 
-	// An admin's own revocation is not in the vocabulary, and E17's open question 4 is why. The assertion
+	// An admin's own revocation is not in the vocabulary, and `ReuseEventAction` says why. The assertion
 	// is here so that adding it is a deliberate act with a failing test in front of it, not a quiet append.
 	it('carries no value for an admin-initiated revocation', () => {
 		expect(REUSE_EVENT_ACTIONS).not.toContain('adminRevoked')
@@ -119,7 +119,8 @@ describe('recordReuseEvent', () => {
 	})
 
 	/*
-	 * ⚠️ **The stored line is the whole contract with E13 and E14-S04: nothing replayable.** Five fields, and
+	 * ⚠️ **The stored line is the whole contract with the hashed namespace and the tombstone: nothing
+	 * replayable.** Five fields, and
 	 * the count is asserted so that a sixth carrying a token, a digest of one, or the IP the replay came from
 	 * cannot be added without this failing. A dump of the trail must stay useless to whoever reads it.
 	 */
@@ -153,7 +154,7 @@ describe('recordReuseEvent', () => {
 	})
 
 	/*
-	 * ⚠️ **The bound, proved against a list that actually stores what it is handed.** E17-S05 asks for a
+	 * ⚠️ **The bound, proved against a list that actually stores what it is handed.** The trail needs a
 	 * stated bound on growth *and a test of it*: 60 appends leave 50 entries, the newest is first, and the
 	 * ten oldest are gone. Asserting the `lTrim` arguments alone would pass on an implementation that trims
 	 * the wrong end and answers an admin with the ten events furthest from the incident.
@@ -189,7 +190,8 @@ describe('recordReuseEvent', () => {
 		])
 	})
 
-	// The retention is E15's session-index figure, reused rather than chosen again: a trail must not outlive
+	// The retention is the session index's own figure, reused rather than chosen again: a trail must not
+	// outlive
 	// the sessions it describes by an interval nobody decided on.
 	it('retains a trail for the same thirty days a session index row gets', () => {
 		expect(REUSE_EVENTS_TTL_SECONDS).toBe(SESSION_INDEX_TTL_SECONDS)
