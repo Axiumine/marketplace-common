@@ -33,18 +33,26 @@ export type ClamSignatureVerdict =
 /**
  * The build date out of a `nVERSION` reply, or `undefined` when the reply is not one.
  *
- * ⚠️ **Field 2 by position, not by pattern.** The engine version carries dots and the database version
- * is a bare number, so a "find the date-shaped field" rule would work today and break the first time
- * ClamAV adds a fourth field — while `split('/')[2]` on a reply that has changed shape yields
- * `undefined` and reads as unreadable, which is the safe answer rather than a confident wrong one.
+ * ⚠️ **Field 3 onwards by position, not by pattern.** The engine version carries dots and the database
+ * version is a bare number, so a "find the date-shaped field" rule would work today and break the first
+ * time ClamAV adds a fourth field — while everything past the second `/` on a reply that has changed
+ * shape fails to parse and reads as unreadable, which is the safe answer rather than a confident wrong
+ * one.
  *
- * Real replies end in a newline (and, over a socket, sometimes a NUL terminator), so the field is
- * trimmed of whitespace and of the `\0` a `zVERSION`-style reply appends. `Date.parse` returns `NaN` for
- * anything it cannot read, including the empty string, which is the whole of the malformed case.
+ * ⚠️ **The tail is re-joined on `/` rather than taken as one field**, because a date is allowed to contain
+ * the separator: `ClamAV 0.103.11/27412/2026/09/04` is a reply whose build date is `2026/09/04`, and
+ * `split('/')[2]` would read it as `2026` alone — which `Date.parse` reads as the first of January, so a
+ * database built this morning gets reported eight months stale.
+ * A reply with no third field joins to the empty string, which `Date.parse` refuses, so the missing-field
+ * case needs no branch of its own — it is already the unreadable case.
+ *
+ * Nothing here strips the newline, the NUL terminator or the padding a socket adds around the reply:
+ * `Date.parse` skips all three on its own, so a `.trim()` or a `.replaceAll('\0', '')` here would be code
+ * that cannot change an answer.
  */
 export const parseClamSignatureDate = (reply: string): Date | undefined => {
-	const field = reply.split('/')[2]?.replaceAll('\0', '').trim()
-	const parsed = field === undefined ? Number.NaN : Date.parse(field)
+	const builtAtField = reply.split('/').slice(2).join('/')
+	const parsed = Date.parse(builtAtField)
 
 	return Number.isNaN(parsed) ? undefined : new Date(parsed)
 }

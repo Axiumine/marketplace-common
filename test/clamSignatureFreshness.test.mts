@@ -19,8 +19,19 @@ describe('the build date is read out of the version reply', () => {
 		expect(parseClamSignatureDate(REPLY)?.getTime()).toBe(BUILT_AT)
 	})
 
+	// `Date.parse` skips both on its own, which is why nothing in the source trims the reply.
 	it('reads a reply that arrives with the newline and NUL a socket adds', () => {
 		expect(parseClamSignatureDate(`${REPLY}\n\0`)?.getTime()).toBe(BUILT_AT)
+	})
+
+	/*
+	 * A build date is allowed to contain the separator the fields are split on, and `clamd` has shipped
+	 * exactly that. Everything past the second `/` is one field again, so the date survives; reading only
+	 * `split('/')[2]` would leave `2026`, which parses as the first of January and reports a database
+	 * built this morning as eight months stale.
+	 */
+	it('keeps a build date that itself contains slashes', () => {
+		expect(parseClamSignatureDate('ClamAV 0.103.11/27412/2026/09/04')?.getTime()).toBe(new Date(2026, 8, 4).getTime())
 	})
 
 	// Each of these is a reply this cannot read, and reading it wrong would be worse than saying so: a
