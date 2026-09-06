@@ -29,7 +29,7 @@
 		"lint:check": "eslint . && prettier --check .",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:cov": "vitest run --coverage",
+		"test:cov": "vitest run --coverage && node scripts/coverage-audit.mjs",
 		"test:contract": "yarn build && vitest run -c vitest.contract.config.mts",
 		"test:int": "vitest run -c vitest.integration.config.mts",
 		"test:types": "vitest run -c vitest.types.config.mts",
