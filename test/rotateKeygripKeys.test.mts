@@ -1,8 +1,37 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { KEYGRIP_KEY_BYTES, KEYGRIP_MAX_KEYS, rotateKeygripKeys } from '../src/encryption/rotateKeygripKeys.mts'
 import { IKeygripKeyMaterial } from '../src/others/IKeygripKeyMaterial.mts'
 import { SESSION_CAP_DAYS_REMEMBERED } from '../src/others/sessionLifetime.mts'
+
+/*
+ * ⚠️ **The module under test is imported per test, and `vi.resetModules()` is what makes that mean
+ * anything.** Read this before turning the three lines below back into a static import.
+ *
+ * `KEYGRIP_KEY_BYTES`, `KEYGRIP_MAX_KEYS` and the `NUMBERED_ID` regex are module-level constants, so a
+ * mutant in any of them is a *static* mutant: it takes effect while the module is being evaluated and
+ * never again. Stryker's vitest runner reuses a worker's module registry between mutant runs, so a
+ * statically imported module is already evaluated by the time the mutant is switched on — the mutated
+ * line never runs, every test passes, and the mutant is reported **Survived** even though the suite
+ * kills it outright when the same edit is made by hand.
+ *
+ * That is not hypothetical here. On 2026-09-06 both `NUMBERED_ID` mutants (`/^k(\d+)/` and `/^k(\d)$/`)
+ * were reported Survived while `reads a multi-digit number…` and `takes no number from an id that only
+ * starts like one` were sitting right there, and both fail within a second when the regex is actually
+ * changed. Nothing was missing from the assertions; the mutant had never reached them.
+ *
+ * Resetting the registry and re-importing inside `beforeEach` moves the module's evaluation into the
+ * test, which is where the mutant switch can reach it. ⚠️ Do **not** answer a survivor here with
+ * `ignoreStatic` — CLAUDE.md says why: it deletes whole classes of mutant from the run and hides real
+ * gaps behind the same green number.
+ */
+let KEYGRIP_KEY_BYTES: number
+let KEYGRIP_MAX_KEYS: number
+let rotateKeygripKeys: typeof import('../src/encryption/rotateKeygripKeys.mts').rotateKeygripKeys
+
+beforeEach(async () => {
+	vi.resetModules()
+	;({ KEYGRIP_KEY_BYTES, KEYGRIP_MAX_KEYS, rotateKeygripKeys } = await import('../src/encryption/rotateKeygripKeys.mts'))
+})
 
 const NOW = new Date('2026-08-12T09:00:00.000Z')
 const DAY_MS = 86_400_000
