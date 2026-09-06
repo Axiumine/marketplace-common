@@ -12,6 +12,13 @@ HIGH and CRITICAL, production tree only), `yarn lint:check` (eslint, then
 `prettier --check`, both over the whole tree), `yarn test:cov` (100% on every metric), `yarn test:mutation`
 (Stryker, `thresholds.break: 100`), then a Qodana scan via `./qodana.sh`. Roughly a minute in total.
 
+⚠️ **`yarn test:cov` is two gates, not one.** vitest runs, and then `scripts/coverage-audit.mjs` proves the
+report the thresholds were computed over actually contains every git-tracked file `coverage.include` gates.
+Without that second half a 100% threshold says nothing about a file no suite ever imported, which is absent
+from the report rather than sitting at 0% (`RISK_REGISTER` R07). This repo exempts nothing and therefore
+ships no `coverage-exempt.txt`: every one of its source files is in the report, and a new one that is not
+takes the run red until it has a test.
+
 Semgrep and trivy are first because they are the cheap ones — about three seconds and, once the
 vulnerability database is pulled, under one — so a rule violation or an advisory is reported before
 anything slow runs. Both are push-only, like mutation: they need Docker and a pinned image, and push is
@@ -28,8 +35,9 @@ dependency here is an unchecked dependency fleet-wide.
 high-entropy values), `yarn lint:check`, `yarn test:cov`, then a full Qodana scan. The last three run
 **only** when the staged paths can move a verdict — `src/`, `test/`, `semgrep/`, `.githooks/`,
 `package.json`, `yarn.lock`, `qodana.yaml`/`qodana.sh`, the vitest/tsconfig/stryker configs and, since the
-lint gate exists to read them, `eslint.config.js`/`.prettierrc`/`.prettierignore` — so a docs-only commit
-skips them. Those last three were missing from the filter for as long as lint was ungated, which is how a
+lint gate exists to read them, `eslint.config.js`/`.prettierrc`/`.prettierignore`, and
+`scripts/coverage-audit.mjs`/`coverage-exempt.txt`, which are the coverage file-count gate itself — so a
+docs-only commit skips them. Those last three were missing from the filter for as long as lint was ungated, which is how a
 run of commits widening the eslint `ignores` block each passed with no gate run at all.
 
 Ahead of all of them each hook selects node by itself, reading `engines.node` and sourcing nvm, because
