@@ -10,10 +10,17 @@ import { IEncryptedFieldSpec } from '@encryption/IEncryptedFieldSpec.mjs'
  * itself has to read.**
  *
  * ⚠️ Adding a personal field to a collection means adding it here *and* declaring it `binData` in
- * `marketplace-db-setup`. Nothing gates that — a `string` field is perfectly valid inside a
- * collection whose neighbours are `binData`, so an omission here is silent and the field simply
- * stays in the clear. `test/encryption.test.mts` walks these lists against the models, which catches
- * a path that does not exist; it cannot catch a path nobody wrote down.
+ * `marketplace-db-setup` — a `string` field is perfectly valid inside a collection whose neighbours
+ * are `binData`, so an omission on either side is silent and the field simply stays in the clear.
+ * `test/encryption.test.mts` walks these lists against the models, which catches a path that does not
+ * exist; it cannot catch a path nobody wrote down.
+ *
+ * ✅ **The pairing itself is gated since 2026-09-06, from the one place that can see both repos**:
+ * `scripts/encryption-coverage-check.mjs` in the parent workspace reads these four lists and every
+ * `binData` leaf in `marketplace-db-setup`'s validators and fails naming any path in one and not the
+ * other, in both directions; `scripts/audit-check.sh` §17 runs it (MC-27, **R48**). No test here can
+ * do that — nothing in this repo's suite can see the other repo — which is why the check lives up
+ * there and why this comment is the only notice of it you get from inside this file.
  *
  * ⚠️ **Deterministic is for equality lookups only, and there are exactly five of them.** Every one
  * is a field some flow filters on — three login addresses and the two pending-email-change slots
