@@ -11,9 +11,42 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.2.1...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.3.0...HEAD)
 
 Nothing yet.
+
+## [4.3.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.3.0) - 2026-09-06
+
+### Added
+
+- **`others/clamSignatureFreshness` — how old the virus signatures behind a `clamd` are.** The two
+  services that accept uploads prove their scanner is reachable at boot and have never asked it anything
+  else, and a scanner whose signature database stopped updating six months ago answers `clean` exactly as
+  fast as a current one. Nothing on this platform runs `freshclam`, no timer checks it and no alert fires
+  — RISK_REGISTER R22.
+
+  `clamSignatureFreshness(reply, now, maxAgeMs)` reads the `nVERSION` reply
+  (`ClamAV 0.103.11/27412/Fri Sep 04 2026 08:31:07 GMT+0000`) and answers `fresh`, `stale` or
+  `unreadable`. `parseClamSignatureDate` is exported beside it for a caller that wants the date alone.
+
+  Three decisions a call site inherits. **It never throws** — a helper that did would take down a service
+  whose scanner works, over a version string, and the honest call site would become a `catch` that
+  swallows its own bugs; the caller turns `stale` into a log line and a Sentry event and carries on.
+  **`now` and `maxAgeMs` are arguments**, not a clock read and a constant, so the boundary is testable
+  and the threshold is the caller's policy. **A database built in the future is `fresh`**: clock skew
+  between a container and the host that built the signatures is ordinary, and alerting on a negative age
+  teaches the reader to ignore the alert that matters.
+
+### Changed
+
+- **`test:contract` now walks `dist/others/` too, which it never did.** The exports-map completeness check
+  covered `models/MongoDB` and `schema` only, so any helper added under `others/` without an `exports`
+  entry compiled, published, and threw `ERR_PACKAGE_PATH_NOT_EXPORTED` at the consumer's import with no
+  gate in this repo seeing it. `others/` is where the session helpers and the small pure readings live, so
+  consumer-facing is now the default there. Two files are allowlisted as deliberately internal —
+  `Constants` and `recordKeygripHolder` — and the list is checked in both directions: an entry naming a
+  file that no longer exists fails, and so does one naming a file somebody has since exported. Ships no
+  change to `dist/`.
 
 ## [4.2.1](https://github.com/Axiumine/marketplace-common/releases/tag/v4.2.1) - 2026-08-31
 

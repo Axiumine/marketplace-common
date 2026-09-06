@@ -1,6 +1,6 @@
 {
 	"name": "@axiumine/marketplace-common",
-	"version": "4.2.1",
+	"version": "4.3.0",
 	"description": "Marketplace common",
 	"author": "Giovanni Manzoni <dev@giovannimanzoni.com> (https://giovannimanzoni.com)",
 	"homepage": "https://github.com/Axiumine/marketplace-common#readme",
@@ -255,6 +255,10 @@
 		"./others/checkUserAuthorizationDisDel": {
 			"import": "./dist/others/checkUserAuthorizationDisDel.mjs",
 			"types": "./dist/others/checkUserAuthorizationDisDel.d.mts"
+		},
+		"./others/clamSignatureFreshness": {
+			"import": "./dist/others/clamSignatureFreshness.mjs",
+			"types": "./dist/others/clamSignatureFreshness.d.mts"
 		},
 		"./others/constantTimeEquals": {
 			"import": "./dist/others/constantTimeEquals.mjs",

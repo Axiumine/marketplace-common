@@ -21,6 +21,20 @@ const ROOT_FIELDS = ['main', 'module', 'types', 'typings', 'browser'] as const
 // as opposed to a pure type/interface file, which compiles down to `export {};`.
 const RUNTIME_EXPORT_RE = /export (const|function|class)|\bmodel\(|new Schema|new GraphQL|\.methods\./
 
+/*
+ * The files under `others/` that carry a runtime export and are still deliberately absent from the
+ * exports map. Everything else there is consumer-facing by default, which is the point of walking the
+ * directory at all: `others/` is where the session helpers, the assertions and the small pure readings
+ * live, and a new one added without an entry throws `ERR_PACKAGE_PATH_NOT_EXPORTED` at the consumer's
+ * import — a failure no gate in this repo could see before, because nothing walked past `models/` and
+ * `schema/`.
+ *
+ * ⚠️ A list of exceptions is only worth having if a stale entry fails. The block below checks this one in
+ * both directions: an entry naming a file that no longer exists is a finding, and so is an entry naming a
+ * file somebody has since exported.
+ */
+const INTERNAL_OTHERS = new Set(['./others/Constants', './others/recordKeygripHolder'])
+
 function walkMjsFiles(dir: string): string[] {
 	const out: string[] = []
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -76,7 +90,7 @@ describe('package.json exports map integrity', () => {
 		// Scoped to consumer-facing dirs only — internal building blocks (sub-schemas under */sub/,
 		// constants, shared field shapes) are intentionally NOT exported.
 		const distDir = path.join(root, 'dist')
-		const consumerDirs = [path.join(distDir, 'models/MongoDB'), path.join(distDir, 'schema')]
+		const consumerDirs = [path.join(distDir, 'models/MongoDB'), path.join(distDir, 'schema'), path.join(distDir, 'others')]
 
 		const toExportsKey = (absFile: string): string => {
 			const rel = path.relative(distDir, absFile).replace(/\\/g, '/')
@@ -93,6 +107,7 @@ describe('package.json exports map integrity', () => {
 				if (!RUNTIME_EXPORT_RE.test(text)) continue // pure type-only file (compiles to `export {};`)
 
 				const key = toExportsKey(file)
+				if (INTERNAL_OTHERS.has(key)) continue // deliberately not consumer-facing; the block below polices the list
 				if (!exportedKeys.has(key)) {
 					missingFromExports.push(`${key}  (from ${path.relative(root, file)})`)
 				}
@@ -103,6 +118,25 @@ describe('package.json exports map integrity', () => {
 			missingFromExports,
 			`Consumer-facing dist modules missing from package.json "exports":\n${missingFromExports.join('\n')}`
 		).toEqual([])
+	})
+})
+
+describe('the internal-others allowlist stays true in both directions', () => {
+	// `Constants` holds SALT_ROUNDS and friends, read only from inside this package; `recordKeygripHolder`
+	// is called by `loadKeygrip`, which is the exported face of it. Both would be a wider surface than
+	// either wants if consumers could import them.
+	it('names only files that still exist', () => {
+		const gone = [...INTERNAL_OTHERS].filter((key) => !fs.existsSync(path.join(root, 'dist', `${key.slice('./'.length)}.mjs`)))
+
+		expect(gone, `allowlisted internals that no longer exist:\n${gone.join('\n')}`).toEqual([])
+	})
+
+	it('names only files the exports map really does not offer', () => {
+		// The stale half. Export one of these deliberately and the entry here stops being an exception and
+		// starts being a hole that hides the next unexported file behind it.
+		const exported = [...INTERNAL_OTHERS].filter((key) => Object.hasOwn(exportsMap, key))
+
+		expect(exported, `allowlisted as internal, yet exported:\n${exported.join('\n')}`).toEqual([])
 	})
 })
 
