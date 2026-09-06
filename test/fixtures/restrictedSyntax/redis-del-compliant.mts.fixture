@@ -1,0 +1,11 @@
+// The shapes this repo actually carries — `revokeSessionFamily.mts` and `refreshSessionTokens.mts`.
+// Nothing here may be reported: the batching is `Promise.all`'s, one key per call, which is what makes
+// the same code correct on a single node and on a cluster.
+export const revokeFamily = async (store, members, key) => {
+	await Promise.all(members.map((member) => store.del(member)))
+	await store.del(key)
+}
+
+export const retirePair = async (store, keyAccess, keyRefresh) => {
+	await Promise.all([store.del(keyAccess), store.del(keyRefresh)])
+}
