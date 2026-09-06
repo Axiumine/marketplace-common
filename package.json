@@ -256,6 +256,10 @@
 			"import": "./dist/others/checkUserAuthorizationDisDel.mjs",
 			"types": "./dist/others/checkUserAuthorizationDisDel.d.mts"
 		},
+		"./others/clamSignatureFreshness": {
+			"import": "./dist/others/clamSignatureFreshness.mjs",
+			"types": "./dist/others/clamSignatureFreshness.d.mts"
+		},
 		"./others/constantTimeEquals": {
 			"import": "./dist/others/constantTimeEquals.mjs",
 			"types": "./dist/others/constantTimeEquals.d.mts"
