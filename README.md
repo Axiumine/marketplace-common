@@ -1,5 +1,12 @@
 # @axiumine/marketplace-common
 
+> ⚠️ **Work in progress — this software is not tested yet.** It has never run outside a developer
+> workstation: no real deployment, no load test, no security review, no upgrade path. Parts of the
+> platform are deliberately unbuilt, and anything here — schemas, endpoints, configuration, file
+> layout — can still change without notice. Whatever automated gates this repo runs, treat the result
+> as unproven: do not point it at real users or real data.
+> Read [`docs/PRODUCTION_HARDENING.md`](https://github.com/Axiumine/fullstack-marketplace-blueprint/blob/main/docs/PRODUCTION_HARDENING.md) before taking any of it further.
+
 Shared building blocks for the [Marketplace platform](https://github.com/Axiumine/fullstack-marketplace-blueprint) —
 Mongoose models, GraphQL field fragments, Redis session DTOs and the authorization helpers its nine backend services
 have in common. It is a library, not a service: nothing here listens on a port.
