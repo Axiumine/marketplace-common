@@ -11,6 +11,9 @@ export default defineConfig({
 	test: {
 		include: ['test/*.test.mts'],
 		testTimeout: 30_000, // bcrypt with SALT_ROUNDS=14 is intentionally slow
+		// Caps how long a test's name may be — the mutation gate selects tests by name, and past a
+		// size it cannot; see the file.
+		setupFiles: ['./vitest.testNames.mts'],
 		server: { deps: { inline: ['graphql', 'graphql-scalars'] } },
 		coverage: {
 			provider: 'v8',
