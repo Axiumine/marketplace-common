@@ -20,6 +20,9 @@ export default defineConfig({
 		hookTimeout: 30_000,
 		fileParallelism: false, // one throwaway database per run; the suite drops it in globalSetup
 		globalSetup: ['./test/integration/globalSetup.mts'],
+		// Caps how long a test's name may be — the mutation gate selects tests by name, and past a
+		// size it cannot; see the file.
+		setupFiles: ['./vitest.testNames.mts'],
 		server: { deps: { inline: ['graphql', 'graphql-scalars'] } },
 		// MONGO_TEST_* connection pieces come from .env; the R/W user is the least-privilege grant
 		// production uses, so a model that quietly needs more than readWrite fails here too.

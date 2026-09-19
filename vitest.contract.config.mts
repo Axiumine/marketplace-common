@@ -10,6 +10,9 @@ export default defineConfig({
 	test: {
 		include: ['test/contract/**/*.test.mts'],
 		testTimeout: 30_000,
+		// Caps how long a test's name may be — the mutation gate selects tests by name, and past a
+		// size it cannot; see the file.
+		setupFiles: ['./vitest.testNames.mts'],
 		server: { deps: { inline: ['graphql', 'graphql-scalars'] } }
 	}
 })
