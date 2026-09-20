@@ -30,6 +30,8 @@ move each consumer's range — nine steps, all of them, every time. Full flow: [
 ⚠️ **Never run `yarn test:mutation` / `stryker` by hand.** It is hook-only — `pre-push` runs it, nothing
 else does, not to check a change, not on one file, not to confirm a survivor is fixed. Reproduce a
 survivor by hand-applying the mutant in source and running `yarn test` (seconds; names the failing tests).
+⚠️ Since ADR-055 the script has a second caller, `.github/workflows/gates.yml`, which runs it on
+every pull request — two callers, both automated, and a hand is neither.
 
 ⚠️ **A company IS the shop.** No `shop` model or collection, none coming — the chain is
 `shopOwner ──idShopOwner──> company ──idCompany──> item`, and a storefront's shop fields (`publicName`,
