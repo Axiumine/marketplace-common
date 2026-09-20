@@ -11,9 +11,31 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.3.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.4.0...HEAD)
 
 Nothing yet.
+
+## [4.4.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.4.0) - 2026-09-20
+
+### Added
+
+- **`others/retentionKeys` and `others/registrationKeys` — the last two Redis key builders that were
+  living outside this package.** `retentionLockKey()` builds `<prefix>retention:lock`, the single key the
+  fleet's hourly retention sweeps contend on (ADR-041); `pendingRegistrationKey(tier, email)` builds
+  `<prefix>pending:<tier>:<ciphertext hex>`, where a registration lives between the form and the click
+  (ADR-042). Both were template literals in a service's own `src/`, which is precisely what MC-01 forbids:
+  a key built in a service can be found by no other service, so the logout service cannot reach it and a
+  revocation cannot delete it. `./scripts/audit-check.sh` §1 had been failing on both since the features
+  landed, and moving them here is what closes it.
+
+  `pendingRegistrationKey` takes the address's deterministic ciphertext as a `Binary` and does the hex
+  encoding itself. The encoding is part of the key shape, not formatting at the call site — a caller that
+  hexed the ciphertext to arrive at the identical string would be rebuilding the shape a second time in a
+  second repo, which is the drift the move exists to end. The key is the ciphertext rather than a digest
+  of it because the ciphertext is already the value MongoDB indexes (ADR-043).
+
+  Both shapes are now rows in `docs/data-model.md` §Key shapes and entries in this package's
+  `test/redisKeyspace.test.mts` registry, so a third builder cannot be added to either file quietly.
 
 ## [4.3.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.3.0) - 2026-09-06
 
