@@ -80,7 +80,7 @@ const REMOVED_KEYS: ReadonlySet<string> = new Set([
 /**
  * Every header the SDK turns into a span attribute is removed by prefix, not by name.
  *
- * `@sentry/core` 10.69.0 already drops sensitive header names at collection time
+ * `@sentry/core` 10.75.0 already drops sensitive header names at collection time
  * (`utils/data-collection/filterKeyValueData.js:11` against `filtering-snippets.js:5-27`). That is a
  * second layer, not a substitute: the snippet list is an implementation detail of a minor version, the
  * version is pinned by nothing, and a header this platform adds later would not be on it. Taking the
