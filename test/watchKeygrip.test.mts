@@ -32,7 +32,7 @@ const makeStore = (initial: Record<string, string>) => {
 
 	return {
 		hGetAll: vi.fn(async () => current),
-		hSet: vi.fn(async () => 1),
+		hSet: vi.fn<(key: string, field: string, value: string) => Promise<unknown>>(async () => 1),
 		hExpire: vi.fn(async () => [1]),
 		hGet: vi.fn(async (_key: string, field: string) => current[field]),
 		rotate: (next: Record<string, string>) => {
@@ -275,6 +275,7 @@ describe('watchKeygrip', () => {
 			subscriber: makeSubscriber(),
 			serviceName: SERVICE,
 			version: 3,
+			fp: keygripFingerprint(KEYS_V3),
 			onKeys,
 			onError,
 			pollMs: 1_000

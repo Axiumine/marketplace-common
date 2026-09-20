@@ -70,6 +70,7 @@ commands used and nothing more, so importing a Mongoose model from here does not
 
 ```bash
 yarn build          # ESM build (tspc → dist/, one step, no post-processing)
+yarn typecheck      # tsc over src/, test/ and the vitest configs, no emit
 yarn lint:check     # eslint, then prettier --check
 yarn test:cov       # unit tests, 100% required on every metric
 yarn test:contract  # exports-map integrity against a fresh dist/

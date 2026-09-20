@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, type Mocked, vi } from 'vitest'
 
 import {
 	ISessionRevokeStore,
@@ -29,9 +29,7 @@ const ACCESS_KEYS = SESSION_KEYS.map(accessKeyOf)
  * being handed capabilities it has no business holding just to log an account out: one named field of one
  * hash is the entire read surface. `hDel` prunes; it cannot read either.
  */
-const store = (
-	over: Partial<ISessionRevokeStore> = {}
-): ISessionRevokeStore & { [K in keyof ISessionRevokeStore]: ReturnType<typeof vi.fn> } => ({
+const store = (over: Partial<Mocked<ISessionRevokeStore>> = {}): Mocked<ISessionRevokeStore> => ({
 	hKeys: vi.fn(async () => FIELDS),
 	hGet: vi.fn(async (key: string) => accessKeyOf(key)),
 	del: vi.fn(async () => 1),

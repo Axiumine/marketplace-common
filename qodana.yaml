@@ -90,10 +90,20 @@ failureConditions:
 # Scoped to the path, NOT disabled globally: a genuine hardcoded secret anywhere
 # in src/ must still fail the build. Do not widen this to the whole semgrep/
 # dir either — custom.yml is ours and should stay inspected.
+#
+# ES6PreferShortImport, scoped to test/: `tsconfig.test.json` (yarn typecheck) extends tsconfig.json for
+# the whole test tree, which brings src/'s `@others/*`-style baseUrl aliases into scope for test files too
+# — and the inspection duly suggests every one of the suite's existing `../src/...` imports be rewritten
+# to the shorter alias form. That import style is deliberate and universal across test/ (never adopted
+# there, only in src/), so this is the gate reacting to a resolution path newly opened for type-checking,
+# not a real problem with an import. Scoped to the path, not disabled globally: src/ keeps the inspection.
 exclude:
   - name: HardcodedPasswords
     paths:
       - semgrep/vendor
+  - name: ES6PreferShortImport
+    paths:
+      - test
 
 #Execute shell command before Qodana execution (Applied in CI/CD pipeline)
 #bootstrap: sh ./prepare-qodana.sh

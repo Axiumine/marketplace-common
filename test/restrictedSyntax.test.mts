@@ -21,9 +21,20 @@ const FIXTURES = new URL('./fixtures/restrictedSyntax/', import.meta.url)
 const TLS_MESSAGE = 'Certificate verification stays on.'
 const PII_MESSAGE = 'The blanket Sentry PII flag is absent by decision, not set to false.'
 
+/*
+ * ⚠️ **One `ESLint` instance, hoisted here and reused by every fixture below.** `new ESLint()` resolves
+ * `eslint.config.js` from scratch — cheap once, but this file drives it through a dozen `lintText` calls,
+ * and on a loaded runner a dozen cold config resolutions is what turned this suite flaky: an instance
+ * that took slightly too long occasionally tripped vitest's default 5s per-test timeout, not the
+ * assertion. One instance amortises that resolution across every case instead of paying it a dozen times.
+ * The fixture tests still carry an explicit 30s timeout of their own — this is a real lint run, not a
+ * mock, so a slow CI box should have room to finish rather than fail on the clock.
+ */
+const eslint = new ESLint()
+
 const lintFixture = async (name: string) => {
 	const code = await readFile(new URL(`${name}.mts.fixture`, FIXTURES), 'utf8')
-	const [result] = await new ESLint().lintText(code, { filePath: 'test/restrictedSyntaxFixture.mts' })
+	const [result] = await eslint.lintText(code, { filePath: 'test/restrictedSyntaxFixture.mts' })
 
 	return (result?.messages ?? []).filter((message) => message.ruleId === 'no-restricted-syntax')
 }
@@ -36,19 +47,23 @@ describe('the no-restricted-syntax block fires on every shape it names', () => {
 		['send-default-pii', PII_MESSAGE],
 		['member-node-tls-reject-unauthorized', TLS_MESSAGE],
 		['literal-node-tls-reject-unauthorized', TLS_MESSAGE]
-	])('reports %s exactly once', async (fixture, expected) => {
-		const messages = await lintFixture(fixture)
+	])(
+		'reports %s exactly once',
+		async (fixture, expected) => {
+			const messages = await lintFixture(fixture)
 
-		expect(messages).toHaveLength(1)
-		expect(messages[0]?.message).toContain(expected)
-		expect(messages[0]?.severity).toBe(2)
-	})
+			expect(messages).toHaveLength(1)
+			expect(messages[0]?.message).toContain(expected)
+			expect(messages[0]?.severity).toBe(2)
+		},
+		30_000
+	)
 })
 
 describe('the block stays silent on the shape the services carry', () => {
 	it('reports nothing on the compliant init options', async () => {
 		expect(await lintFixture('compliant')).toStrictEqual([])
-	})
+	}, 30_000)
 })
 
 const REDIS_DEL_MESSAGE = 'BCON-08: one Redis key per `del`.'
@@ -72,15 +87,19 @@ describe('the one-key-per-del rule fires on every batched shape', () => {
 		['redis-del-two-arguments', REDIS_DEL_MESSAGE],
 		['redis-del-array-argument', REDIS_DEL_MESSAGE],
 		['redis-del-spread-argument', REDIS_DEL_MESSAGE]
-	])('reports %s exactly once', async (fixture, expected) => {
-		const messages = await lintFixture(fixture)
+	])(
+		'reports %s exactly once',
+		async (fixture, expected) => {
+			const messages = await lintFixture(fixture)
 
-		expect(messages).toHaveLength(1)
-		expect(messages[0]?.message).toContain(expected)
-		expect(messages[0]?.severity).toBe(2)
-	})
+			expect(messages).toHaveLength(1)
+			expect(messages[0]?.message).toContain(expected)
+			expect(messages[0]?.severity).toBe(2)
+		},
+		30_000
+	)
 
 	it('reports nothing on the per-key shape the session code carries', async () => {
 		expect(await lintFixture('redis-del-compliant')).toStrictEqual([])
-	})
+	}, 30_000)
 })

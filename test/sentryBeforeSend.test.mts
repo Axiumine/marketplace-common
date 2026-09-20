@@ -131,7 +131,7 @@ function makeErrorEvent(): ISentryScrubbableEvent {
 				level: 'info',
 				data: { method: 'POST', status_code: 200, 'user-agent': AGENT }
 			}
-		] as ISentryScrubbableEvent['breadcrumbs']
+		] as unknown as ISentryScrubbableEvent['breadcrumbs']
 	}
 }
 
@@ -146,6 +146,15 @@ function attributeBags(event: ISentryScrubbableEvent): Array<Record<string, unkn
 /** The breadcrumbs of a scrubbed event, as bags. */
 function crumbs(event: ISentryScrubbableEvent): Array<Record<string, unknown>> {
 	return (event.breadcrumbs ?? []).map((breadcrumb) => breadcrumb as Record<string, unknown>)
+}
+
+/**
+ * `request.url`, read back the same way as the bags above. `ISentryScrubbableEvent['request']` only
+ * declares `headers`/`env`/`data` — the fields the scrubber itself touches — so the `url` every fixture
+ * here also carries needs the same widening the bags get, not a second interface for one property.
+ */
+function requestUrl(event: ISentryScrubbableEvent): unknown {
+	return (event.request as Record<string, unknown> | undefined)?.url
 }
 
 describe('sentryBeforeSend — the whole-event guarantee', () => {
@@ -562,7 +571,7 @@ function makeBrowserErrorEvent(): ISentryScrubbableEvent {
 				level: 'warning',
 				data: { method: 'POST', url: '/graphql-user-authorization?probeQuery=TOKENQUERYPROBE', status_code: 404 }
 			}
-		] as ISentryScrubbableEvent['breadcrumbs']
+		] as unknown as ISentryScrubbableEvent['breadcrumbs']
 	}
 }
 
@@ -629,7 +638,7 @@ describe('sentryBeforeSend — the captured browser event', () => {
 
 		sentryBeforeSend(event)
 
-		expect(event.request?.url).toBe('https://marketplace-domain.com/account/addresses')
+		expect(requestUrl(event)).toBe('https://marketplace-domain.com/account/addresses')
 	})
 
 	it('keeps the reset path on the transaction, on both the request and the trace attribute', () => {
@@ -637,7 +646,7 @@ describe('sentryBeforeSend — the captured browser event', () => {
 
 		sentryBeforeSend(event)
 
-		expect(event.request?.url).toBe('https://marketplace-domain.com/reset-password/confirm')
+		expect(requestUrl(event)).toBe('https://marketplace-domain.com/reset-password/confirm')
 		expect(event.contexts?.trace?.data).toMatchObject({ 'url.full': 'https://marketplace-domain.com/reset-password/confirm' })
 	})
 

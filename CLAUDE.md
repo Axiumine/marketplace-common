@@ -66,8 +66,9 @@ one puts Sentry behind every consumer of a Mongoose model.
 Otherwise a `vi.mock(...)` on either stops intercepting once the import runs from `dist/` here instead of
 the service's own `src/`, and it fails as a silent dry-run with no mutant in sight.
 
-⚠️ **Nothing type-checks `test/integration/`.** `tsconfig.typecheck.json` stops at `src/**` and
-`test/types/**`; verify a new type there with a throwaway `tsc` config, not by trusting the suite.
+⚠️ **`tsconfig.typecheck.json` stops at `src/**` and `test/types/**`** — it does not reach
+`test/integration/`. `yarn typecheck` (`tsconfig.test.json`) is the one that does: it covers all of
+`test/**`, `src/**` and the vitest configs, with no emit.
 
 ⚠️ **Never add `ignoreStatic` to `stryker.config.mjs`.** It hides real survivors instead of fixing them —
 a module-load-time throw belongs inside a dynamic `import()` in `beforeEach` (not `beforeAll`), so the

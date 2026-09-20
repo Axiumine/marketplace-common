@@ -18,7 +18,7 @@ import {
 	sessionKeyFromIndexField,
 	tombstoneKey
 } from '../src/others/sessionKeys.mts'
-import { Tier } from '../src/others/Tier.mts'
+import { TIER } from '../src/others/Tier.mts'
 
 /*
  * The Redis keyspace, enumerated once and asserted from two directions.
@@ -77,7 +77,7 @@ const KEY_SHAPES = [
 	{
 		file: 'others/sessionKeys.mts',
 		name: 'sessionIndexKey',
-		build: () => sessionIndexKey(Tier.User, ACCOUNT_ID),
+		build: () => sessionIndexKey(TIER.user, ACCOUNT_ID),
 		digests: false,
 		why: 'a tier and an account _id, both of which every resource query already carries'
 	},
@@ -91,7 +91,7 @@ const KEY_SHAPES = [
 	{
 		file: 'others/sessionKeys.mts',
 		name: 'reuseEventsKey',
-		build: () => reuseEventsKey(Tier.Admin, ACCOUNT_ID),
+		build: () => reuseEventsKey(TIER.admin, ACCOUNT_ID),
 		digests: false,
 		why: 'a tier and an account _id, as the session index above'
 	},
