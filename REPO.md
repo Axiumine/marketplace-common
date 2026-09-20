@@ -6,10 +6,11 @@ carries the rules; [`README.md`](./README.md) is the consumer-facing document.
 
 ## The hooks
 
-`.githooks/pre-push` is a blocking six-step gate: `yarn semgrep:ci` (Semgrep SAST over `src/`, rules
+`.githooks/pre-push` is a blocking seven-step gate: `yarn semgrep:ci` (Semgrep SAST over `src/`, rules
 vendored under `semgrep/`, pinned image, `--network none`), trivy (dependency advisories over `yarn.lock`,
 HIGH and CRITICAL, production tree only), `yarn lint:check` (eslint, then
-`prettier --check`, both over the whole tree), `yarn test:cov` (100% on every metric), `yarn test:mutation`
+`prettier --check`, both over the whole tree), `yarn typecheck` (`tsconfig.test.json` — src/, test/ and the
+vitest configs, no emit), `yarn test:cov` (100% on every metric), `yarn test:mutation`
 (Stryker, `thresholds.break: 100`), then a Qodana scan via `./qodana.sh`. Roughly a minute in total.
 
 ⚠️ **`yarn test:cov` is two gates, not one.** vitest runs, and then `scripts/coverage-audit.mjs` proves the
@@ -31,13 +32,13 @@ repo here; the class that does query one is in the image and in no profile. This
 advisories reach every other — nine services install it by package name — so an unchecked transitive
 dependency here is an unchecked dependency fleet-wide.
 
-`.githooks/pre-commit` is four gates, cheapest first: the secret guard (staged secret paths, staged
-high-entropy values), `yarn lint:check`, `yarn test:cov`, then a full Qodana scan. The last three run
-**only** when the staged paths can move a verdict — `src/`, `test/`, `semgrep/`, `.githooks/`,
-`package.json`, `yarn.lock`, `qodana.yaml`/`qodana.sh`, the vitest/tsconfig/stryker configs and, since the
-lint gate exists to read them, `eslint.config.js`/`.prettierrc`/`.prettierignore`, and
+`.githooks/pre-commit` is five gates, cheapest first: the secret guard (staged secret paths, staged
+high-entropy values), `yarn lint:check`, `yarn typecheck`, `yarn test:cov`, then a full Qodana scan. The
+last four run **only** when the staged paths can move a verdict — `src/`, `test/`, `semgrep/`,
+`.githooks/`, `package.json`, `yarn.lock`, `qodana.yaml`/`qodana.sh`, the vitest/tsconfig/stryker configs
+and, since the lint gate exists to read them, `eslint.config.js`/`.prettierrc`/`.prettierignore`, and
 `scripts/coverage-audit.mjs`/`coverage-exempt.txt`, which are the coverage file-count gate itself — so a
-docs-only commit skips them. Those last three were missing from the filter for as long as lint was ungated, which is how a
+docs-only commit skips them. Those last four were missing from the filter for as long as lint was ungated, which is how a
 run of commits widening the eslint `ignores` block each passed with no gate run at all.
 
 ### Why the mutation gate is hook-only
@@ -297,10 +298,10 @@ those models are gone now; the shape of the weakness is not.
 ## Traps in the tests
 
 - **Adding a runtime file drops coverage below 100 → `test:cov` fails.** Add a matching test.
-- ⚠️ **Nothing type-checks `test/integration/`.** `tsconfig.typecheck.json` includes `src/**/*.mts` and
-  `test/types/**/*.test-d.mts` and stops there, and vitest strips types without checking them, so a type
-  error in that suite surfaces nowhere. Verify a type you add there by pointing a throwaway config at the
-  directory.
+- ⚠️ **`tsconfig.typecheck.json` does not reach `test/integration/`** — it includes only `src/**/*.mts`
+  and `test/types/**/*.test-d.mts`. `yarn typecheck` (`tsconfig.test.json`, gated in `.githooks/pre-commit`
+  and `.githooks/pre-push`) is the one that covers it, along with the rest of `test/**` and the vitest
+  configs — vitest itself still strips types without checking them, which is the gap that gate closes.
 - ⚠️ **Do not add `ignoreStatic` to `stryker.config.mjs`.** A mutant in module-load-time code can throw
   during vitest's file-collection phase, before any test runs; Stryker then cannot attribute the failure to
   a test and reports it **Survived** even though the suite did fail. That artifact looks exactly like a real
@@ -496,6 +497,7 @@ config inlining requirement — live in [`CLAUDE.md`](./CLAUDE.md).
 
 ```bash
 yarn build          # ESM build only (tspc → dist/). This is the working build.
+yarn typecheck      # tsc -p tsconfig.test.json — src/, test/ and the vitest configs, no emit
 yarn lint           # eslint --fix . && prettier --write .      (lint:check = read-only)
 yarn prepare        # hooks:install + rm -rf dist && yarn build (runs on install/publish)
 yarn hooks:install  # core.hooksPath .githooks + the yarn.lock registry filter

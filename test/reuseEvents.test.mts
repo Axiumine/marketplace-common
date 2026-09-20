@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, type Mocked, vi } from 'vitest'
 
 import {
 	IReuseEvent,
@@ -27,9 +27,7 @@ const event = (over: Partial<IReuseEvent> = {}): IReuseEvent => ({
 	...over
 })
 
-const store = (
-	over: Partial<IReuseEventStore> = {}
-): IReuseEventStore & { [K in keyof IReuseEventStore]: ReturnType<typeof vi.fn> } => ({
+const store = (over: Partial<Mocked<IReuseEventStore>> = {}): Mocked<IReuseEventStore> => ({
 	lPush: vi.fn(async () => 1),
 	lTrim: vi.fn(async () => 'OK'),
 	expire: vi.fn(async () => 1),

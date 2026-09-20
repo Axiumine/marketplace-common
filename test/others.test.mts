@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { REFRESH_TOKEN_EXPIRY } from '@axiumine/koa-utils/lib/tokens'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type Mocked, vi } from 'vitest'
 
 import { PositionType } from '../src/models/types/PositionType.mts'
 import { ADMIN_ONLY_FIELDS_SHOP_OWNER, APPROVAL_GATE_FIELD_SHOP_OWNER } from '../src/others/adminOnlyFields.mts'
@@ -323,9 +323,7 @@ describe('assertUnderRateLimit', () => {
 	// value itself would agree with the implementation about any algorithm, including a mutated one.
 	const KEY = 'test:rl:login:857b6e3f78989500a2e460a084bb142eed749b2c938b938edcad77abf521aa19'
 
-	const store = (
-		over: Partial<IRateLimitStore> = {}
-	): IRateLimitStore & { [K in keyof IRateLimitStore]: ReturnType<typeof vi.fn> } => ({
+	const store = (over: Partial<Mocked<IRateLimitStore>> = {}): Mocked<IRateLimitStore> => ({
 		incr: vi.fn(async () => 1),
 		ttl: vi.fn(async () => -1),
 		expire: vi.fn(async () => 1),

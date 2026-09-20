@@ -25,6 +25,7 @@
 		"build:all": "yarn run build:cjs && yarn run build:esm",
 		"build:cjs": "yarn run tsc -p tsconfig.cjs.json && find dist/cjs -type f -name \"*.js\" -exec bash -c 'mv \"$0\" \"${0%.js}.cjs\"' {} \\; && cp -R dist/cjs/* dist/ && rm -rf dist/cjs",
 		"build:esm": "yarn run tspc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.test.json",
 		"lint": "eslint --fix . && prettier --write .",
 		"lint:check": "eslint . && prettier --check .",
 		"test": "vitest run",

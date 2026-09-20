@@ -3,7 +3,7 @@ import { IAuthorizationDisDel } from '@axiumine/koa-utils/lib/IAuthorizationDisD
 import { ICookies } from '@axiumine/koa-utils/lib/ICookies'
 import { REFRESH_TOKEN_EXPIRY } from '@axiumine/koa-utils/lib/tokens'
 import { Types } from 'mongoose'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type Mocked, vi } from 'vitest'
 
 import { findAccountForSession, ISessionAccountModel } from '../src/others/findAccountForSession.mts'
 import { hashSessionToken } from '../src/others/hashSessionToken.mts'
@@ -604,9 +604,7 @@ describe('refreshSessionTokens', () => {
 		accessKey: BOUND_ACCESS_KEY
 	}
 
-	const writeStore = (
-		over: Partial<ISessionWriteStore> = {}
-	): ISessionWriteStore & { [K in keyof ISessionWriteStore]: ReturnType<typeof vi.fn> } => ({
+	const writeStore = (over: Partial<Mocked<ISessionWriteStore>> = {}): Mocked<ISessionWriteStore> => ({
 		hSet: vi.fn(async () => 1),
 		expire: vi.fn(async () => 1),
 		del: vi.fn(async () => 1),

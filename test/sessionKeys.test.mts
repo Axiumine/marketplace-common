@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type Mocked, vi } from 'vitest'
 
 import { hashSessionToken } from '../src/others/hashSessionToken.mts'
 import { IRefreshData } from '../src/others/IRefreshData.mts'
@@ -36,9 +36,7 @@ const DIGEST = '75f795d1820581753bbd527fcaca37ff850fa290cdb00bc81bab995b93931a11
 
 const ACCOUNT_ID = '68b0f2c1a2b3c4d5e6f70819'
 
-const store = (
-	over: Partial<ISessionKeyStore> = {}
-): ISessionKeyStore & { [K in keyof ISessionKeyStore]: ReturnType<typeof vi.fn> } => ({
+const store = (over: Partial<Mocked<ISessionKeyStore>> = {}): Mocked<ISessionKeyStore> => ({
 	hGetAll: vi.fn(async () => ({})),
 	hGet: vi.fn(async () => null),
 	del: vi.fn(async () => 1),
@@ -264,7 +262,7 @@ describe('readSessionHash', () => {
 	 */
 	it('treats a nullish reply as a miss rather than throwing', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
-		const s = store({ hGetAll: vi.fn(async () => null) as unknown as ISessionKeyStore['hGetAll'] })
+		const s = store({ hGetAll: vi.fn(async () => null) as unknown as Mocked<ISessionKeyStore>['hGetAll'] })
 
 		await expect(readSessionHash(s, TOKEN)).resolves.toEqual({})
 	})

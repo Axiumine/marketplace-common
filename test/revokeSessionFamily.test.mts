@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type Mocked, vi } from 'vitest'
 
 import { IReuseEvent } from '../src/others/recordReuseEvent.mts'
 import { ISessionFamilyStore, revokeSessionFamily } from '../src/others/revokeSessionFamily.mts'
@@ -21,9 +21,7 @@ const MEMBERS = [`${REDIS_KEY}${'a'.repeat(64)}`, `${REDIS_KEY}${'b'.repeat(64)}
  * and it is the point of the extraction. The routine is reachable with a store that cannot read a session,
  * which is the proof that widening `ISessionReadStore` bought a delegation rather than a dependency.
  */
-const store = (
-	over: Partial<ISessionFamilyStore> = {}
-): ISessionFamilyStore & { [K in keyof ISessionFamilyStore]: ReturnType<typeof vi.fn> } => ({
+const store = (over: Partial<Mocked<ISessionFamilyStore>> = {}): Mocked<ISessionFamilyStore> => ({
 	sMembers: vi.fn(async () => MEMBERS),
 	del: vi.fn(async () => 1),
 	lPush: vi.fn(async () => 1),
