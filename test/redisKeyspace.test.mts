@@ -2,10 +2,13 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { Binary } from 'mongodb'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { HASH_FIELD_TTL_PROBE_KEY } from '../src/others/assertHashFieldTTLSupport.mts'
 import { assertUnderRateLimit, IRateLimitStore } from '../src/others/assertUnderRateLimit.mts'
+import { pendingRegistrationKey } from '../src/others/registrationKeys.mts'
+import { retentionLockKey } from '../src/others/retentionKeys.mts'
 import {
 	familyKey,
 	graceHitsKey,
@@ -52,6 +55,9 @@ const PREFIX = 'test:'
 const INPUT = 'e7d4c1a09b6f4e2d8a3c5b7f1e9d0c2a'
 
 const ACCOUNT_ID = '68b1f2c4a9d0e1f2a3b4c5d6'
+
+/** A stand-in deterministic ciphertext, for the one builder here that takes a `Binary` rather than a string. */
+const EMAIL = new Binary(Buffer.from(INPUT), Binary.SUBTYPE_ENCRYPTED)
 
 const SRC = fileURLToPath(new URL('../src/', import.meta.url))
 
@@ -105,7 +111,15 @@ const KEY_SHAPES = [
 		build: HASH_FIELD_TTL_PROBE_KEY,
 		digests: null
 	},
-	{ file: 'others/assertUnderRateLimit.mts', name: 'assertUnderRateLimit', build: null, digests: true }
+	{ file: 'others/assertUnderRateLimit.mts', name: 'assertUnderRateLimit', build: null, digests: true },
+	{
+		file: 'others/registrationKeys.mts',
+		name: 'pendingRegistrationKey',
+		build: () => pendingRegistrationKey(TIER.user, EMAIL),
+		digests: false,
+		why: 'the deterministic ciphertext of the address, already the value MongoDB indexes (ADR-043) — not plaintext and not a credential'
+	},
+	{ file: 'others/retentionKeys.mts', name: 'retentionLockKey', build: retentionLockKey, digests: null }
 ] as const
 
 /** How many `process.env.REDIS_KEY` interpolations each source file is allowed to carry. */
@@ -192,7 +206,8 @@ describe('no raw token reaches a key name', () => {
 			'familyKey',
 			'sessionIndexKey',
 			'sessionKeyFromIndexField',
-			'reuseEventsKey'
+			'reuseEventsKey',
+			'pendingRegistrationKey'
 		])
 		expect(passThrough.filter((shape) => !shape.why?.trim())).toStrictEqual([])
 	})
@@ -207,7 +222,8 @@ describe('the constant key shapes', () => {
 			`${PREFIX}keygrip`,
 			`${PREFIX}keygrip:holders`,
 			`${PREFIX}keygrip:rotated`,
-			`${PREFIX}hash-field-ttl-probe`
+			`${PREFIX}hash-field-ttl-probe`,
+			`${PREFIX}retention:lock`
 		])
 	})
 })

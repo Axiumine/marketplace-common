@@ -357,9 +357,17 @@
 			"import": "./dist/others/refreshSessionTokens.mjs",
 			"types": "./dist/others/refreshSessionTokens.d.mts"
 		},
+		"./others/registrationKeys": {
+			"import": "./dist/others/registrationKeys.mjs",
+			"types": "./dist/others/registrationKeys.d.mts"
+		},
 		"./others/resolveAuthorizationSession": {
 			"import": "./dist/others/resolveAuthorizationSession.mjs",
 			"types": "./dist/others/resolveAuthorizationSession.d.mts"
+		},
+		"./others/retentionKeys": {
+			"import": "./dist/others/retentionKeys.mjs",
+			"types": "./dist/others/retentionKeys.d.mts"
 		},
 		"./others/ReuseEventAction": {
 			"import": "./dist/others/ReuseEventAction.mjs",
