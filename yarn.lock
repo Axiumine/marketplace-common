@@ -2197,10 +2197,10 @@ graceful-fs@^4.2.4:
   resolved "https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz#4183e4e8bf08bb6e05bbb2f7d2e0c8f712ca40e3"
   integrity sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==
 
-graphql-scalars@^1.25.0:
-  version "1.26.0"
-  resolved "https://registry.npmjs.org/graphql-scalars/-/graphql-scalars-1.26.0.tgz#a84a516689e8b259bddad3c5c40539a485032a84"
-  integrity sha512-o7BnU5yxAFUWTMKpC5yshB12DjzzoxLgEBO9OpOAcxodWrL3sPldD/fqVQoIfcqPH8OclyQilLtg3/7ZRqQUVQ==
+graphql-scalars@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/graphql-scalars/-/graphql-scalars-2.0.0.tgz#96de418e8861368a954a2391110d28a0fe032eda"
+  integrity sha512-tCd2ddcxlbz5rG7xsfDbjvIssR9c/5EauDYt272pxfxpUNBjFMpnDwukuA3rm1O/9michQDxFfPPAeoQjZtJVQ==
   dependencies:
     tslib "^2.5.0"
 
