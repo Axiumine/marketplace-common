@@ -6,9 +6,10 @@ carries the rules; [`README.md`](./README.md) is the consumer-facing document.
 
 ## The hooks
 
-`.githooks/pre-push` is a blocking seven-step gate: `yarn semgrep:ci` (Semgrep SAST over `src/`, rules
+`.githooks/pre-push` is a blocking eight-step gate: `yarn semgrep:ci` (Semgrep SAST over `src/`, rules
 vendored under `semgrep/`, pinned image, `--network none`), trivy (dependency advisories over `yarn.lock`,
-HIGH and CRITICAL, production tree only), `yarn lint:check` (eslint, then
+HIGH and CRITICAL, production tree only), then the OpenSSF Scorecard floor (`.scorecard-floor`, supply-chain
+posture read from the GitHub API, ADR-054), `yarn lint:check` (eslint, then
 `prettier --check`, both over the whole tree), `yarn typecheck` (`tsconfig.test.json` — src/, test/ and the
 vitest configs, no emit), `yarn test:cov` (100% on every metric), `yarn test:mutation`
 (Stryker, `thresholds.break: 100`), then a Qodana scan via `./qodana.sh`. Roughly a minute in total.
