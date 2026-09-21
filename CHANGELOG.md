@@ -11,9 +11,31 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.4.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.5.0...HEAD)
 
 Nothing yet.
+
+## [4.5.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.5.0) - 2026-09-21
+
+### Changed
+
+- **`graphql-scalars` 1.25 → 2.0 — the one change in this release that reaches `dist/`.** `GraphQLDate` is
+  the runtime `type` of the `date` field inside `GraphQLInputShopOwnerPersonalData` and
+  `GraphQLInputUserPersonalData`, and the `exports` map publishes both, so every consumer's schema is now
+  built against the 2.x scalar. The emitted `.d.mts` does not change — the exported symbols are still
+  `GraphQLInputObjectType` from `graphql` itself — which is why this is a minor and not a major. A consumer
+  that also imports `graphql-scalars` directly should move to 2.x in the same breath: two copies in one
+  schema means two distinct `GraphQLDate` instances, and `graphql` rejects that the way it rejects two
+  copies of itself.
+- **`@sentry/node` 10.69.0 → 10.75.0 — ships no change to `dist/`.** It is a devDependency, imported nowhere
+  under `src/`, and the ten version guards that pin it were bumped with it.
+- **The build moved onto TypeScript 6 — ships no change to `dist/`.** `typescript` `^6.0.3`, `ts-patch`
+  `^4.0.1`, `typescript-transform-paths` `^4.0.0`, `baseUrl` dropped from `tsconfig.json` and the fifteen
+  path aliases relativised, with `types: ["node"]` now named explicitly because dropping `baseUrl` also
+  drops the automatic `@types` sweep. ts-patch 4 refuses TypeScript 5 and TypeScript 6 errors on `baseUrl`
+  (`TS5101`), so the three could only land together. This changes how `dist/` is produced, not what it
+  contains: the aliases were already rewritten to relative paths by the transform rather than resolved
+  through `baseUrl`.
 
 ## [4.4.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.4.0) - 2026-09-20
 
