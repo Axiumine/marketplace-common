@@ -415,7 +415,7 @@
 		}
 	},
 	"dependencies": {
-		"graphql-scalars": "^1.25.0"
+		"graphql-scalars": "^2.0.0"
 	},
 	"peerDependencies": {
 		"@axiumine/koa-utils": ">=6",
