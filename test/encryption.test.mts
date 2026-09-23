@@ -842,14 +842,58 @@ describe('encryptUpdate', () => {
 		expect(vault).toHaveLength(0)
 	})
 
-	// The cast is skipped for an interior node — a whole sub-document reached by one dotted key has no
-	// `plaintext` of its own, and is left to `encryptAtNode`'s own per-field walk, unchanged.
-	it('does not cast a value reaching an interior node', async () => {
-		const update = { $set: { personalData: { firstName: 'Ada' } } }
+	/*
+	 * ⚠️ The shape the platform's two `personalData` writers actually use —
+	 * `funUserPersonalDataUpdate` and `funShopOwnerUpdate` both `$set` the *whole* sub-document behind
+	 * one interior key, never a dotted leaf. A cast that only recognised a dotted-leaf key would never
+	 * engage for either of them, leaving the CastError guarantee above true in the test suite and false
+	 * in production. `castAtNode` descends into the interior node the same way `encryptAtNode` itself
+	 * does, so this is that exact call-site shape, several levels deep.
+	 */
+	it('casts a value reaching an interior node, not only a dotted leaf key, and throws the same CastError', async () => {
+		const update = { $set: { personalData: { birth: { date: 'not a date' } } } }
+
+		await expect(encryptUpdate(update, root, KEY)).rejects.toThrow(/Cast to EncryptedField failed/)
+		expect(vault).toHaveLength(0)
+	})
+
+	it('coerces a plaintext value reached through an interior node, the same way a dotted leaf key does', async () => {
+		const update = { $set: { personalData: { firstName: 42 } } }
 
 		await encryptUpdate(update, root, 'user')
 
-		expect(plaintextOf((update.$set.personalData as Record<string, unknown>).firstName)).toBe('Ada')
+		expect(plaintextOf((update.$set.personalData as Record<string, unknown>).firstName)).toBe('42')
+	})
+
+	// A shape that does not match the node at all — an object where the array-valued `addresses` is
+	// declared — is left exactly as `encryptAtNode` leaves it: untouched, not cast, not thrown on.
+	it('leaves a value untouched when its shape does not match the node it resolved to', async () => {
+		const update = { $set: { addresses: { not: 'an array' } } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(update.$set.addresses).toEqual({ not: 'an array' })
+	})
+
+	// The mirror case: an array where the object-valued `personalData` is declared. `node.element` is
+	// undefined for an interior object node, so this is the walker's other shape-mismatch escape.
+	it('leaves an array untouched when the node it resolved to has no element of its own', async () => {
+		const update = { $set: { personalData: ['not an object'] } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(update.$set.personalData).toEqual(['not an object'])
+	})
+
+	// A whole encrypted array replaced in one `$set`, not appended to — every element is cast against
+	// the array's own element node, the same as a dotted leaf or a single interior sub-document.
+	it('casts every element when a whole encrypted array is $set at once', async () => {
+		const update = { $set: { addresses: [{ street: 42 }, { street: 'B street' }] } }
+
+		await encryptUpdate(update, root, 'user')
+
+		const addresses = update.$set.addresses as Record<string, unknown>[]
+		expect(addresses.map((entry) => plaintextOf(entry.street))).toEqual(['42', 'B street'])
 	})
 
 	it('encrypts $set, by dotted path and by whole sub-document alike', async () => {
@@ -913,6 +957,28 @@ describe('encryptUpdate', () => {
 			'B street'
 		])
 		expect(plaintextOf(update.$addToSet.addresses.city)).toBe('Town')
+	})
+
+	// The interior-node cast gap applied here too — $push and $addToSet never cast the pushed element
+	// at all, dotted-leaf key or not. Same walker, same fix.
+	it('casts a pushed array element against the element node, the same way a $set value is cast', async () => {
+		const update = { $push: { addresses: { street: 42, _id: 'one' } } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(plaintextOf(update.$push.addresses.street)).toBe('42')
+		expect(update.$push.addresses._id).toBe('one')
+	})
+
+	it('casts each element of a $push $each against the element node too', async () => {
+		const update = { $push: { addresses: { $each: [{ street: 42 }, { street: 'B street' }] } } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(update.$push.addresses.$each.map((entry) => plaintextOf((entry as Record<string, unknown>).street))).toEqual([
+			'42',
+			'B street'
+		])
 	})
 
 	it('ignores a push at a key that is not an encrypted array, and an operand that is not a value map', async () => {

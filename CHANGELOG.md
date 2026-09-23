@@ -31,7 +31,9 @@ otherwise surface, silently, the day a new caller shaped its query or write diff
   filters, updates, insert documents and replacement documents are all encrypted before the batch leaves
   the process.
 - **A query-based update now gets the same `CastError` guarantee `save()` gives** for a malformed value on
-  an encrypted field, instead of silently encrypting the raw, uncast value.
+  an encrypted field, instead of silently encrypting the raw, uncast value — at any depth the update names
+  it, a dotted leaf key (`'personalData.birth.date'`) or a whole interior sub-document (`{ personalData }`,
+  the shape both `personalData` writers on the platform actually use), not only the former.
 - **`pre('save')` reverts already-encrypted fields to their original plaintext if a later field's KMS call
   throws mid-write**, instead of leaving the in-memory document a silent mix of ciphertext and plaintext.
 
