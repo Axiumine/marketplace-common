@@ -585,6 +585,41 @@ describe('resolveAuthorizationSession', () => {
 		expectStatus(await rejection(() => resolve(s)), 409, 'Refresh In Progress')
 		expect(s.expire).not.toHaveBeenCalled()
 	})
+
+	/*
+	 * ⚠️ **The short-circuit itself, not just where it leads.** A first claim (`attempts === 1`) arms the
+	 * TTL unconditionally and never has to ask what the key's TTL already is — Redis never hands `INCR` a
+	 * fresh key with one set. Folding that check into `|| (await store.ttl(key)) < 0` would still call
+	 * `expire` here, because the default mock's `ttl` also answers -1, so only the *call itself* tells
+	 * the two apart: this is the assertion the comment on the default `ttl` mock above promises exists.
+	 */
+	it('never reads the claim key TTL on a first claim: attempts === 1 short-circuits it', async () => {
+		vi.stubEnv('REDIS_KEY', REDIS_KEY)
+		const s = readStore(live())
+
+		await resolve(s)
+
+		expect(s.incr).toHaveBeenCalledExactlyOnceWith(claimKeyFor(TOKEN))
+		expect(s.ttl).not.toHaveBeenCalled()
+		expect(s.expire).toHaveBeenCalledExactlyOnceWith(claimKeyFor(TOKEN), 10)
+	})
+
+	/*
+	 * ⚠️ **The boundary the repair's `< 0` actually draws.** A losing attempt whose claim key carries a
+	 * `ttl` of exactly 0 is not "unset" — `< 0` leaves it alone, same as any other live TTL — and only a
+	 * mutant widening the check to `<= 0` would re-arm it here.
+	 */
+	it('does not re-arm a claim whose TTL is exactly 0, only a TTL below it', async () => {
+		vi.stubEnv('REDIS_KEY', REDIS_KEY)
+		const s = readStore(live())
+
+		s.incr.mockImplementation(async () => 4)
+		s.ttl.mockImplementation(async (key: string) => (key === claimKeyFor(TOKEN) ? 0 : 1))
+
+		expectStatus(await rejection(() => resolve(s)), 409, 'Refresh In Progress')
+		expect(s.ttl).toHaveBeenCalledExactlyOnceWith(claimKeyFor(TOKEN))
+		expect(s.expire).not.toHaveBeenCalled()
+	})
 })
 
 describe('findAccountForSession', () => {
