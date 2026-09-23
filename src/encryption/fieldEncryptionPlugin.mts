@@ -1,11 +1,12 @@
 import { decryptDocument } from '@encryption/decryptDocument.mjs'
 import { encryptAtNode } from '@encryption/encryptAtNode.mjs'
-import { buildEncryptedFieldTrie } from '@encryption/encryptedFieldTrie.mjs'
+import { buildEncryptedFieldTrie, IEncryptedFieldNode } from '@encryption/encryptedFieldTrie.mjs'
 import { encryptFilter } from '@encryption/encryptFilter.mjs'
 import { encryptUpdate } from '@encryption/encryptUpdate.mjs'
 import { encryptValue } from '@encryption/fieldEncryption.mjs'
 import { IEncryptedFieldSpec } from '@encryption/IEncryptedFieldSpec.mjs'
 import { isCiphertext } from '@encryption/isCiphertext.mjs'
+import { isPlainObject } from '@encryption/isPlainObject.mjs'
 import { Document, MongooseDefaultQueryMiddleware, Query, Schema } from 'mongoose'
 
 export interface IFieldEncryptionPluginOptions {
@@ -174,4 +175,57 @@ export function fieldEncryptionPlugin(schema: Schema, options: IFieldEncryptionP
 			documents[index] = await encryptAtNode(documents[index], root, keyAltName)
 		}
 	})
+
+	// `bulkWrite` lives in mongoose's own separate bucket of model-level middleware, alongside
+	// `insertMany` above, and is not covered by `FILTER_HOOKS`/`UPDATE_HOOKS`: those are Query-level
+	// middleware names and `bulkWrite` is not one of them. Nothing on the platform calls it today —
+	// same as `insertMany` — but the day something does, an unrewritten filter matches nothing on a
+	// deterministic field, and an unrewritten write sends plaintext PII into a collection whose every
+	// other document is ciphertext.
+	schema.pre('bulkWrite', async function (ops: unknown) {
+		if (!Array.isArray(ops)) {
+			return
+		}
+
+		for (const op of ops) {
+			await encryptBulkWriteOp(op, root, keyAltName)
+		}
+	})
+}
+
+/**
+ * Encrypts one operation inside a `bulkWrite()` batch, in place.
+ *
+ * Driven by the shape each operation carries rather than by its kind's name: `insertOne.document` and
+ * `replaceOne.replacement` are whole documents (`encryptAtNode`, same as `insertMany`); the `filter`
+ * every kind but `insertOne` carries goes through `encryptFilter`; and `updateOne`/`updateMany`'s
+ * `update` goes through `encryptUpdate`. A kind that carries none of these — there is none today — is
+ * left untouched rather than guessed at.
+ */
+async function encryptBulkWriteOp(op: unknown, root: IEncryptedFieldNode, keyAltName: string): Promise<void> {
+	if (!isPlainObject(op)) {
+		return
+	}
+
+	for (const spec of Object.values(op)) {
+		if (!isPlainObject(spec)) {
+			continue
+		}
+
+		if ('document' in spec) {
+			spec.document = await encryptAtNode(spec.document, root, keyAltName)
+		}
+
+		if ('replacement' in spec) {
+			spec.replacement = await encryptAtNode(spec.replacement, root, keyAltName)
+		}
+
+		if ('filter' in spec) {
+			await encryptFilter(spec.filter, root, keyAltName)
+		}
+
+		if ('update' in spec) {
+			await encryptUpdate(spec.update, root, keyAltName)
+		}
+	}
 }

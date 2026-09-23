@@ -335,6 +335,58 @@ describe('insertMany', () => {
 })
 
 /*
+ * Nothing on the platform calls `bulkWrite` today, same as `insertMany` above. `bulkWrite` lives in
+ * mongoose's own separate bucket of model middleware, alongside `insertMany` — not in
+ * `FILTER_HOOKS`/`UPDATE_HOOKS`, which are Query-level middleware names — so it needs a hook of its
+ * own rather than inheriting either array's.
+ */
+describe('bulkWrite', () => {
+	it('encrypts each operation kind by the document shape it carries', async () => {
+		// The filter of every kind but `insertOne` uses the dotted-key shape a real MongoDB filter
+		// does — `{ 'login.email': … }`, one literal key, not `{ login: { email: … } }` — so it is read
+		// back the same way, by that one key, rather than through `valueAt`'s nested-path traversal.
+		const insertOp = { insertOne: { document: { login: { email: 'one@b.test' } } } }
+		const updateOp = { updateOne: { filter: { 'login.email': 'two@b.test' }, update: { $set: { notes: 'a note' } } } }
+		const replaceOp = {
+			replaceOne: { filter: { 'login.email': 'three@b.test' }, replacement: { login: { email: 'four@b.test' } } }
+		}
+		const deleteOneOp = { deleteOne: { filter: { 'login.email': 'five@b.test' } } }
+		const deleteManyOp = { deleteMany: { filter: { 'login.email': 'six@b.test' } } }
+		const updateManyOp = {
+			updateMany: { filter: { 'login.email': 'seven@b.test' }, update: { $set: { notes: 'another note' } } }
+		}
+		const ops = [insertOp, updateOp, replaceOp, deleteOneOp, deleteManyOp, updateManyOp]
+
+		await hooks.execPre('bulkWrite', null, [ops])
+
+		expect(plaintextOf(valueAt(insertOp, 'insertOne.document.login.email'))).toBe('one@b.test')
+		expect(plaintextOf(updateOp.updateOne.filter['login.email'])).toBe('two@b.test')
+		expect(plaintextOf(updateOp.updateOne.update.$set.notes)).toBe('a note')
+		expect(plaintextOf(replaceOp.replaceOne.filter['login.email'])).toBe('three@b.test')
+		expect(plaintextOf(valueAt(replaceOp, 'replaceOne.replacement.login.email'))).toBe('four@b.test')
+		expect(plaintextOf(deleteOneOp.deleteOne.filter['login.email'])).toBe('five@b.test')
+		expect(plaintextOf(deleteManyOp.deleteMany.filter['login.email'])).toBe('six@b.test')
+		expect(plaintextOf(updateManyOp.updateMany.filter['login.email'])).toBe('seven@b.test')
+		expect(plaintextOf(updateManyOp.updateMany.update.$set.notes)).toBe('another note')
+	})
+
+	it('does nothing when it is not handed an array', async () => {
+		await expect(hooks.execPre('bulkWrite', null, ['not an array'])).resolves.toBeDefined()
+
+		expect(vault).toHaveLength(0)
+	})
+
+	it('ignores an operation that is not an object, and a spec that is not an object', async () => {
+		const ops: unknown[] = ['not an operation', { deleteMany: 'nonsense' }]
+
+		await hooks.execPre('bulkWrite', null, [ops])
+
+		expect(ops).toEqual(['not an operation', { deleteMany: 'nonsense' }])
+		expect(vault).toHaveLength(0)
+	})
+})
+
+/*
  * The three account models the plugin is registered on, checked through the plugin rather than by
  * looking for it: a filter on the login credential comes back as ciphertext under that collection's
  * own key. A model that lost its `.plugin(...)` line fails here, and so does one that got the wrong
