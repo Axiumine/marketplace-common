@@ -13,6 +13,16 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.5.0...HEAD)
 
+### Added
+
+- **`others/assertPasswordByteLength`**, a new export: throws the same `GraphQLError` shape
+  `@axiumine/koa-utils`' `checkPwdLen` throws for a too-long password, but measures
+  `Buffer.byteLength(password, 'utf8')` rather than `.length`. `checkPwdLen` counts UTF-16 code units, and
+  bcrypt truncates at 72 UTF-8 **bytes** with no guard of its own — so a password heavy in emoji, accents
+  or CJK characters can sit under `checkPwdLen`'s ceiling while running well past bcrypt's, and two such
+  passwords that agree on their first 72 bytes then hash identically. Consumers adopt it once this release
+  is out; none does yet.
+
 ### Fixed
 
 - **A refresh token's rotation now claims the token atomically before it does anything else**, closing a
