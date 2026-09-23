@@ -1,7 +1,19 @@
 import { encryptAtNode } from '@encryption/encryptAtNode.mjs'
+import { castPlaintext } from '@encryption/EncryptedField.mjs'
 import { IEncryptedFieldNode, resolveEncryptedPath } from '@encryption/encryptedFieldTrie.mjs'
 import { encryptFilter } from '@encryption/encryptFilter.mjs'
 import { isPlainObject } from '@encryption/isPlainObject.mjs'
+
+/**
+ * Casts a value against `node`'s own declared type when the dotted key that resolved to `node` names
+ * a leaf directly — the common `{ 'personalData.birth.date': … }` shape. An interior node (`node`
+ * reached by a key naming a whole sub-document, e.g. `{ personalData: { birth: { date: … } } }`) has
+ * no `plaintext` of its own and is left to `encryptAtNode`, unchanged from before this cast existed —
+ * see `castPlaintext`'s own comment for why the leaf case needs it at all.
+ */
+function castLeaf(value: unknown, node: IEncryptedFieldNode, path: string): unknown {
+	return node.algorithm === undefined ? value : castPlaintext(value, node.plaintext, path)
+}
 
 /**
  * Operators whose operand is, field by field, the value to store. The two that matter here, and the
@@ -30,7 +42,7 @@ async function encryptValueMap(operand: unknown, root: IEncryptedFieldNode, keyA
 	for (const [key, value] of Object.entries(operand)) {
 		const node = resolveEncryptedPath(root, key)
 		if (node !== undefined) {
-			operand[key] = await encryptAtNode(value, node, keyAltName)
+			operand[key] = await encryptAtNode(castLeaf(value, node, key), node, keyAltName)
 		}
 	}
 }
@@ -114,7 +126,7 @@ export async function encryptUpdate(update: unknown, root: IEncryptedFieldNode, 
 		// than values.
 		const node = resolveEncryptedPath(root, key)
 		if (node !== undefined) {
-			update[key] = await encryptAtNode(operand, node, keyAltName)
+			update[key] = await encryptAtNode(castLeaf(operand, node, key), node, keyAltName)
 		}
 	}
 }

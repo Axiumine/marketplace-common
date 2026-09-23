@@ -9,6 +9,45 @@ interface IEncryptedFieldOptions {
 }
 
 /**
+ * Casts a plaintext value the way the `EncryptedField` path itself does, and the single source of
+ * truth both share — a `String`/`Date` path's own cast, restated for the one type each `plaintext`
+ * option stands in for.
+ *
+ * ⚠️ **Extracted so a write that never passes through this path's `cast()` can still get the same
+ * guarantee.** `save()` gets it for free: assigning `doc.personalData.birth.date = …` casts through
+ * this very path before the field-encryption plugin ever runs. A query-based update does not — the
+ * plugin's `pre` hook encrypts the raw filter/update value *before* mongoose's own `_castUpdate` runs
+ * against it, so a malformed value would otherwise be encrypted as-is and never raise the `CastError`
+ * `save()` would give for the same bad input. `encryptUpdate` calls this directly for exactly that
+ * reason — see its own comment.
+ */
+export function castPlaintext(value: unknown, plaintext: IEncryptedFieldSpec['plaintext'] | undefined, path: string): unknown {
+	if (value === null || value === undefined || isCiphertext(value)) {
+		return value
+	}
+
+	if (plaintext === 'date') {
+		const date = value instanceof Date ? value : new Date(value as string)
+		if (Number.isNaN(date.getTime())) {
+			throw new MongooseError.CastError(ENCRYPTED_FIELD_TYPE, value, path)
+		}
+		return date
+	}
+
+	if (plaintext === 'string') {
+		if (typeof value === 'string') {
+			return value
+		}
+		if (typeof value === 'number' || typeof value === 'boolean') {
+			return String(value)
+		}
+		throw new MongooseError.CastError(ENCRYPTED_FIELD_TYPE, value, path)
+	}
+
+	return value
+}
+
+/**
  * The Mongoose path type of every encrypted field, and the reason the rest of the platform did not
  * have to change.
  *
@@ -36,31 +75,7 @@ export class EncryptedField extends SchemaType {
 	}
 
 	override cast(value: unknown): unknown {
-		if (value === null || value === undefined || isCiphertext(value)) {
-			return value
-		}
-
-		const plaintext = (this.options as IEncryptedFieldOptions).plaintext
-
-		if (plaintext === 'date') {
-			const date = value instanceof Date ? value : new Date(value as string)
-			if (Number.isNaN(date.getTime())) {
-				throw new MongooseError.CastError(ENCRYPTED_FIELD_TYPE, value, this.path)
-			}
-			return date
-		}
-
-		if (plaintext === 'string') {
-			if (typeof value === 'string') {
-				return value
-			}
-			if (typeof value === 'number' || typeof value === 'boolean') {
-				return String(value)
-			}
-			throw new MongooseError.CastError(ENCRYPTED_FIELD_TYPE, value, this.path)
-		}
-
-		return value
+		return castPlaintext(value, (this.options as IEncryptedFieldOptions).plaintext, this.path)
 	}
 }
 

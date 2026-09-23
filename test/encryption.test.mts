@@ -802,6 +802,56 @@ describe('encryptUpdate', () => {
 		expect(vault).toHaveLength(0)
 	})
 
+	/*
+	 * ⚠️ The gap this closes: mongoose's own cast runs *after* this plugin's pre-hook has already
+	 * encrypted the update, so without this, a raw uncast value would be silently encrypted as-is —
+	 * `EncryptedField.cast()` sees ciphertext on the way past and short-circuits, and the CastError
+	 * `save()` would give for the same bad input never happens. `$set` is the shape the whole platform
+	 * writes updates with, so this is the leaf-dotted-path case: `castPlaintext`'s own suite (in
+	 * `EncryptedField`'s tests) is the source of truth for every coercion this reuses.
+	 */
+	it('casts the plaintext before encrypting, the same way save() would, and throws the same CastError', async () => {
+		const update = { $set: { 'personalData.birth.date': 'not a date' } }
+
+		await expect(encryptUpdate(update, root, KEY)).rejects.toThrow(/Cast to EncryptedField failed/)
+		expect(vault).toHaveLength(0)
+	})
+
+	it('accepts an already-cast value and encrypts it unchanged', async () => {
+		const date = new Date('2020-01-01T00:00:00.000Z')
+		const update = { $set: { 'personalData.birth.date': date } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(plaintextOf(update.$set['personalData.birth.date'])).toEqual(date)
+	})
+
+	it('casts a numeric or boolean plaintext to a string the way save() would', async () => {
+		const update = { $set: { 'login.email': 42 } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(plaintextOf(update.$set['login.email'])).toBe('42')
+	})
+
+	// The bare-key replacement-document branch gets the identical treatment, not only $set.
+	it('casts the plaintext of a bare-key replacement field before encrypting', async () => {
+		const update: Record<string, unknown> = { 'personalData.birth.date': 'not a date' }
+
+		await expect(encryptUpdate(update, root, KEY)).rejects.toThrow(/Cast to EncryptedField failed/)
+		expect(vault).toHaveLength(0)
+	})
+
+	// The cast is skipped for an interior node — a whole sub-document reached by one dotted key has no
+	// `plaintext` of its own, and is left to `encryptAtNode`'s own per-field walk, unchanged.
+	it('does not cast a value reaching an interior node', async () => {
+		const update = { $set: { personalData: { firstName: 'Ada' } } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(plaintextOf((update.$set.personalData as Record<string, unknown>).firstName)).toBe('Ada')
+	})
+
 	it('encrypts $set, by dotted path and by whole sub-document alike', async () => {
 		const update: { $set: Record<string, unknown> } = {
 			$set: {
