@@ -80,11 +80,14 @@ describe('the admin-only fields on the shopOwner', () => {
 
 	// The shopOwner's address point is optional: every shopOwner in the collection was written
 	// before this path existed, so a required one would fail every existing document on its next save.
+	//
+	// ⚠️ `type` is the GeoJSON literal `'Point'`, not `string` — see `PositionType`'s own `as const`. A
+	// widened `string` here would let this compile with `type: 'point'` or any other typo.
 	test('the address point is optional', () => {
 		expectTypeOf<IShopOwnerAddress>().toExtend<IBaseAddressSchema>()
 		expectTypeOf<IShopOwnerAddress>()
 			.toHaveProperty('position')
-			.toEqualTypeOf<{ type: string; coordinates: number[] } | undefined>()
+			.toEqualTypeOf<{ type: 'Point'; coordinates: number[] } | undefined>()
 	})
 
 	test('personalData.address is the shape that carries the point', () => {
@@ -103,9 +106,10 @@ describe('the company schema', () => {
 		expectTypeOf<ICompanySchema>().toHaveProperty('deleted').toEqualTypeOf<Date | undefined>()
 	})
 
+	// ⚠️ Same literal as the shopOwner's: `type` is `'Point'`, not `string` — see `PositionType`'s own `as const`.
 	test('the company address carries a required point', () => {
 		expectTypeOf<ICompanyAddress>().toExtend<IBaseAddressSchema>()
-		expectTypeOf<ICompanyAddress>().toHaveProperty('position').toEqualTypeOf<{ type: string; coordinates: number[] }>()
+		expectTypeOf<ICompanyAddress>().toHaveProperty('position').toEqualTypeOf<{ type: 'Point'; coordinates: number[] }>()
 	})
 })
 

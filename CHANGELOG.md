@@ -25,6 +25,10 @@ apart without reading the diff.
   could still throw after the old key had really been deleted; the unconditional rollback that followed
   used to delete the new pair too, leaving the caller with no working session at all for a failure that
   only ever touched a now-orphaned index row.
+- **`PositionType` now declares its `Point` literal `as const`**, matching `Tier.mts` and
+  `ReuseEventAction.mts`. Without it, `IShopOwnerAddress`, `ICompanyAddress` and `IUserAddress` all typed
+  their GeoJSON `position.type` as plain `string` rather than the literal `'Point'` GeoJSON itself
+  requires (RFC 7946), silently accepting any string at compile time.
 
 Six hardening fixes to `src/encryption`, an internal audit of the field-encryption plugin's fail-loud
 guarantees. None has a currently-reachable trigger on the platform today — each closes a gap that would
