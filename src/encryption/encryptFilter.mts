@@ -15,11 +15,14 @@ const VALUE_OPERATORS = new Set(['$eq', '$ne'])
 const VALUE_LIST_OPERATORS = new Set(['$in', '$nin'])
 
 /**
- * Operators that ask about the field rather than its value, and so are legal on any encrypted field
- * under any algorithm. `$exists` reads presence; `$type` reads the BSON type, which for an encrypted
- * field is `binData` and nothing else.
+ * The one BSON type an encrypted field's ciphertext can ever be. `$exists` reads presence and needs
+ * no value check at all; `$type` reads the BSON type, and the only value that can ever be true for an
+ * encrypted field is this one — a caller who queries the field's original logical type (`'string'`,
+ * `'date'`) gets an operand that matches nothing, silently, which is exactly the class of bug this
+ * file otherwise throws to prevent.
  */
-const VALUE_FREE_OPERATORS = new Set(['$exists', '$type'])
+const ENCRYPTED_BSON_TYPE = 'binData'
+const ENCRYPTED_BSON_TYPE_CODE = 5
 
 function unsupported(key: string, detail: string): Error {
 	return new Error(`Cannot query the encrypted field "${key}": ${detail} (ADR-029)`)
@@ -27,7 +30,15 @@ function unsupported(key: string, detail: string): Error {
 
 async function encryptOperand(key: string, operand: Record<string, unknown>, node: IEncryptedFieldNode, keyAltName: string) {
 	for (const operator of Object.keys(operand)) {
-		if (VALUE_FREE_OPERATORS.has(operator)) {
+		if (operator === '$exists') {
+			continue
+		}
+
+		if (operator === '$type') {
+			const type = operand[operator]
+			if (type !== ENCRYPTED_BSON_TYPE && type !== ENCRYPTED_BSON_TYPE_CODE) {
+				throw unsupported(key, `the stored BSON type is always "${ENCRYPTED_BSON_TYPE}", not "${String(type)}"`)
+			}
 			continue
 		}
 
@@ -93,6 +104,23 @@ export async function encryptFilter(filter: unknown, root: IEncryptedFieldNode, 
 		}
 
 		if (node.algorithm === undefined) {
+			// A query operator on a whole encrypted array or sub-document — `$elemMatch`, `$all`,
+			// `$size`, an `$eq` wrapped around the object instead of the bare-object equality shape
+			// below. `encryptAtNode` only ever rewrites values *named* by the field map's children, so
+			// an operator key such as `$elemMatch` is invisible to it and the object it wraps — full of
+			// plaintext — would otherwise reach `encryptAtNode` unrecognised and come back unchanged,
+			// straight to the server. `$exists` is the one exception: it reads presence, not the value
+			// inside, and is legal here exactly as it is on a leaf.
+			if (isPlainObject(value)) {
+				const operator = Object.keys(value).find((candidate) => candidate.startsWith('$') && candidate !== '$exists')
+				if (operator !== undefined) {
+					throw unsupported(
+						key,
+						`it is an encrypted array or sub-document, so "${operator}" cannot be evaluated against ciphertext`
+					)
+				}
+			}
+
 			// An interior node reached by an equality match on a whole sub-document, e.g.
 			// `{ personalData: { firstName: …, lastName: … } }`. Encrypt what is inside it.
 			filter[key] = await encryptAtNode(value, node, keyAltName)

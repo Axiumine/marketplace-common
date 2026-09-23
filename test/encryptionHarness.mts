@@ -26,7 +26,19 @@ export interface IVaultEntry {
 
 export const vault: IVaultEntry[] = []
 
+/**
+ * A value `fakeEncryptValue` refuses rather than encrypts — the stand-in for a KMS call that fails
+ * partway through a multi-field write, without reaching for `vi.spyOn` on a mocked module (fragile:
+ * the mock is a plain object, not every runner lets a later test un-spy it cleanly). Reset nothing;
+ * it carries no state of its own.
+ */
+export const POISON = Symbol('poison')
+
 export async function fakeEncryptValue(value: unknown, algorithm: string, keyAltName: string): Promise<Binary> {
+	if (value === POISON) {
+		throw new Error('KMS unreachable')
+	}
+
 	vault.push({ value: value, algorithm: algorithm, keyAltName: keyAltName })
 	return new Binary(Buffer.from(String(vault.length - 1)), Binary.SUBTYPE_ENCRYPTED)
 }

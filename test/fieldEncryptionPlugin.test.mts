@@ -10,7 +10,7 @@ import { Company } from '../src/models/MongoDB/Company.mts'
 import { Item } from '../src/models/MongoDB/Item.mts'
 import { ShopOwner } from '../src/models/MongoDB/ShopOwner.mts'
 import { User } from '../src/models/MongoDB/User.mts'
-import { entryOf, plaintextOf, resetVault, vault } from './encryptionHarness.mts'
+import { entryOf, plaintextOf, POISON, resetVault, vault } from './encryptionHarness.mts'
 
 vi.mock('@encryption/fieldEncryption.mjs', async () => {
 	const harness = await import('./encryptionHarness.mts')
@@ -155,9 +155,22 @@ describe.each(['find', 'findOne', 'findOneAndDelete', 'findOneAndReplace', 'find
 
 describe('the count and update kinds', () => {
 	it('have no result hook at all', () => {
-		for (const name of ['countDocuments', 'distinct', 'updateOne', 'updateMany', 'deleteOne', 'deleteMany']) {
+		for (const name of ['countDocuments', 'updateOne', 'updateMany', 'deleteOne', 'deleteMany']) {
 			expect(hooks._posts.get(name)).toBeUndefined()
 		}
+	})
+})
+
+// `distinct` answers a bare array of the field's own values rather than a document, so it is checked
+// on its own rather than folded into "the result of %s" above, which asserts a document shape.
+describe('the result of distinct', () => {
+	it('comes back decrypted, as a bare array rather than a document', async () => {
+		vault.push({ value: 'a@b.test', algorithm: ALGORITHM_DETERMINISTIC, keyAltName: KEY })
+		const result = [new Binary(Buffer.from('0'), Binary.SUBTYPE_ENCRYPTED), 'already plain']
+
+		await hooks.execPost('distinct', null, [result])
+
+		expect(result).toEqual(['a@b.test', 'already plain'])
 	})
 })
 
@@ -241,6 +254,25 @@ describe('save', () => {
 		expect(vault).toHaveLength(1)
 	})
 
+	/*
+	 * ⚠️ The regression test for the mid-loop failure this hook now guards against. `login.email` is
+	 * declared before `notes` in `FIELDS`, so it is already ciphertext on the document by the time
+	 * `notes`'s encryption throws — without the fix, `login.email` would stay ciphertext even though
+	 * the `save()` this hook belongs to never happens, leaving the in-memory document a silent mix of
+	 * the two.
+	 */
+	it('reverts already-encrypted fields to their original plaintext when a later field fails to encrypt', async () => {
+		const data: Record<string, unknown> = { login: { email: 'a@b.test' }, notes: POISON }
+
+		await expect(hooks.execPre('save', documentContext(data))).rejects.toThrow('KMS unreachable')
+
+		expect(valueAt(data, 'login.email')).toBe('a@b.test')
+		expect(data.notes).toBe(POISON)
+		// The KMS call for `login.email` already happened and cannot be undone — only the in-memory
+		// document is put back. One vault entry, from that one successful call.
+		expect(vault).toHaveLength(1)
+	})
+
 	// A document read out of the database and saved straight back. Encrypting it again would produce
 	// a `binData` that decrypts to a `binData`.
 	it('does not encrypt a value that is already ciphertext', async () => {
@@ -298,6 +330,58 @@ describe('insertMany', () => {
 	it('does nothing when it is not handed an array', async () => {
 		await expect(hooks.execPre('insertMany', null, ['not an array'])).resolves.toBeDefined()
 
+		expect(vault).toHaveLength(0)
+	})
+})
+
+/*
+ * Nothing on the platform calls `bulkWrite` today, same as `insertMany` above. `bulkWrite` lives in
+ * mongoose's own separate bucket of model middleware, alongside `insertMany` — not in
+ * `FILTER_HOOKS`/`UPDATE_HOOKS`, which are Query-level middleware names — so it needs a hook of its
+ * own rather than inheriting either array's.
+ */
+describe('bulkWrite', () => {
+	it('encrypts each operation kind by the document shape it carries', async () => {
+		// The filter of every kind but `insertOne` uses the dotted-key shape a real MongoDB filter
+		// does — `{ 'login.email': … }`, one literal key, not `{ login: { email: … } }` — so it is read
+		// back the same way, by that one key, rather than through `valueAt`'s nested-path traversal.
+		const insertOp = { insertOne: { document: { login: { email: 'one@b.test' } } } }
+		const updateOp = { updateOne: { filter: { 'login.email': 'two@b.test' }, update: { $set: { notes: 'a note' } } } }
+		const replaceOp = {
+			replaceOne: { filter: { 'login.email': 'three@b.test' }, replacement: { login: { email: 'four@b.test' } } }
+		}
+		const deleteOneOp = { deleteOne: { filter: { 'login.email': 'five@b.test' } } }
+		const deleteManyOp = { deleteMany: { filter: { 'login.email': 'six@b.test' } } }
+		const updateManyOp = {
+			updateMany: { filter: { 'login.email': 'seven@b.test' }, update: { $set: { notes: 'another note' } } }
+		}
+		const ops = [insertOp, updateOp, replaceOp, deleteOneOp, deleteManyOp, updateManyOp]
+
+		await hooks.execPre('bulkWrite', null, [ops])
+
+		expect(plaintextOf(valueAt(insertOp, 'insertOne.document.login.email'))).toBe('one@b.test')
+		expect(plaintextOf(updateOp.updateOne.filter['login.email'])).toBe('two@b.test')
+		expect(plaintextOf(updateOp.updateOne.update.$set.notes)).toBe('a note')
+		expect(plaintextOf(replaceOp.replaceOne.filter['login.email'])).toBe('three@b.test')
+		expect(plaintextOf(valueAt(replaceOp, 'replaceOne.replacement.login.email'))).toBe('four@b.test')
+		expect(plaintextOf(deleteOneOp.deleteOne.filter['login.email'])).toBe('five@b.test')
+		expect(plaintextOf(deleteManyOp.deleteMany.filter['login.email'])).toBe('six@b.test')
+		expect(plaintextOf(updateManyOp.updateMany.filter['login.email'])).toBe('seven@b.test')
+		expect(plaintextOf(updateManyOp.updateMany.update.$set.notes)).toBe('another note')
+	})
+
+	it('does nothing when it is not handed an array', async () => {
+		await expect(hooks.execPre('bulkWrite', null, ['not an array'])).resolves.toBeDefined()
+
+		expect(vault).toHaveLength(0)
+	})
+
+	it('ignores an operation that is not an object, and a spec that is not an object', async () => {
+		const ops: unknown[] = ['not an operation', { deleteMany: 'nonsense' }]
+
+		await hooks.execPre('bulkWrite', null, [ops])
+
+		expect(ops).toEqual(['not an operation', { deleteMany: 'nonsense' }])
 		expect(vault).toHaveLength(0)
 	})
 })

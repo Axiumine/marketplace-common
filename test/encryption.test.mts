@@ -589,6 +589,73 @@ describe('encryptFilter', () => {
 		expect(vault).toHaveLength(0)
 	})
 
+	// `$type` also accepts the numeric BSON type code — 5 for `binData` — and that spelling is
+	// legal too, untouched, the same as the string alias above.
+	it('allows the numeric binData type code', async () => {
+		const filter = { 'login.email': { $type: 5 } }
+
+		await encryptFilter(filter, root, KEY)
+
+		expect(filter).toEqual({ 'login.email': { $type: 5 } })
+		expect(vault).toHaveLength(0)
+	})
+
+	/*
+	 * ⚠️ The one MongoDB gives every encrypted field is `binData` — the ciphertext's own BSON type.
+	 * A caller who queries the field's *original* logical type instead (`'string'`, a `Date` field's
+	 * `'date'`) gets a `$type` that can never be true for this field, silently matching nothing —
+	 * exactly the class of bug the rest of this file throws to prevent.
+	 */
+	it('refuses $type with the field original logical type instead of binData', async () => {
+		await expectRejection(
+			encryptFilter({ 'login.email': { $type: 'string' } }, root, KEY),
+			'Cannot query the encrypted field "login.email": the stored BSON type is always "binData", not "string" (ADR-029)'
+		)
+	})
+
+	it('refuses $type with the wrong numeric BSON type code', async () => {
+		await expectRejection(
+			encryptFilter({ 'personalData.birth.date': { $type: 9 } }, root, KEY),
+			'Cannot query the encrypted field "personalData.birth.date": the stored BSON type is always "binData", not "9" (ADR-029)'
+		)
+	})
+
+	// The array/sub-document counterpart of the leaf guard above: `$exists` reads presence of the
+	// whole encrypted array or sub-document, not any value inside it, so it is legal here exactly as
+	// it is on a leaf, and touches nothing.
+	it('allows $exists on an encrypted array or sub-document and touches neither', async () => {
+		const filter = { addresses: { $exists: true }, personalData: { $exists: false } }
+
+		await encryptFilter(filter, root, KEY)
+
+		expect(filter).toEqual({ addresses: { $exists: true }, personalData: { $exists: false } })
+		expect(vault).toHaveLength(0)
+	})
+
+	/*
+	 * ⚠️ The array-level counterpart of the file's own fail-loud design. `encryptAtNode` only rewrites
+	 * values *named* by the field map's children, so a query operator wrapped around a whole encrypted
+	 * array or sub-document — `$elemMatch`, here — is invisible to it: the plaintext `city` inside
+	 * would reach `encryptAtNode`, come back completely untouched, and go to the server in the clear,
+	 * silently matching nothing once it got there (the stored `city` is ciphertext). This is the
+	 * regression test for that hole.
+	 */
+	it('refuses a query operator on a whole encrypted array', async () => {
+		await expectRejection(
+			encryptFilter({ addresses: { $elemMatch: { city: 'Springfield' } } }, root, KEY),
+			'Cannot query the encrypted field "addresses": it is an encrypted array or sub-document, so "$elemMatch" cannot be evaluated against ciphertext (ADR-029)'
+		)
+	})
+
+	// The same hole, one level up: `$eq` wrapped around a whole sub-document instead of the bare-object
+	// equality shape `encryptFilter` otherwise recognises.
+	it('refuses $eq wrapped around a whole encrypted sub-document', async () => {
+		await expectRejection(
+			encryptFilter({ personalData: { $eq: { firstName: 'Ada' } } }, root, KEY),
+			'Cannot query the encrypted field "personalData": it is an encrypted array or sub-document, so "$eq" cannot be evaluated against ciphertext (ADR-029)'
+		)
+	})
+
 	// All three are asserted through an encrypted field of their own. A branch carrying only ordinary
 	// fields would pass whether the admin was descended into or stepped over.
 	it('descends into $and, $or and $nor', async () => {
@@ -626,6 +693,19 @@ describe('encryptFilter', () => {
 		await encryptFilter(filter, root, KEY)
 
 		expect(filter).toEqual(snapshot)
+	})
+
+	// The array counterpart of the whole-sub-document case below: a value that is not a plain object at
+	// all — here an array, matched by equality rather than through `$elemMatch` — never carries a `$`
+	// operator to guard against, so the check is skipped and the array is encrypted element by element.
+	it('encrypts the inside of a whole array matched by equality', async () => {
+		const filter: Record<string, unknown> = { addresses: [{ street: 'A street', city: 'Town' }] }
+
+		await encryptFilter(filter, root, 'user')
+
+		const addresses = filter.addresses as Array<Record<string, unknown>>
+		expect(plaintextOf(addresses[0]?.street)).toBe('A street')
+		expect(plaintextOf(addresses[0]?.city)).toBe('Town')
 	})
 
 	it('encrypts the inside of a whole sub-document matched by equality', async () => {
@@ -722,6 +802,100 @@ describe('encryptUpdate', () => {
 		expect(vault).toHaveLength(0)
 	})
 
+	/*
+	 * ⚠️ The gap this closes: mongoose's own cast runs *after* this plugin's pre-hook has already
+	 * encrypted the update, so without this, a raw uncast value would be silently encrypted as-is —
+	 * `EncryptedField.cast()` sees ciphertext on the way past and short-circuits, and the CastError
+	 * `save()` would give for the same bad input never happens. `$set` is the shape the whole platform
+	 * writes updates with, so this is the leaf-dotted-path case: `castPlaintext`'s own suite (in
+	 * `EncryptedField`'s tests) is the source of truth for every coercion this reuses.
+	 */
+	it('casts the plaintext before encrypting, the same way save() would, and throws the same CastError', async () => {
+		const update = { $set: { 'personalData.birth.date': 'not a date' } }
+
+		await expect(encryptUpdate(update, root, KEY)).rejects.toThrow(/Cast to EncryptedField failed/)
+		expect(vault).toHaveLength(0)
+	})
+
+	it('accepts an already-cast value and encrypts it unchanged', async () => {
+		const date = new Date('2020-01-01T00:00:00.000Z')
+		const update = { $set: { 'personalData.birth.date': date } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(plaintextOf(update.$set['personalData.birth.date'])).toEqual(date)
+	})
+
+	it('casts a numeric or boolean plaintext to a string the way save() would', async () => {
+		const update = { $set: { 'login.email': 42 } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(plaintextOf(update.$set['login.email'])).toBe('42')
+	})
+
+	// The bare-key replacement-document branch gets the identical treatment, not only $set.
+	it('casts the plaintext of a bare-key replacement field before encrypting', async () => {
+		const update: Record<string, unknown> = { 'personalData.birth.date': 'not a date' }
+
+		await expect(encryptUpdate(update, root, KEY)).rejects.toThrow(/Cast to EncryptedField failed/)
+		expect(vault).toHaveLength(0)
+	})
+
+	/*
+	 * ⚠️ The shape the platform's two `personalData` writers actually use —
+	 * `funUserPersonalDataUpdate` and `funShopOwnerUpdate` both `$set` the *whole* sub-document behind
+	 * one interior key, never a dotted leaf. A cast that only recognised a dotted-leaf key would never
+	 * engage for either of them, leaving the CastError guarantee above true in the test suite and false
+	 * in production. `castAtNode` descends into the interior node the same way `encryptAtNode` itself
+	 * does, so this is that exact call-site shape, several levels deep.
+	 */
+	it('casts a value reaching an interior node, not only a dotted leaf key, and throws the same CastError', async () => {
+		const update = { $set: { personalData: { birth: { date: 'not a date' } } } }
+
+		await expect(encryptUpdate(update, root, KEY)).rejects.toThrow(/Cast to EncryptedField failed/)
+		expect(vault).toHaveLength(0)
+	})
+
+	it('coerces a plaintext value reached through an interior node, the same way a dotted leaf key does', async () => {
+		const update = { $set: { personalData: { firstName: 42 } } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(plaintextOf((update.$set.personalData as Record<string, unknown>).firstName)).toBe('42')
+	})
+
+	// A shape that does not match the node at all — an object where the array-valued `addresses` is
+	// declared — is left exactly as `encryptAtNode` leaves it: untouched, not cast, not thrown on.
+	it('leaves a value untouched when its shape does not match the node it resolved to', async () => {
+		const update = { $set: { addresses: { not: 'an array' } } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(update.$set.addresses).toEqual({ not: 'an array' })
+	})
+
+	// The mirror case: an array where the object-valued `personalData` is declared. `node.element` is
+	// undefined for an interior object node, so this is the walker's other shape-mismatch escape.
+	it('leaves an array untouched when the node it resolved to has no element of its own', async () => {
+		const update = { $set: { personalData: ['not an object'] } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(update.$set.personalData).toEqual(['not an object'])
+	})
+
+	// A whole encrypted array replaced in one `$set`, not appended to — every element is cast against
+	// the array's own element node, the same as a dotted leaf or a single interior sub-document.
+	it('casts every element when a whole encrypted array is $set at once', async () => {
+		const update = { $set: { addresses: [{ street: 42 }, { street: 'B street' }] } }
+
+		await encryptUpdate(update, root, 'user')
+
+		const addresses = update.$set.addresses as Record<string, unknown>[]
+		expect(addresses.map((entry) => plaintextOf(entry.street))).toEqual(['42', 'B street'])
+	})
+
 	it('encrypts $set, by dotted path and by whole sub-document alike', async () => {
 		const update: { $set: Record<string, unknown> } = {
 			$set: {
@@ -783,6 +957,28 @@ describe('encryptUpdate', () => {
 			'B street'
 		])
 		expect(plaintextOf(update.$addToSet.addresses.city)).toBe('Town')
+	})
+
+	// The interior-node cast gap applied here too — $push and $addToSet never cast the pushed element
+	// at all, dotted-leaf key or not. Same walker, same fix.
+	it('casts a pushed array element against the element node, the same way a $set value is cast', async () => {
+		const update = { $push: { addresses: { street: 42, _id: 'one' } } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(plaintextOf(update.$push.addresses.street)).toBe('42')
+		expect(update.$push.addresses._id).toBe('one')
+	})
+
+	it('casts each element of a $push $each against the element node too', async () => {
+		const update = { $push: { addresses: { $each: [{ street: 42 }, { street: 'B street' }] } } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(update.$push.addresses.$each.map((entry) => plaintextOf((entry as Record<string, unknown>).street))).toEqual([
+			'42',
+			'B street'
+		])
 	})
 
 	it('ignores a push at a key that is not an encrypted array, and an operand that is not a value map', async () => {
@@ -861,6 +1057,21 @@ describe('decryptDocument', () => {
 			login: { email: 'a@b.test', password: '$2b$…' },
 			addresses: [{ street: 'A street', _id: 'one' }]
 		})
+	})
+
+	/*
+	 * ⚠️ `Model.distinct()` returns a bare array of field values, not an array of documents — the one
+	 * result shape none of the other hooks produce. Without this, ciphertext in that array position
+	 * would come back as a `Binary` instead of being decrypted, since the walk otherwise only ever
+	 * decrypts ciphertext found as an *object property*.
+	 */
+	it('decrypts a bare array of scalars, not only arrays of documents', async () => {
+		const email = await fakeEncryptValue('a@b.test', ALGORITHM_DETERMINISTIC, 'user')
+		const values: unknown[] = [email, 'already plain']
+
+		await decryptDocument(values)
+
+		expect(values).toEqual(['a@b.test', 'already plain'])
 	})
 
 	it('walks an array of documents', async () => {

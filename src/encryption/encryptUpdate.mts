@@ -1,7 +1,45 @@
 import { encryptAtNode } from '@encryption/encryptAtNode.mjs'
+import { castPlaintext } from '@encryption/EncryptedField.mjs'
 import { IEncryptedFieldNode, resolveEncryptedPath } from '@encryption/encryptedFieldTrie.mjs'
 import { encryptFilter } from '@encryption/encryptFilter.mjs'
 import { isPlainObject } from '@encryption/isPlainObject.mjs'
+
+/**
+ * Casts a value against `node`'s declared shape before it is encrypted — the same cast
+ * `EncryptedField.cast()` applies on assignment through `save()`, restated here because the
+ * plugin's `pre` hook runs before mongoose's own `_castUpdate` (see `castPlaintext`'s own comment).
+ *
+ * Mirrors `encryptAtNode`'s own walk — leaf, array, interior object — so a value is cast wherever it
+ * arrives, not only when the dotted key that resolved to `node` names a leaf directly. That matters
+ * because the platform's two `personalData` writers, `funUserPersonalDataUpdate` and
+ * `funShopOwnerUpdate`, both `$set` the *whole* sub-document (`{ $set: { personalData } }`) rather
+ * than one dotted leaf at a time — the key names an interior node, and a leaf-only cast would never
+ * engage for either of them.
+ */
+function castAtNode(value: unknown, node: IEncryptedFieldNode, path: string): unknown {
+	if (node.algorithm !== undefined) {
+		return castPlaintext(value, node.plaintext, path)
+	}
+
+	if (Array.isArray(value)) {
+		if (node.element === undefined) {
+			return value
+		}
+
+		const element = node.element
+		return value.map((entry, index) => castAtNode(entry, element, `${path}.${index}`))
+	}
+
+	if (isPlainObject(value) && node.children !== undefined) {
+		for (const [key, child] of node.children) {
+			if (Object.hasOwn(value, key)) {
+				value[key] = castAtNode(value[key], child, `${path}.${key}`)
+			}
+		}
+	}
+
+	return value
+}
 
 /**
  * Operators whose operand is, field by field, the value to store. The two that matter here, and the
@@ -30,7 +68,7 @@ async function encryptValueMap(operand: unknown, root: IEncryptedFieldNode, keyA
 	for (const [key, value] of Object.entries(operand)) {
 		const node = resolveEncryptedPath(root, key)
 		if (node !== undefined) {
-			operand[key] = await encryptAtNode(value, node, keyAltName)
+			operand[key] = await encryptAtNode(castAtNode(value, node, key), node, keyAltName)
 		}
 	}
 }
@@ -47,11 +85,15 @@ async function encryptAppendMap(operand: unknown, root: IEncryptedFieldNode, key
 		}
 
 		if (isPlainObject(value) && Array.isArray(value.$each)) {
-			value.$each = await Promise.all(value.$each.map(async (entry) => await encryptAtNode(entry, element, keyAltName)))
+			value.$each = await Promise.all(
+				value.$each.map(
+					async (entry, index) => await encryptAtNode(castAtNode(entry, element, `${key}.$each.${index}`), element, keyAltName)
+				)
+			)
 			continue
 		}
 
-		operand[key] = await encryptAtNode(value, element, keyAltName)
+		operand[key] = await encryptAtNode(castAtNode(value, element, key), element, keyAltName)
 	}
 }
 
@@ -114,7 +156,7 @@ export async function encryptUpdate(update: unknown, root: IEncryptedFieldNode, 
 		// than values.
 		const node = resolveEncryptedPath(root, key)
 		if (node !== undefined) {
-			update[key] = await encryptAtNode(operand, node, keyAltName)
+			update[key] = await encryptAtNode(castAtNode(operand, node, key), node, keyAltName)
 		}
 	}
 }

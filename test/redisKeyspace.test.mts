@@ -15,6 +15,7 @@ import {
 	keygripChannel,
 	keygripHoldersKey,
 	keygripKey,
+	refreshClaimKey,
 	reuseEventsKey,
 	sessionIndexKey,
 	sessionKey,
@@ -73,6 +74,7 @@ const SRC = fileURLToPath(new URL('../src/', import.meta.url))
 const KEY_SHAPES = [
 	{ file: 'others/sessionKeys.mts', name: 'sessionKey', build: () => sessionKey(INPUT), digests: true },
 	{ file: 'others/sessionKeys.mts', name: 'tombstoneKey', build: () => tombstoneKey(INPUT), digests: true },
+	{ file: 'others/sessionKeys.mts', name: 'refreshClaimKey', build: () => refreshClaimKey(INPUT), digests: true },
 	{
 		file: 'others/sessionKeys.mts',
 		name: 'familyKey',

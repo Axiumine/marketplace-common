@@ -70,6 +70,16 @@ export const sessionKey = (token: string) => `${process.env.REDIS_KEY}${hashSess
 export const tombstoneKey = (token: string) => `${process.env.REDIS_KEY}used:${hashSessionToken(token)}`
 
 /**
+ * The key of the counter that decides who gets to rotate one refresh token — the shared prefix, the word
+ * `claim:`, and the digest of the prefixed token.
+ *
+ * ⚠️ **A digest, exactly like a session key and a tombstone, and for the same reason.** `claim:` is a
+ * constant namespace word; what varies in the key is still only the digest, so a dump of this counter
+ * names no credential. See `claimRefreshRotation` for what the counter behind it is for.
+ */
+export const refreshClaimKey = (token: string) => `${process.env.REDIS_KEY}claim:${hashSessionToken(token)}`
+
+/**
  * The key of the set naming every session key minted from one login — the shared prefix, the word
  * `family:`, and the lineage's own id.
  *

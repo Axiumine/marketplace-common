@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Eight gates, all blocking:
+# Nine gates, all blocking:
 #   1. semgrep   — SAST: vendored rules, pinned image, offline (yarn semgrep:ci)
 #   2. trivy     — dependency advisories, HIGH+ , production tree only
 #   3. scorecard — OpenSSF supply-chain posture, floored in .scorecard-floor
@@ -7,21 +7,22 @@
 #   5. types     — src/, test/ and the vitest configs, no emit (yarn typecheck)
 #   6. coverage  — 100% on every metric (yarn test:cov)
 #   7. mutation  — 100% mutation score (yarn test:mutation)
-#   8. Qodana    — inspections, SAST, license audit, coverage (qodana.yaml)
+#   8. contract  — exports map exhaustive, every src/ file reachable (yarn test:contract)
+#   9. Qodana    — inspections, SAST, license audit, coverage (qodana.yaml)
 #
 # Coverage proves the lines ran. Mutation proves the assertions actually catch a
 # change in them. Qodana proves nothing else regressed — and is the only gate
-# that ever sees the merge commit (see gate 8). Neither number may be lowered: if one goes red the fix is a
+# that ever sees the merge commit (see gate 9). Neither number may be lowered: if one goes red the fix is a
 # test, a deleted dead branch, or — for a provably equivalent mutant — a
 # documented `// Stryker disable next-line <Mutator>: <why>`.
 #
 # Mirrors the hook in the backend services, with the message adapted: this is a
 # published library, not a Koa server, so there is no index.mts / instrument.mts
 # wiring to cover and no COVERAGE.md. A new file is only reachable by consumers
-# once it has its own package.json `exports` entry — `yarn test:contract`
-# guards that, not this hook.
+# once it has its own package.json `exports` entry — gate 8, `yarn test:contract`,
+# is what guards that (ADR-015, ADR-037).
 #
-# Ahead of all eight: node. Every gate that shells out to yarn meets `engines.node`, a
+# Ahead of all nine: node. Every gate that shells out to yarn meets `engines.node`, a
 # HARD gate under yarn classic — a mismatch exits 1 with `The engine "node" is
 # incompatible with this module`, not a warning. Without the switch below, a push
 # from a shell on the machine default node dies before the first gate, under
@@ -95,7 +96,7 @@ PUSH BLOCKED — wrong node.
 node $(node -v 2> /dev/null || echo '(not found)') does not satisfy engines.node ^$REQUIRED_NODE, and nvm could
 not be used to switch — either it is not installed at \${NVM_DIR:-\$HOME/.nvm}/nvm.sh
 or that version is not installed. yarn refuses to run at all in this state, so
-none of the eight gates below could report anything.
+none of the nine gates below could report anything.
 
 Fix it with:
 
@@ -135,9 +136,9 @@ fi
 # gets bypassed out of habit. Push is the layer that matters anyway — it is the
 # only one that ever sees a merge commit.
 #
-# It runs FIRST because it is by far the cheapest of the seven (~3 s against the
+# It runs FIRST because it is by far the cheapest of the eight (~3 s against the
 # minutes the rest take together), so a rule violation is reported in seconds
-# rather than after a full coverage + mutation + Qodana run.
+# rather than after a full coverage + mutation + contract + Qodana run.
 #
 # `semgrep:ci` is the --error variant of `yarn semgrep`: exit 1 on any finding,
 # plus a SARIF at semgrep.sarif (gitignored). Every rule is vendored under
@@ -153,7 +154,7 @@ fi
 # ---------------------------------------------------------------------------
 
 if [ -n "${SKIP_SEMGREP:-}" ]; then
-	echo 'pre-push [1/8]: Semgrep gate skipped — SKIP_SEMGREP is set.' >&2
+	echo 'pre-push [1/9]: Semgrep gate skipped — SKIP_SEMGREP is set.' >&2
 else
 	# $1 = what is wrong, $2… = the command(s) that fix it. A missing prerequisite
 	# blocks; it never warns and continues. A gate that steps aside when it cannot
@@ -209,7 +210,7 @@ else
 		semgrep_block "semgrep image $SEMGREP_IMAGE is not present locally." \
 			"docker pull $SEMGREP_IMAGE"
 
-	echo "pre-push [1/8]: running the SAST gate ($SEMGREP_IMAGE)…"
+	echo "pre-push [1/9]: running the SAST gate ($SEMGREP_IMAGE)…"
 
 	if ! yarn semgrep:ci; then
 		cat >&2 <<'MSG'
@@ -232,7 +233,7 @@ MSG
 		exit 1
 	fi
 
-	echo 'pre-push [1/8]: Semgrep clean.'
+	echo 'pre-push [1/9]: Semgrep clean.'
 fi
 
 # ---------------------------------------------------------------------------
@@ -271,7 +272,7 @@ fi
 # ---------------------------------------------------------------------------
 
 if [ -n "${SKIP_TRIVY:-}" ]; then
-	echo 'pre-push [2/8]: dependency-advisory gate skipped — SKIP_TRIVY is set.' >&2
+	echo 'pre-push [2/9]: dependency-advisory gate skipped — SKIP_TRIVY is set.' >&2
 else
 	# Same contract as the SAST gate above: a missing prerequisite blocks, it never
 	# warns and continues. A gate that steps aside when it cannot run is not a gate.
@@ -314,7 +315,7 @@ else
 		trivy_block "trivy image $TRIVY_IMAGE is not present locally." \
 			"docker pull $TRIVY_IMAGE"
 
-	echo "pre-push [2/8]: checking dependency advisories ($TRIVY_IMAGE)…"
+	echo "pre-push [2/9]: checking dependency advisories ($TRIVY_IMAGE)…"
 
 	# --db-repository is not a preference: from here mirror.gcr.io answers 404 for
 	# the database layer and trivy treats that as fatal rather than falling back to
@@ -354,7 +355,7 @@ MSG
 		exit 1
 	fi
 
-	echo 'pre-push [2/8]: no HIGH or CRITICAL advisory in the production tree.'
+	echo 'pre-push [2/9]: no HIGH or CRITICAL advisory in the production tree.'
 fi
 
 # ---------------------------------------------------------------------------
@@ -396,7 +397,7 @@ fi
 # ---------------------------------------------------------------------------
 
 if [ -n "${SKIP_SCORECARD:-}" ]; then
-	echo 'pre-push [3/8]: supply-chain posture gate skipped — SKIP_SCORECARD is set.' >&2
+	echo 'pre-push [3/9]: supply-chain posture gate skipped — SKIP_SCORECARD is set.' >&2
 else
 	# Same contract as every gate above: a missing prerequisite blocks. A gate that
 	# steps aside when it cannot run is not a gate.
@@ -472,7 +473,7 @@ else
 			'gh auth login' \
 			'# or, for one push:  GITHUB_AUTH_TOKEN=<token> git push'
 
-	echo "pre-push [3/8]: checking supply-chain posture of $SCORECARD_SLUG ($SCORECARD_IMAGE_TAG)…"
+	echo "pre-push [3/9]: checking supply-chain posture of $SCORECARD_SLUG ($SCORECARD_IMAGE_TAG)…"
 
 	SCORECARD_JSON="$(mktemp)"
 	if ! GITHUB_AUTH_TOKEN="$SCORECARD_TOKEN_VALUE" docker run --rm \
@@ -493,9 +494,11 @@ else
 	# Column 0 for the heredoc body on purpose: <<- strips every leading tab, which
 	# would flatten the script's own indentation on its way to the interpreter.
 	#
-	# Exit 0 = at or above the floor. 3 = below it. Anything else means the comparison
-	# itself broke, which says nothing at all about the score — reported as its own
-	# failure below rather than dressed up as a finding.
+	# Exit 0 = at or above the floor, every check floored. 3 = a check fell below its floor.
+	# 4 = nothing fell but Scorecard reported a check with no floor line — blocked too, so a
+	# new check cannot sit at 0 unnoticed. Anything else means the comparison itself broke,
+	# which says nothing at all about the score — reported as its own failure below rather
+	# than dressed up as a finding.
 	SCORECARD_VERDICT=0
 	SC_JSON="$SCORECARD_JSON" SC_FLOOR="$SCORECARD_FLOOR_FILE" node <<'EVAL' || SCORECARD_VERDICT=$?
 const fs = require("fs");
@@ -548,14 +551,14 @@ if (unfloored.length) {
 }
 if (out.length) console.error(out.join("\n"));
 if (!fell.length) console.error(`\n  aggregate ${report.score} >= floor ${floorAggregate}`);
-process.exit(fell.length ? 3 : 0);
+process.exit(fell.length ? 3 : unfloored.length ? 4 : 0);
 EVAL
 
 	rm -f "$SCORECARD_JSON"
 
 	case "$SCORECARD_VERDICT" in
 		0)
-			echo 'pre-push [3/8]: supply-chain posture at or above the floor.'
+			echo 'pre-push [3/9]: supply-chain posture at or above the floor.'
 			;;
 		3)
 			cat >&2 <<'MSG'
@@ -585,6 +588,25 @@ In order:
 MSG
 			exit 1
 			;;
+		4)
+			cat >&2 <<'MSG'
+
+────────────────────────────────────────────────────────────────────────────
+PUSH BLOCKED — Scorecard reported a check with no line in .scorecard-floor. The
+checks are listed above.
+
+⚠️ An unfloored check is not measured against anything: it could score 0 on
+the next scan and this gate would still pass silently. That is the gap this
+blocks, the same one the warning above used to leave open.
+
+Add a `<check-name> = <score>` line to .scorecard-floor for each check listed
+above, at the score Scorecard just reported (never higher than what was
+actually measured, or the very next scan fails this same gate), then push
+again.
+────────────────────────────────────────────────────────────────────────────
+MSG
+			exit 1
+			;;
 		*)
 			scorecard_block "the floor comparison did not run (exit $SCORECARD_VERDICT) — its error is above. The score was never compared against the floor, so nothing here is cleared." \
 				'# that is a bug in this gate, not a finding in the repository' \
@@ -593,7 +615,7 @@ MSG
 	esac
 fi
 
-echo "pre-push [4/8]: checking lint and formatting (yarn lint:check)…"
+echo "pre-push [4/9]: checking lint and formatting (yarn lint:check)…"
 
 if ! yarn lint:check; then
 	cat >&2 <<'MSG'
@@ -615,7 +637,7 @@ MSG
 	exit 1
 fi
 
-echo "pre-push [5/8]: type-checking (yarn typecheck)…"
+echo "pre-push [5/9]: type-checking (yarn typecheck)…"
 
 if ! yarn typecheck; then
 	cat >&2 <<'MSG'
@@ -635,7 +657,7 @@ MSG
 	exit 1
 fi
 
-echo "pre-push [6/8]: enforcing 100% test coverage (yarn test:cov)…"
+echo "pre-push [6/9]: enforcing 100% test coverage (yarn test:cov)…"
 
 if ! yarn test:cov; then
 	cat >&2 <<'MSG'
@@ -647,7 +669,7 @@ Fix it (do NOT lower `thresholds` in vitest.config.mts):
   1. Add the missing tests for the uncovered lines / branches / functions.
   2. If the uncovered code is unreachable or dead, delete it.
   3. A new file is only reachable once it has its own package.json `exports`
-     entry — `yarn test:contract` catches the omission, this hook does not.
+     entry — `yarn test:contract` (gate 8, below) is what catches the omission.
 
 Re-run `yarn test:cov` until every metric reports 100%, then push again.
 ────────────────────────────────────────────────────────────────────────────
@@ -655,7 +677,7 @@ MSG
 	exit 1
 fi
 
-echo "pre-push [7/8]: enforcing 100% mutation score (yarn test:mutation)…"
+echo "pre-push [7/9]: enforcing 100% mutation score (yarn test:mutation)…"
 
 if ! yarn test:mutation; then
 	cat >&2 <<'MSG'
@@ -687,8 +709,45 @@ MSG
 	exit 1
 fi
 
+# `yarn typecheck` (gate 5) proves src/ compiles. `yarn test:cov` (gate 6) proves
+# every line of it ran under a test. Neither proves a compiled file is *reachable*
+# by a consumer: `test:contract` builds dist/ and then imports every module the
+# way a consumer does, through the package.json `exports` map alone, never by
+# relative path — a file with no matching entry compiles clean, is 100% covered,
+# and is still `ERR_PACKAGE_PATH_NOT_EXPORTED` for all nine backend services that
+# install this package by name (ADR-015, ADR-037). Documented as a push/publish
+# gate since ADR-015; this is the first hook that actually runs it.
+#
+# No SKIP_* here, unlike gates 1–3 and 9: the check is a plain `yarn build && vitest
+# run`, needs neither Docker nor the network, and skipping it is exactly the gap
+# this gate exists to close.
+echo "pre-push [8/9]: checking the exports map is exhaustive (yarn test:contract)…"
+
+if ! yarn test:contract; then
+	cat >&2 <<'MSG'
+
+────────────────────────────────────────────────────────────────────────────
+PUSH BLOCKED — a file under src/ compiles and is covered, but is not reachable
+through the package.json `exports` map.
+
+`test:contract` builds dist/ and then imports every module the way a consumer
+does: through `exports` alone, never by relative path. Fix it:
+  1. Add the missing entry to `exports` in package.json, pointing at the built
+     file under dist/ (ADR-015, ADR-037).
+  2. If the file should stay private to this package, it should never have been
+     importable in the first place — nest it under a path an already-exported
+     module reaches internally, instead of adding a public entry for it.
+
+Re-run `yarn test:contract` until it passes, then push again.
+────────────────────────────────────────────────────────────────────────────
+MSG
+	exit 1
+fi
+
+echo 'pre-push [8/9]: exports map exhaustive.'
+
 # ---------------------------------------------------------------------------
-# Gate 8 — Qodana. It runs here as well as in pre-commit, for two reasons that
+# Gate 9 — Qodana. It runs here as well as in pre-commit, for two reasons that
 # pre-commit structurally cannot cover.
 #
 # 1. `git merge --no-ff` never fires pre-commit. Git runs that hook for
@@ -781,7 +840,7 @@ docker image inspect "$LINTER" > /dev/null 2>&1 ||
 		'# get a project token from https://qodana.cloud, then:' \
 		"echo 'QODANA_TOKEN=<token>' >> .env"
 
-echo "pre-push [8/8]: enforcing the Qodana gate ($LINTER)…"
+echo "pre-push [9/9]: enforcing the Qodana gate ($LINTER)…"
 
 if ! SKIP_TESTS=1 ./qodana.sh --results-dir .qodana/results; then
 	cat >&2 <<'MSG'

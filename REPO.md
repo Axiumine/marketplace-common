@@ -6,13 +6,15 @@ carries the rules; [`README.md`](./README.md) is the consumer-facing document.
 
 ## The hooks
 
-`.githooks/pre-push` is a blocking eight-step gate: `yarn semgrep:ci` (Semgrep SAST over `src/`, rules
+`.githooks/pre-push` is a blocking nine-step gate: `yarn semgrep:ci` (Semgrep SAST over `src/`, rules
 vendored under `semgrep/`, pinned image, `--network none`), trivy (dependency advisories over `yarn.lock`,
 HIGH and CRITICAL, production tree only), then the OpenSSF Scorecard floor (`.scorecard-floor`, supply-chain
 posture read from the GitHub API, ADR-054), `yarn lint:check` (eslint, then
 `prettier --check`, both over the whole tree), `yarn typecheck` (`tsconfig.test.json` — src/, test/ and the
 vitest configs, no emit), `yarn test:cov` (100% on every metric), `yarn test:mutation`
-(Stryker, `thresholds.break: 100`), then a Qodana scan via `./qodana.sh`. Roughly a minute in total.
+(Stryker, `thresholds.break: 100`), `yarn test:contract` (builds `dist/` and imports every module through
+the package.json `exports` map alone, the way a consumer would — ADR-015, ADR-037), then a Qodana scan via
+`./qodana.sh`. Roughly a minute in total.
 
 ⚠️ **`yarn test:cov` is two gates, not one.** vitest runs, and then `scripts/coverage-audit.mjs` proves the
 report the thresholds were computed over actually contains every git-tracked file `coverage.include` gates.

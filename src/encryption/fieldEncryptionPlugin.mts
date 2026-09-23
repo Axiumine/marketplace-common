@@ -1,11 +1,12 @@
 import { decryptDocument } from '@encryption/decryptDocument.mjs'
 import { encryptAtNode } from '@encryption/encryptAtNode.mjs'
-import { buildEncryptedFieldTrie } from '@encryption/encryptedFieldTrie.mjs'
+import { buildEncryptedFieldTrie, IEncryptedFieldNode } from '@encryption/encryptedFieldTrie.mjs'
 import { encryptFilter } from '@encryption/encryptFilter.mjs'
 import { encryptUpdate } from '@encryption/encryptUpdate.mjs'
 import { encryptValue } from '@encryption/fieldEncryption.mjs'
 import { IEncryptedFieldSpec } from '@encryption/IEncryptedFieldSpec.mjs'
 import { isCiphertext } from '@encryption/isCiphertext.mjs'
+import { isPlainObject } from '@encryption/isPlainObject.mjs'
 import { Document, MongooseDefaultQueryMiddleware, Query, Schema } from 'mongoose'
 
 export interface IFieldEncryptionPluginOptions {
@@ -43,15 +44,20 @@ const UPDATE_HOOKS: MongooseDefaultQueryMiddleware[] = [
 ]
 
 /**
- * Query kinds that return documents. `countDocuments` and the `update*` pair are absent on purpose —
- * they return counts, and walking a number is wasted work on the hottest path there is.
+ * Query kinds whose result can hold ciphertext. `countDocuments` and the `update*` pair are absent on
+ * purpose — they return counts, and walking a number is wasted work on the hottest path there is.
+ *
+ * `distinct` belongs here even though it returns no document at all: it answers a bare array of the
+ * field's own values, and an encrypted field's values are ciphertext until `decryptDocument` walks
+ * them — the same as any other result, just without a document wrapped around it.
  */
 const RESULT_HOOKS: MongooseDefaultQueryMiddleware[] = [
 	'find',
 	'findOne',
 	'findOneAndDelete',
 	'findOneAndReplace',
-	'findOneAndUpdate'
+	'findOneAndUpdate',
+	'distinct'
 ]
 
 /**
@@ -118,16 +124,29 @@ export function fieldEncryptionPlugin(schema: Schema, options: IFieldEncryptionP
 	// `document.set` rather than written into `_doc`, so the ciphertext is recorded as a change and
 	// actually reaches the server; `EncryptedField` is what stops the `set` casting it back.
 	schema.pre('save', async function (this: Document) {
-		for (const spec of options.fields) {
-			for (const path of documentPaths(this, spec.path)) {
-				const current: unknown = this.get(path)
+		// Fields already turned to ciphertext this pass, in case a later one's KMS call throws. Reverted
+		// in the catch below rather than left as a silent ciphertext/plaintext mix on the in-memory
+		// document — `save()` never proceeds either way, since the throw still propagates.
+		const applied: Array<{ path: string; value: unknown }> = []
 
-				if (current === null || current === undefined || isCiphertext(current)) {
-					continue
+		try {
+			for (const spec of options.fields) {
+				for (const path of documentPaths(this, spec.path)) {
+					const current: unknown = this.get(path)
+
+					if (current === null || current === undefined || isCiphertext(current)) {
+						continue
+					}
+
+					applied.push({ path: path, value: current })
+					this.set(path, await encryptValue(current, spec.algorithm, keyAltName))
 				}
-
-				this.set(path, await encryptValue(current, spec.algorithm, keyAltName))
 			}
+		} catch (error) {
+			for (const { path, value } of applied) {
+				this.set(path, value)
+			}
+			throw error
 		}
 	})
 
@@ -156,4 +175,57 @@ export function fieldEncryptionPlugin(schema: Schema, options: IFieldEncryptionP
 			documents[index] = await encryptAtNode(documents[index], root, keyAltName)
 		}
 	})
+
+	// `bulkWrite` lives in mongoose's own separate bucket of model-level middleware, alongside
+	// `insertMany` above, and is not covered by `FILTER_HOOKS`/`UPDATE_HOOKS`: those are Query-level
+	// middleware names and `bulkWrite` is not one of them. Nothing on the platform calls it today —
+	// same as `insertMany` — but the day something does, an unrewritten filter matches nothing on a
+	// deterministic field, and an unrewritten write sends plaintext PII into a collection whose every
+	// other document is ciphertext.
+	schema.pre('bulkWrite', async function (ops: unknown) {
+		if (!Array.isArray(ops)) {
+			return
+		}
+
+		for (const op of ops) {
+			await encryptBulkWriteOp(op, root, keyAltName)
+		}
+	})
+}
+
+/**
+ * Encrypts one operation inside a `bulkWrite()` batch, in place.
+ *
+ * Driven by the shape each operation carries rather than by its kind's name: `insertOne.document` and
+ * `replaceOne.replacement` are whole documents (`encryptAtNode`, same as `insertMany`); the `filter`
+ * every kind but `insertOne` carries goes through `encryptFilter`; and `updateOne`/`updateMany`'s
+ * `update` goes through `encryptUpdate`. A kind that carries none of these — there is none today — is
+ * left untouched rather than guessed at.
+ */
+async function encryptBulkWriteOp(op: unknown, root: IEncryptedFieldNode, keyAltName: string): Promise<void> {
+	if (!isPlainObject(op)) {
+		return
+	}
+
+	for (const spec of Object.values(op)) {
+		if (!isPlainObject(spec)) {
+			continue
+		}
+
+		if ('document' in spec) {
+			spec.document = await encryptAtNode(spec.document, root, keyAltName)
+		}
+
+		if ('replacement' in spec) {
+			spec.replacement = await encryptAtNode(spec.replacement, root, keyAltName)
+		}
+
+		if ('filter' in spec) {
+			await encryptFilter(spec.filter, root, keyAltName)
+		}
+
+		if ('update' in spec) {
+			await encryptUpdate(spec.update, root, keyAltName)
+		}
+	}
 }

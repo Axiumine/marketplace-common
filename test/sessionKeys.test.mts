@@ -15,6 +15,7 @@ import {
 	keygripKey,
 	readSessionField,
 	readSessionHash,
+	refreshClaimKey,
 	retireAccessSession,
 	reuseEventsKey,
 	SESSION_INDEX_TTL_SECONDS,
@@ -92,7 +93,12 @@ describe('the session key builders', () => {
 	it('never puts the token itself into any key it builds', () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
 
-		for (const key of [sessionKey(TOKEN), tombstoneKey(TOKEN), sessionKeyFromIndexField(hashSessionToken(TOKEN))])
+		for (const key of [
+			sessionKey(TOKEN),
+			tombstoneKey(TOKEN),
+			refreshClaimKey(TOKEN),
+			sessionKeyFromIndexField(hashSessionToken(TOKEN))
+		])
 			expect(key).not.toContain('refresh-token-1')
 	})
 
@@ -156,6 +162,28 @@ describe('the session key builders', () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
 
 		expect(tombstoneKey(TOKEN)).not.toBe(sessionKey(TOKEN))
+	})
+
+	/*
+	 * ⚠️ Same shape as the tombstone's own test above — a digest under a constant namespace word — and for
+	 * the same reason: `claimRefreshRotation` reads and writes this key long before the token is actually
+	 * consumed, so a dump of it must be exactly as useless as a dump of the session key it claims.
+	 */
+	it('builds the claim key from the prefix, the word and the digest', () => {
+		vi.stubEnv('REDIS_KEY', REDIS_KEY)
+
+		expect(refreshClaimKey(TOKEN)).toBe(`${REDIS_KEY}claim:${DIGEST}`)
+		expect(refreshClaimKey(TOKEN).slice(`${REDIS_KEY}claim:`.length)).toMatch(/^[0-9a-f]{64}$/)
+		expect(refreshClaimKey(TOKEN)).not.toContain('refresh-token-1')
+	})
+
+	// Three distinct namespaces for the same token: the live session, its tombstone and its claim never
+	// share a key, or claiming one would delete another.
+	it('never collides with the session key or the tombstone for the same token', () => {
+		vi.stubEnv('REDIS_KEY', REDIS_KEY)
+
+		expect(refreshClaimKey(TOKEN)).not.toBe(sessionKey(TOKEN))
+		expect(refreshClaimKey(TOKEN)).not.toBe(tombstoneKey(TOKEN))
 	})
 
 	// The lineage id goes in as it is — see the note on the builder. Asserting the token does not appear is

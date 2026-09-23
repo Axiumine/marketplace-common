@@ -13,7 +13,54 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.5.0...HEAD)
 
-Nothing yet.
+### Added
+
+- **`others/assertPasswordByteLength`**, a new export: throws the same `GraphQLError` shape
+  `@axiumine/koa-utils`' `checkPwdLen` throws for a too-long password, but measures
+  `Buffer.byteLength(password, 'utf8')` rather than `.length`. `checkPwdLen` counts UTF-16 code units, and
+  bcrypt truncates at 72 UTF-8 **bytes** with no guard of its own — so a password heavy in emoji, accents
+  or CJK characters can sit under `checkPwdLen`'s ceiling while running well past bcrypt's, and two such
+  passwords that agree on their first 72 bytes then hash identically. Consumers adopt it once this release
+  is out; none does yet.
+
+### Fixed
+
+- **A refresh token's rotation now claims the token atomically before it does anything else**, closing a
+  window in which two requests presenting the same live refresh token — an ordinary multi-tab refresh
+  burst — could both pass `resolveAuthorizationSession` before either had actually consumed the token, and
+  both mint an independent successor session. The loser of the race now gets the same 409
+  `REFRESH_RACE_RETRY` a lost race gets *after* consumption, and never reads the account.
+- **`refreshSessionTokens`'s rollback no longer deletes a freshly-minted session pair when the failure
+  happens after the predecessor refresh key is already gone.** `unindexSession`, the rotation's last write,
+  could still throw after the old key had really been deleted; the unconditional rollback that followed
+  used to delete the new pair too, leaving the caller with no working session at all for a failure that
+  only ever touched a now-orphaned index row.
+- **`PositionType` now declares its `Point` literal `as const`**, matching `Tier.mts` and
+  `ReuseEventAction.mts`. Without it, `IShopOwnerAddress`, `ICompanyAddress` and `IUserAddress` all typed
+  their GeoJSON `position.type` as plain `string` rather than the literal `'Point'` GeoJSON itself
+  requires (RFC 7946), silently accepting any string at compile time.
+
+Six hardening fixes to `src/encryption`, an internal audit of the field-encryption plugin's fail-loud
+guarantees. None has a currently-reachable trigger on the platform today — each closes a gap that would
+otherwise surface, silently, the day a new caller shaped its query or write differently.
+
+- **`encryptFilter` now rejects a query operator wrapped around a whole encrypted array or sub-document**
+  (e.g. `{ addresses: { $elemMatch: { city: … } } }`) instead of passing the plaintext value inside it
+  through unencrypted and unrejected. `$exists` stays legal at that level, as it is on a leaf.
+- **`encryptFilter` now rejects `$type` on an encrypted field unless the value is `'binData'`/`5`**, the
+  only BSON type its ciphertext can ever be, instead of forwarding any other value unrewritten to a query
+  that would then silently match nothing.
+- **`Model.distinct()` results are decrypted again.** Its filter was already encrypted, but its result — a
+  bare array of the field's own values, not a document — was never routed through `decryptDocument`.
+- **`Model.bulkWrite()` is now covered by the field-encryption plugin**, the same as `insertMany` — its
+  filters, updates, insert documents and replacement documents are all encrypted before the batch leaves
+  the process.
+- **A query-based update now gets the same `CastError` guarantee `save()` gives** for a malformed value on
+  an encrypted field, instead of silently encrypting the raw, uncast value — at any depth the update names
+  it, a dotted leaf key (`'personalData.birth.date'`) or a whole interior sub-document (`{ personalData }`,
+  the shape both `personalData` writers on the platform actually use), not only the former.
+- **`pre('save')` reverts already-encrypted fields to their original plaintext if a later field's KMS call
+  throws mid-write**, instead of leaving the in-memory document a silent mix of ciphertext and plaintext.
 
 ## [4.5.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.5.0) - 2026-09-21
 
