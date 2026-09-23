@@ -1,5 +1,5 @@
 import { Binary, ObjectId } from 'mongodb'
-import { Schema, SchemaType } from 'mongoose'
+import { Error as MongooseError, Schema, SchemaType } from 'mongoose'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { decryptDocument } from '../src/encryption/decryptDocument.mts'
@@ -718,6 +718,23 @@ describe('encryptFilter', () => {
 		expect(plaintextOf(personalData.lastName)).toBe('Lovelace')
 	})
 
+	/*
+	 * ⚠️ **`null` is the case that tells the `isPlainObject` guard apart from skipping it outright.** An
+	 * array or a bare scalar reaching the operator check above falls through to the same place either
+	 * way, because `Object.keys` on either answers no `$`-prefixed key. `Object.keys(null)` instead
+	 * throws — so a whole encrypted sub-document matched against a literal `null` (checking the field is
+	 * exactly absent-as-null, distinct from `$exists`) only survives this guard because `isPlainObject`
+	 * is asked, and told no, before `Object.keys` is ever reached.
+	 */
+	it('matches a whole encrypted sub-document against a literal null without throwing', async () => {
+		const filter: Record<string, unknown> = { personalData: null }
+
+		await encryptFilter(filter, root, KEY)
+
+		expect(filter).toEqual({ personalData: null })
+		expect(vault).toHaveLength(0)
+	})
+
 	// A plain object with no `$` key is a value, not an operand — `{ 'login.email': { a: 1 } }` asks
 	// for a field equal to that object rather than for an admin.
 	it('treats an admin-free object operand as a value', async () => {
@@ -865,6 +882,43 @@ describe('encryptUpdate', () => {
 		expect(plaintextOf((update.$set.personalData as Record<string, unknown>).firstName)).toBe('42')
 	})
 
+	/*
+	 * ⚠️ **The path a thrown `CastError` carries, not only that one was thrown.** `castAtNode` builds it
+	 * one segment at a time — an array index for an array element, an interior key for a sub-document —
+	 * and a mutant that empties out either template literal still throws a `CastError` with the right
+	 * message *prefix*, so `rejects.toThrow(/Cast to EncryptedField failed/)` alone never notices. A bad
+	 * value behind `addresses.[].street`, one array element into one `$set`, exercises both segments in
+	 * the same walk: the array index (element 0) and the interior key (`street`) built onto it.
+	 */
+	it('names the exact path of a bad value behind an array index and an interior key', async () => {
+		const update = { $set: { addresses: [{ street: {} }] } }
+
+		const error = await encryptUpdate(update, root, KEY).then(
+			() => undefined,
+			(reason: unknown) => reason
+		)
+
+		expect(error).toBeInstanceOf(MongooseError.CastError)
+		expect((error as InstanceType<typeof MongooseError.CastError>).path).toBe('addresses.0.street')
+		expect(vault).toHaveLength(0)
+	})
+
+	/*
+	 * ⚠️ **The guard is what keeps a missing field missing, not merely unencrypted.** `castAtNode`'s
+	 * interior walk only touches `value[key]` for a key the value actually carries — `Object.hasOwn`
+	 * before every write. Without it, every one of the node's *declared* children would be visited
+	 * regardless, and `castAtNode(undefined, …)` on each absent one would write it back as an explicit
+	 * `undefined`-valued key: `toEqual` alone cannot see that (it treats an absent key and one set to
+	 * `undefined` as equal), which is exactly why this checks `Object.keys` instead.
+	 */
+	it('adds no key for a declared child the value does not itself carry', async () => {
+		const update = { $set: { personalData: { firstName: 'Ada' } } }
+
+		await encryptUpdate(update, root, 'user')
+
+		expect(Object.keys(update.$set.personalData)).toEqual(['firstName'])
+	})
+
 	// A shape that does not match the node at all — an object where the array-valued `addresses` is
 	// declared — is left exactly as `encryptAtNode` leaves it: untouched, not cast, not thrown on.
 	it('leaves a value untouched when its shape does not match the node it resolved to', async () => {
@@ -979,6 +1033,21 @@ describe('encryptUpdate', () => {
 			'42',
 			'B street'
 		])
+	})
+
+	// The $each counterpart of the array-index/interior-key path test above: its own segment of the
+	// path, `$each.<index>`, is built on a line the array-element and $set walkers never reach.
+	it('names the exact path of a bad value inside a $push $each element', async () => {
+		const update = { $push: { addresses: { $each: [{ street: {} }] } } }
+
+		const error = await encryptUpdate(update, root, KEY).then(
+			() => undefined,
+			(reason: unknown) => reason
+		)
+
+		expect(error).toBeInstanceOf(MongooseError.CastError)
+		expect((error as InstanceType<typeof MongooseError.CastError>).path).toBe('addresses.$each.0.street')
+		expect(vault).toHaveLength(0)
 	})
 
 	it('ignores a push at a key that is not an encrypted array, and an operand that is not a value map', async () => {

@@ -26,5 +26,13 @@ import { MAX_PWD_LENGTH } from '@axiumine/koa-utils/lib/Constants'
  * code-point count `[...password].length` would give either.
  */
 export function assertPasswordByteLength(password: string): void {
-	if (Buffer.byteLength(password, 'utf8') > MAX_PWD_LENGTH) throwErrorWrongUserInput('Password is too long')
+	// `Buffer.byteLength` falls back to UTF-8 for any encoding argument it does not recognize by name —
+	// `Buffer.byteLength(s, '')`, `Buffer.byteLength(s, 'garbage')` and `Buffer.byteLength(s, 'utf8')` all
+	// agree on every input, verified against this repo's pinned Node 24. Mutating `'utf8'` to `''` is
+	// therefore unobservable on any reachable input: an equivalent mutant, not a gap. `'Password is too
+	// long'` stays live on its own line below, where a mutant to *that* string is still caught.
+	// Stryker disable next-line StringLiteral: '' and 'utf8' are the same encoding to Buffer.byteLength, see comment above
+	const byteLength = Buffer.byteLength(password, 'utf8')
+
+	if (byteLength > MAX_PWD_LENGTH) throwErrorWrongUserInput('Password is too long')
 }

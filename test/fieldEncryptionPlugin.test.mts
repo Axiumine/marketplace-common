@@ -376,6 +376,18 @@ describe('bulkWrite', () => {
 		expect(vault).toHaveLength(0)
 	})
 
+	/*
+	 * ⚠️ **A string survives an unguarded `for...of` too, which is exactly why the case above cannot
+	 * kill a mutant in this guard.** A plain object has no `Symbol.iterator` at all: `for (const op of
+	 * ops)` throws `ops is not iterable` the moment it is reached, so only a non-iterable `ops` tells a
+	 * skipped guard apart from one that actually ran.
+	 */
+	it('does nothing when it is not handed an array, and does not merely tolerate one that happens to be', async () => {
+		await expect(hooks.execPre('bulkWrite', null, [{}])).resolves.toBeDefined()
+
+		expect(vault).toHaveLength(0)
+	})
+
 	it('ignores an operation that is not an object, and a spec that is not an object', async () => {
 		const ops: unknown[] = ['not an operation', { deleteMany: 'nonsense' }]
 
@@ -383,6 +395,40 @@ describe('bulkWrite', () => {
 
 		expect(ops).toEqual(['not an operation', { deleteMany: 'nonsense' }])
 		expect(vault).toHaveLength(0)
+	})
+
+	/*
+	 * ⚠️ **`null` is what tells this guard apart from the inner one two lines below it.** A string
+	 * operation skips *this* guard too (`isPlainObject('…')` is false) but then walks straight into
+	 * `Object.values('…')`, one character at a time, and the inner per-`spec` guard (`isPlainObject`
+	 * again) quietly skips every one of them — so a string never actually exercises this outer guard on
+	 * its own. `Object.values(null)` throws instead, which only this guard stands in front of.
+	 */
+	it('ignores a null operation, before it ever reaches Object.values', async () => {
+		const ops: unknown[] = [null]
+
+		await expect(hooks.execPre('bulkWrite', null, [ops])).resolves.toBeDefined()
+
+		expect(vault).toHaveLength(0)
+	})
+
+	/*
+	 * ⚠️ **The two keys `encryptAtNode` writes back, not merely reads.** `document` and `replacement`
+	 * are assigned (`spec.document = await encryptAtNode(...)`), unlike `filter`/`update` two guards
+	 * below, which only ever mutate their argument in place. A spec that carries neither key would still
+	 * gain one, set to `undefined`, if either guard ran unconditionally — a change `toEqual` cannot see
+	 * (it treats an absent key and one set to `undefined` as equal), which is why this checks the key's
+	 * presence directly instead.
+	 */
+	it('adds neither a document nor a replacement key to a spec that carries only a filter', async () => {
+		const spec: Record<string, unknown> = { filter: { 'login.email': 'delete-me@b.test' } }
+		const ops = [{ deleteOne: spec }]
+
+		await hooks.execPre('bulkWrite', null, [ops])
+
+		expect(plaintextOf((spec.filter as Record<string, unknown>)['login.email'])).toBe('delete-me@b.test')
+		expect(Object.hasOwn(spec, 'document')).toBe(false)
+		expect(Object.hasOwn(spec, 'replacement')).toBe(false)
 	})
 })
 

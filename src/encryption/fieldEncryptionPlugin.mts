@@ -220,10 +220,21 @@ async function encryptBulkWriteOp(op: unknown, root: IEncryptedFieldNode, keyAlt
 			spec.replacement = await encryptAtNode(spec.replacement, root, keyAltName)
 		}
 
+		// ⚠️ Unlike `document`/`replacement` above, `'filter' in spec` cannot be told apart from
+		// unconditionally calling `encryptFilter` here: a spec without a `filter` key hands it
+		// `undefined`, and `encryptFilter`'s own guard (`if (!isPlainObject(filter)) return`,
+		// tested in its own suite) already no-ops on that — no throw, no mutation, no key added,
+		// because `encryptFilter` only ever mutates its argument in place and never assigns one back
+		// here. Equivalent mutant.
+		// Stryker disable next-line ConditionalExpression: encryptFilter(undefined) is a no-op, see comment above
 		if ('filter' in spec) {
 			await encryptFilter(spec.filter, root, keyAltName)
 		}
 
+		// Same reasoning as `filter` above: `encryptUpdate`'s own top guard
+		// (`if (Array.isArray(update) || !isPlainObject(update)) return`) no-ops on `undefined` the
+		// same way, and nothing here assigns its result back onto `spec`. Equivalent mutant.
+		// Stryker disable next-line ConditionalExpression: encryptUpdate(undefined) is a no-op, see comment above
 		if ('update' in spec) {
 			await encryptUpdate(spec.update, root, keyAltName)
 		}
