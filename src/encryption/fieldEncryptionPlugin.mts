@@ -123,16 +123,29 @@ export function fieldEncryptionPlugin(schema: Schema, options: IFieldEncryptionP
 	// `document.set` rather than written into `_doc`, so the ciphertext is recorded as a change and
 	// actually reaches the server; `EncryptedField` is what stops the `set` casting it back.
 	schema.pre('save', async function (this: Document) {
-		for (const spec of options.fields) {
-			for (const path of documentPaths(this, spec.path)) {
-				const current: unknown = this.get(path)
+		// Fields already turned to ciphertext this pass, in case a later one's KMS call throws. Reverted
+		// in the catch below rather than left as a silent ciphertext/plaintext mix on the in-memory
+		// document — `save()` never proceeds either way, since the throw still propagates.
+		const applied: Array<{ path: string; value: unknown }> = []
 
-				if (current === null || current === undefined || isCiphertext(current)) {
-					continue
+		try {
+			for (const spec of options.fields) {
+				for (const path of documentPaths(this, spec.path)) {
+					const current: unknown = this.get(path)
+
+					if (current === null || current === undefined || isCiphertext(current)) {
+						continue
+					}
+
+					applied.push({ path: path, value: current })
+					this.set(path, await encryptValue(current, spec.algorithm, keyAltName))
 				}
-
-				this.set(path, await encryptValue(current, spec.algorithm, keyAltName))
 			}
+		} catch (error) {
+			for (const { path, value } of applied) {
+				this.set(path, value)
+			}
+			throw error
 		}
 	})
 

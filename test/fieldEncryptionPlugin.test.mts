@@ -10,7 +10,7 @@ import { Company } from '../src/models/MongoDB/Company.mts'
 import { Item } from '../src/models/MongoDB/Item.mts'
 import { ShopOwner } from '../src/models/MongoDB/ShopOwner.mts'
 import { User } from '../src/models/MongoDB/User.mts'
-import { entryOf, plaintextOf, resetVault, vault } from './encryptionHarness.mts'
+import { entryOf, plaintextOf, POISON, resetVault, vault } from './encryptionHarness.mts'
 
 vi.mock('@encryption/fieldEncryption.mjs', async () => {
 	const harness = await import('./encryptionHarness.mts')
@@ -251,6 +251,25 @@ describe('save', () => {
 
 		expect(data.notes).toBeNull()
 		expect(data.position).toBeUndefined()
+		expect(vault).toHaveLength(1)
+	})
+
+	/*
+	 * ⚠️ The regression test for the mid-loop failure this hook now guards against. `login.email` is
+	 * declared before `notes` in `FIELDS`, so it is already ciphertext on the document by the time
+	 * `notes`'s encryption throws — without the fix, `login.email` would stay ciphertext even though
+	 * the `save()` this hook belongs to never happens, leaving the in-memory document a silent mix of
+	 * the two.
+	 */
+	it('reverts already-encrypted fields to their original plaintext when a later field fails to encrypt', async () => {
+		const data: Record<string, unknown> = { login: { email: 'a@b.test' }, notes: POISON }
+
+		await expect(hooks.execPre('save', documentContext(data))).rejects.toThrow('KMS unreachable')
+
+		expect(valueAt(data, 'login.email')).toBe('a@b.test')
+		expect(data.notes).toBe(POISON)
+		// The KMS call for `login.email` already happened and cannot be undone — only the in-memory
+		// document is put back. One vault entry, from that one successful call.
 		expect(vault).toHaveLength(1)
 	})
 
