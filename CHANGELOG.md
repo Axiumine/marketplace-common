@@ -15,6 +15,17 @@ apart without reading the diff.
 
 ### Fixed
 
+- **A refresh token's rotation now claims the token atomically before it does anything else**, closing a
+  window in which two requests presenting the same live refresh token — an ordinary multi-tab refresh
+  burst — could both pass `resolveAuthorizationSession` before either had actually consumed the token, and
+  both mint an independent successor session. The loser of the race now gets the same 409
+  `REFRESH_RACE_RETRY` a lost race gets *after* consumption, and never reads the account.
+- **`refreshSessionTokens`'s rollback no longer deletes a freshly-minted session pair when the failure
+  happens after the predecessor refresh key is already gone.** `unindexSession`, the rotation's last write,
+  could still throw after the old key had really been deleted; the unconditional rollback that followed
+  used to delete the new pair too, leaving the caller with no working session at all for a failure that
+  only ever touched a now-orphaned index row.
+
 Six hardening fixes to `src/encryption`, an internal audit of the field-encryption plugin's fail-loud
 guarantees. None has a currently-reachable trigger on the platform today — each closes a gap that would
 otherwise surface, silently, the day a new caller shaped its query or write differently.

@@ -4,7 +4,7 @@ import { assertTier } from '@others/assertTier.mjs'
 import { IRefreshData } from '@others/IRefreshData.mjs'
 import { ITombstoneData } from '@others/ITombstoneData.mjs'
 import { ISessionFamilyStore, revokeSessionFamily } from '@others/revokeSessionFamily.mjs'
-import { graceHitsKey, readSessionHash, tombstoneKey } from '@others/sessionKeys.mjs'
+import { graceHitsKey, readSessionHash, refreshClaimKey, tombstoneKey } from '@others/sessionKeys.mjs'
 import { GRACE_SECONDS, sessionCapDeadline } from '@others/sessionLifetime.mjs'
 import { throwRefreshRaceRetry } from '@others/throwRefreshRaceRetry.mjs'
 import { isTier, Tier } from '@others/Tier.mjs'
@@ -13,11 +13,13 @@ import { Types } from 'mongoose'
 /**
  * The Redis commands this resolver's paths may issue — the whole set, not one of them.
  *
- * **On the path that resolves a session, `hGetAll` is still the only command**, run once against the
- * hashed session key. Everything else below belongs to a path that has already found something wrong:
+ * **On the path that resolves a session, `hGetAll` reads it and `incr` claims it** — one command each,
+ * every time a live session is found, not only on a path that has gone wrong. See `claimRefreshRotation`
+ * for why a hit pays for a second command now, and `expire`/`ttl` for the window that claim arms and
+ * repairs. Everything else below still belongs to a path that has already found something wrong:
  *
  * - a miss reads the reuse tombstone with a second `hGetAll`, and `incr`s the grace counter when the
- *   token turns out to have been consumed seconds ago;
+ *   token turns out to have been consumed seconds ago — the same counter a lost claim also increments;
  * - a replay past the grace window, and a session past its absolute age cap, both delegate to
  *   `revokeSessionFamily`, which costs `sMembers` plus one `del` per member plus one for the set —
  *   1 + N commands, on the request that discovered a theft rather than on the auth path —
@@ -27,8 +29,8 @@ import { Types } from 'mongoose'
  * ⚠️ **Keep this list and the interface below in step.** It once read "the single Redis command this
  * resolver issues", written when there was one and left alone when there stopped being one — which is
  * how a docstring becomes a claim a reader sizes the auth path by and is wrong. Anything that adds a
- * command here — the session index did — widens the interface, and the widening is the moment to rewrite
- * this paragraph rather than append to it.
+ * command here — the session index did, and the claim did again — widens the interface, and the
+ * widening is the moment to rewrite this paragraph rather than append to it.
  *
  * ⚠️ The client is a **parameter, not an import**, for the same reason `assertUnderRateLimit` takes
  * one: reaching for `redisClient` from `@axiumine/koa-utils/dataSources/Redis` here would pull the
@@ -44,8 +46,52 @@ import { Types } from 'mongoose'
  */
 export interface ISessionReadStore extends ISessionFamilyStore {
 	hGetAll(key: string): Promise<Record<string, string>>
-	/** The grace counter, and nothing else — see `graceHitsKey`. */
+	/** The grace counter and the claim counter — see `graceHitsKey` and `claimRefreshRotation`. */
 	incr(key: string): Promise<unknown>
+	/** The claim's own remaining life, read to repair one whose `expire` never landed — see `claimRefreshRotation`. */
+	ttl(key: string): Promise<number>
+}
+
+/**
+ * Claims the right to rotate one refresh token, atomically — the fix for the gap `INCR` closes on its
+ * own: two requests presenting the same live token can both reach this function before either one has
+ * actually consumed anything, because the real consumption, `deleteSession(oldRefresh)`, does not run
+ * until deep inside `refreshSessionTokens`, ten Redis round trips later. Without a claim taken *here*,
+ * at the first read, both requests pass every check below and both mint an independent successor — an
+ * ordinary multi-tab refresh burst quietly doubling into two live sessions.
+ *
+ * ⚠️ **`INCR` is the whole compare-and-swap, and it needs no Lua script.** Redis executes one command at
+ * a time; the first of two truly concurrent callers to reach a key nobody has touched reads back `1`,
+ * and the second reads back a number greater than `1` — there is only ever one thing being compared,
+ * "was I first", and a single atomic command already answers it. Contrast `keygripCas` in the admin
+ * resource service, which needs a script because it compares a version *and* writes three fields in the
+ * same breath; this claims a counter and writes nothing else.
+ *
+ * ⚠️ **The claim key is not the session key, deliberately.** Marking or deleting the real session hash
+ * here would move the *actual* consumption a full rotation earlier than the rest of this module
+ * documents, and would break the very rollback `refreshSessionTokens` depends on — the old key has to
+ * stay alive and readable until that function's own last write. This key claims nothing about the
+ * session; it only answers "has anyone already started rotating this exact token".
+ *
+ * ⚠️ **The window is `GRACE_SECONDS`, the same one the post-consumption race uses.** Both bound the same
+ * question — how long a second presentation of the same token, dispatched before the first one
+ * finished, is still the same multi-tab race rather than something else — one measured from the eventual
+ * tombstone, this one from the first read. A claim that outlives a rotation which then failed only costs
+ * a legitimate retry a few seconds; it can never lock the token out, because `EXPIRE` always wins against
+ * a client that has to make a second network round trip to try again.
+ *
+ * ⚠️ **The TTL is repaired if a process died between the `INCR` and the `EXPIRE`.** Without the repair, a
+ * crash in that exact gap leaves the key immortal and this one token permanently unrotatable. Checking
+ * the key's own `ttl` on every call, not only the first, is the same defence `assertUnderRateLimit` uses
+ * and for the same reason.
+ */
+async function claimRefreshRotation(store: ISessionReadStore, refreshToken: string): Promise<boolean> {
+	const key = refreshClaimKey(refreshToken)
+	const attempts = await store.incr(key)
+
+	if (attempts === 1 || (await store.ttl(key)) < 0) await store.expire(key, GRACE_SECONDS)
+
+	return attempts === 1
 }
 
 /**
@@ -138,6 +184,10 @@ export type TAuthorizationSession<TAccountData extends object> = TAccountData & 
  *   the digest of the prefixed refresh token, and it is the only shape a session has: the raw-key
  *   fallback that once sat behind this helper is gone, so a token that misses the digest
  *   is a token with no session.
+ * - **A hit is claimed before anything else runs.** `claimRefreshRotation` is the mutual exclusion two
+ *   requests presenting the same live token need: the loser is told to retry with the same 409 a lost
+ *   multi-tab race gets after consumption, rather than reading the account and minting a second session
+ *   for a token this request is about to rotate too.
  * - **The tier is asserted before the `_id` is looked up.** All nine services share one `REDIS_KEY`
  *   prefix — deliberately, because the single logout service finds a session by token content and
  *   cannot know which collection minted it — so a well-formed session found under this key may
@@ -177,6 +227,16 @@ export async function resolveAuthorizationSession<TAccountData extends object>({
 		await assertNotReplayed(store, refreshToken)
 
 		throw throwRefreshTokenExpiredOrDeleted()
+	}
+
+	// A live session exists, so from here on this request is racing every other request that read the
+	// same token before either one has rotated it — see `claimRefreshRotation`. The loser gets the same
+	// 409 the post-consumption race gives a lost multi-tab refresh, and never reaches the account read
+	// below.
+	if (!(await claimRefreshRotation(store, refreshToken))) {
+		await store.incr(graceHitsKey())
+
+		throw throwRefreshRaceRetry()
 	}
 
 	// Redis returns an object with no Object.prototype in its prototype chain; spreading it gives an

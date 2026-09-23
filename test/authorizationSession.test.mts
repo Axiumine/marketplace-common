@@ -31,6 +31,7 @@ const hashedKey = (token: string) => `${REDIS_KEY}${hashSessionToken(token)}`
 const tombstoneKeyFor = (token: string) => `${REDIS_KEY}used:${hashSessionToken(token)}`
 const familyKeyFor = (familyId: string) => `${REDIS_KEY}family:${familyId}`
 const indexKeyFor = (tier: string, accountId: string) => `${REDIS_KEY}idx:${tier}:${accountId}`
+const claimKeyFor = (token: string) => `${REDIS_KEY}claim:${hashSessionToken(token)}`
 
 /**
  * A fixed clock, so the two windows these suites turn on — the grace window and the absolute age cap —
@@ -70,7 +71,13 @@ describe('resolveAuthorizationSession', () => {
 		tombstone: Record<string, string> = {}
 	): ISessionReadStore & { [K in keyof ISessionReadStore]: ReturnType<typeof vi.fn> } => ({
 		hGetAll: vi.fn(async (key: string) => (key === TOMBSTONE_KEY ? tombstone : hash)),
+		// The default answers 1 to every key: the claim's `INCR` wins on the first (and, in most of these
+		// suites, only) call. Tests of the race itself override this to simulate a second, losing caller.
 		incr: vi.fn(async () => 1),
+		// -1 is "no TTL set" — the shape a fresh `EXPIRE` leaves and the one the repair check in
+		// `claimRefreshRotation` reads as "still needs arming". Not asserted against by default: `incr`
+		// answering 1 short-circuits the `||` before this is ever called.
+		ttl: vi.fn(async () => -1),
 		sMembers: vi.fn(async () => MEMBERS),
 		del: vi.fn(async () => 1),
 		lPush: vi.fn(async () => 1),
@@ -129,22 +136,26 @@ describe('resolveAuthorizationSession', () => {
 	})
 
 	/*
-	 * ⚠️ **The resolving path still costs one command**, and this is the assertion that keeps it that way.
-	 * Everything the lineage added — the tombstone read, the family walk, the grace counter — hangs off a
-	 * miss, so a
-	 * refactor that hoisted any of it above the hit would multiply the whole platform's auth traffic by
-	 * three without failing a single behavioural test.
+	 * ⚠️ **The resolving path costs exactly a read and a claim, and this is the assertion that keeps it
+	 * that way.** Everything the *lineage* added — the tombstone read, the family walk, the grace
+	 * counter's own `incr` — hangs off a miss, so a refactor that hoisted any of it above the hit would
+	 * multiply the whole platform's auth traffic by three without failing a single behavioural test.
+	 * The claim itself, added to close the concurrent-rotation race, is not part of that reuse machinery —
+	 * see `claimRefreshRotation` — which is why it is asserted here rather than folded into "not called".
 	 */
-	it('pays for none of the reuse machinery when the session is simply there', async () => {
+	it('reads once and claims once when the session is simply there, and pays for none of the reuse machinery', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
 		const s = readStore(live())
 
 		await resolve(s)
 
 		expect(s.hGetAll.mock.calls).toEqual([[SESSION_KEY]])
+		expect(s.incr).toHaveBeenCalledExactlyOnceWith(claimKeyFor(TOKEN))
+		// The literal 10, not GRACE_SECONDS: a mutant in that constant must not move both sides of this
+		// assertion at once, for the same reason GRACE_MS above is a literal rather than a product of it.
+		expect(s.expire).toHaveBeenCalledExactlyOnceWith(claimKeyFor(TOKEN), 10)
 		expect(s.sMembers).not.toHaveBeenCalled()
 		expect(s.del).not.toHaveBeenCalled()
-		expect(s.incr).not.toHaveBeenCalled()
 	})
 
 	/*
@@ -487,11 +498,17 @@ describe('resolveAuthorizationSession', () => {
 			})
 		)
 		expect(s.lTrim).toHaveBeenCalledExactlyOnceWith(trailKeyFor(TIER.shopOwner, ID), 0, 49)
-		expect(s.expire).toHaveBeenCalledExactlyOnceWith(trailKeyFor(TIER.shopOwner, ID), 30 * 24 * 60 * 60)
+		// Not "exactly once": the claim this session won on the way in already armed its own `expire`, on a
+		// different key — see the claim suite above. This is the trail's, asserted by call rather than by count.
+		expect(s.expire).toHaveBeenCalledWith(trailKeyFor(TIER.shopOwner, ID), 30 * 24 * 60 * 60)
 	})
 
 	// A session inside its cap resolves and writes no trail at all: the events are what a revocation leaves
 	// behind, and an ordinary refresh revokes nothing.
+	//
+	// ⚠️ The one `expire` this path issues is the claim's — asserted by key and value in the suite above —
+	// never the trail's three-command write (`lPush`, `lTrim`, `expire`). "Records nothing" is about the
+	// trail, so the trail's two other commands are what this still pins as untouched.
 	it('records nothing on the path that resolves a session', async () => {
 		vi.stubEnv('REDIS_KEY', REDIS_KEY)
 		const s = readStore(live())
@@ -499,6 +516,73 @@ describe('resolveAuthorizationSession', () => {
 		await expect(resolve(s)).resolves.toMatchObject({ _id: ID })
 		expect(s.lPush).not.toHaveBeenCalled()
 		expect(s.lTrim).not.toHaveBeenCalled()
+		expect(s.expire).toHaveBeenCalledExactlyOnceWith(claimKeyFor(TOKEN), 10)
+	})
+
+	/*
+	 * ⚠️ **The bug this claim closes, proven the way this suite proves every race: sequentially, against a
+	 * store whose `incr` behaves like the one thing two real concurrent callers actually share — the
+	 * counter behind one key.** The first call to reach it reads back 1 and resolves normally; the second
+	 * reads back 2, exactly as a genuinely simultaneous `INCR` from another tab racing the same refresh
+	 * token would, and is told to retry instead of reading the account and minting a second session.
+	 *
+	 * Without the fix this test fails closed the wrong way: both calls resolve, `readSessionData` is
+	 * called twice, and no 409 is ever thrown — two live sessions minted from one token.
+	 */
+	it('claims the token atomically: the first presentation wins, the second is told to retry and never reads the account', async () => {
+		vi.stubEnv('REDIS_KEY', REDIS_KEY)
+		const s = readStore(live())
+		let claims = 0
+
+		s.incr.mockImplementation(async (key: string) => (key === claimKeyFor(TOKEN) ? ++claims : 1))
+
+		await expect(resolve(s)).resolves.toMatchObject({ _id: ID })
+		expect(readSessionData).toHaveBeenCalledOnce()
+
+		const error = await rejection(() => resolve(s))
+
+		expectStatus(error, 409, 'Refresh In Progress')
+		expect(error.extensions.code).toBe('REFRESH_RACE_RETRY')
+		// The loser's own grace-hits increment, on top of the two claim attempts above.
+		expect(s.incr).toHaveBeenCalledWith(`${REDIS_KEY}grace-hits`)
+		// Still one: the loser lost before the account was ever read, exactly like every other 409 this
+		// resolver hands back.
+		expect(readSessionData).toHaveBeenCalledOnce()
+		expect(s.sMembers).not.toHaveBeenCalled()
+		expect(s.del).not.toHaveBeenCalled()
+	})
+
+	/*
+	 * ⚠️ **The claim must not lock a token out forever.** A process that died between the claim's `INCR`
+	 * and its `EXPIRE` would otherwise leave that counter immortal — every future presentation of this
+	 * exact token reading back 2, 3, 4… and losing the race against nobody, for ever. The repair — reading
+	 * the key's own `ttl` whenever `INCR` did not just create it — is what re-arms the window on exactly
+	 * that counter, exactly as `assertUnderRateLimit` repairs the same gap on its own bucket. This one call
+	 * still loses its own race, being a fourth attempt and not the first — the repair unsticks the *next*
+	 * presentation, not this one.
+	 */
+	it('re-arms the claim window when a previous claim never got its TTL set, even though this attempt still loses', async () => {
+		vi.stubEnv('REDIS_KEY', REDIS_KEY)
+		const s = readStore(live())
+
+		s.incr.mockImplementation(async () => 4)
+		s.ttl.mockImplementation(async (key: string) => (key === claimKeyFor(TOKEN) ? -1 : 1))
+
+		expectStatus(await rejection(() => resolve(s)), 409, 'Refresh In Progress')
+		expect(s.ttl).toHaveBeenCalledExactlyOnceWith(claimKeyFor(TOKEN))
+		expect(s.expire).toHaveBeenCalledExactlyOnceWith(claimKeyFor(TOKEN), 10)
+	})
+
+	// The mirror of the repair above: a claim still comfortably inside its window is left alone, so a
+	// legitimate winner's own successful claim never gets its expiry pushed forward on every check.
+	it('does not re-arm a claim that already carries a live TTL', async () => {
+		vi.stubEnv('REDIS_KEY', REDIS_KEY)
+		const s = readStore(live())
+
+		s.incr.mockImplementation(async () => 4)
+		s.ttl.mockImplementation(async () => 7)
+
+		expectStatus(await rejection(() => resolve(s)), 409, 'Refresh In Progress')
 		expect(s.expire).not.toHaveBeenCalled()
 	})
 })
@@ -1250,5 +1334,35 @@ describe('refreshSessionTokens', () => {
 		expect(store.del.mock.calls).toEqual([[OLD_KEY], [store.hSet.mock.calls[0][0]], [store.hSet.mock.calls[1][0]]])
 		expect(store.del.mock.calls.flat()).not.toContain(FAMILY_KEY)
 		expect(store.del.mock.calls.flat()).not.toContain(OLD_TOMBSTONE_KEY)
+	})
+
+	/*
+	 * ⚠️ **The failure the unconditional rollback used to get wrong.** `unindexSession` is the very last
+	 * write, and by the time it runs the old refresh key is not merely *about* to be deleted — `deleteSession`
+	 * above already succeeded. A rollback that still deletes the freshly-written pair here destroys every
+	 * key this session ever had: the old one because it really is gone, the new one because the rollback
+	 * took it too, for a failure that only ever touched a now-orphaned index row.
+	 */
+	it('spares the new pair when only the index prune fails after the old key is already gone', async () => {
+		vi.stubEnv('REDIS_KEY', REDIS_KEY)
+		const boom = new Error('redis is down')
+		const store = writeStore({
+			hDel: vi.fn(async () => {
+				throw boom
+			})
+		})
+		const { ctx, set } = cookieJar()
+
+		expectStatus(
+			await rejection(() => refreshSessionTokens({ store, ctx, session, captureException })),
+			500,
+			'Internal Server Error'
+		)
+
+		expect(set).toHaveBeenCalledOnce()
+		// The old key really was deleted, and it is the *only* delete the rollback still gets to make: the
+		// new pair — the caller's only remaining session at this point — must survive.
+		expect(store.del).toHaveBeenCalledExactlyOnceWith(OLD_KEY)
+		expect(captureException).toHaveBeenCalledExactlyOnceWith(boom)
 	})
 })

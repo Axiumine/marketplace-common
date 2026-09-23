@@ -94,17 +94,24 @@ export interface IRefreshSessionTokensInput<TAccountData extends object> {
  *   counted on entry so that only real mints count — see `guardFamilyMintRate` for why a request that
  *   mints nothing must not.
  *
- * ⚠️ On any failure both freshly-written session keys are deleted before the error is rethrown. A
- * session stored without its TTL would never expire, so a half-written rotation must leave nothing
- * behind. Those two deletes name the hashed keys directly rather than going through `deleteSession`:
- * this call minted them moments ago, so no raw-shape twin can exist and looking for one would be a
- * second round trip on the error path for a key that is provably absent.
+ * ⚠️ On a failure **before** the old refresh key is actually deleted, both freshly-written session keys
+ * are deleted before the error is rethrown. A session stored without its TTL would never expire, so a
+ * half-written rotation must leave nothing behind. Those two deletes name the hashed keys directly rather
+ * than going through `deleteSession`: this call minted them moments ago, so no raw-shape twin can exist
+ * and looking for one would be a second round trip on the error path for a key that is provably absent.
+ *
+ * ⚠️ **On a failure *after* the old key is gone, the rollback must not touch the new pair at all.** The
+ * two are no longer "freshly written and unused" at that point — they are the only session the caller has
+ * left, because the predecessor really is deleted and cannot be handed back. `unindexSession` runs last
+ * and can still throw; were the rollback unconditional, that one late failure would delete the new pair
+ * too and leave the caller logged out of everything for a failure that only ever touched a index row.
+ * See `oldRefreshDeleted` below for the flag this reads.
  *
  * ⚠️ **The rollback does not unwind the tombstone or the family entry, deliberately.** A rotation that
- * failed left the old refresh key alive, so the tombstone is unreachable — nothing reads one until a
- * live-key miss — and it is overwritten by the rotation that eventually succeeds. The family members it
- * added point at keys the rollback has just deleted, and deleting an absent key is a no-op. Unwinding
- * either would add commands to an error path to tidy state that is already inert.
+ * failed before the old key was deleted left it alive, so the tombstone is unreachable — nothing reads
+ * one until a live-key miss — and it is overwritten by the rotation that eventually succeeds. The family
+ * members it added point at keys the rollback has just deleted, and deleting an absent key is a no-op.
+ * Unwinding either would add commands to an error path to tidy state that is already inert.
  */
 export async function refreshSessionTokens<TAccountData extends object>({
 	store,
@@ -127,6 +134,13 @@ export async function refreshSessionTokens<TAccountData extends object>({
 	// output. Equivalent mutant.
 	// Stryker disable next-line BooleanLiteral: initial value is provably unobservable, see comment above
 	let status = false // default
+
+	// ⚠️ **The point of no return, read by the catch block below.** Before this flips true, a failure has
+	// left the old refresh key alive and the new pair unused — the ordinary case the rollback exists for.
+	// After it flips, the old key is really gone: the new pair is the only session the caller has left,
+	// and the rollback must leave it alone even if a later step — `unindexSession`, the last write —
+	// throws. See the docstring's note on the two rollback shapes.
+	let oldRefreshDeleted = false
 
 	let accessToken = generateAccessToken()
 	const refreshToken = generateRefreshToken()
@@ -258,6 +272,7 @@ export async function refreshSessionTokens<TAccountData extends object>({
 		// that leaves the old refresh key alive is exactly the replay this function rotates to prevent, and
 		// the digest is now the only name that key has ever had.
 		await deleteSession(store, oldRefresh)
+		oldRefreshDeleted = true
 
 		// Unfile the token that has just been deleted, so one session is one row rather than one
 		// row per rotation. **After the delete, never before**: between the two commands there is a window,
@@ -286,8 +301,12 @@ export async function refreshSessionTokens<TAccountData extends object>({
 		// the one clear that is.
 		// Stryker disable next-line StringLiteral: cleared value is provably unobservable, see comment above
 		accessToken = ''
-		// delete keys
-		await Promise.all([store.del(keyAccess), store.del(keyRefresh)])
+		// ⚠️ **Only while the old key is still alive.** Once `deleteSession(oldRefresh)` has actually run,
+		// the new pair is no longer "freshly written and unused" — it is the caller's only session, and a
+		// later failure (`unindexSession`, the last write) must not delete it too. Deleting both here for
+		// that case would destroy the old key *and* the new one, forcing a re-login a stale index row never
+		// justified.
+		if (!oldRefreshDeleted) await Promise.all([store.del(keyAccess), store.del(keyRefresh)])
 		tryCatchRethrow(e as GraphQLError | Error)
 	}
 
