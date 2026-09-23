@@ -13,7 +13,27 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.5.0...HEAD)
 
-Nothing yet.
+### Fixed
+
+Six hardening fixes to `src/encryption`, an internal audit of the field-encryption plugin's fail-loud
+guarantees. None has a currently-reachable trigger on the platform today — each closes a gap that would
+otherwise surface, silently, the day a new caller shaped its query or write differently.
+
+- **`encryptFilter` now rejects a query operator wrapped around a whole encrypted array or sub-document**
+  (e.g. `{ addresses: { $elemMatch: { city: … } } }`) instead of passing the plaintext value inside it
+  through unencrypted and unrejected. `$exists` stays legal at that level, as it is on a leaf.
+- **`encryptFilter` now rejects `$type` on an encrypted field unless the value is `'binData'`/`5`**, the
+  only BSON type its ciphertext can ever be, instead of forwarding any other value unrewritten to a query
+  that would then silently match nothing.
+- **`Model.distinct()` results are decrypted again.** Its filter was already encrypted, but its result — a
+  bare array of the field's own values, not a document — was never routed through `decryptDocument`.
+- **`Model.bulkWrite()` is now covered by the field-encryption plugin**, the same as `insertMany` — its
+  filters, updates, insert documents and replacement documents are all encrypted before the batch leaves
+  the process.
+- **A query-based update now gets the same `CastError` guarantee `save()` gives** for a malformed value on
+  an encrypted field, instead of silently encrypting the raw, uncast value.
+- **`pre('save')` reverts already-encrypted fields to their original plaintext if a later field's KMS call
+  throws mid-write**, instead of leaving the in-memory document a silent mix of ciphertext and plaintext.
 
 ## [4.5.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.5.0) - 2026-09-21
 
