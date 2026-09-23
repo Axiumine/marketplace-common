@@ -43,15 +43,20 @@ const UPDATE_HOOKS: MongooseDefaultQueryMiddleware[] = [
 ]
 
 /**
- * Query kinds that return documents. `countDocuments` and the `update*` pair are absent on purpose —
- * they return counts, and walking a number is wasted work on the hottest path there is.
+ * Query kinds whose result can hold ciphertext. `countDocuments` and the `update*` pair are absent on
+ * purpose — they return counts, and walking a number is wasted work on the hottest path there is.
+ *
+ * `distinct` belongs here even though it returns no document at all: it answers a bare array of the
+ * field's own values, and an encrypted field's values are ciphertext until `decryptDocument` walks
+ * them — the same as any other result, just without a document wrapped around it.
  */
 const RESULT_HOOKS: MongooseDefaultQueryMiddleware[] = [
 	'find',
 	'findOne',
 	'findOneAndDelete',
 	'findOneAndReplace',
-	'findOneAndUpdate'
+	'findOneAndUpdate',
+	'distinct'
 ]
 
 /**

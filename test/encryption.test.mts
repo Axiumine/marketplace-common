@@ -943,6 +943,21 @@ describe('decryptDocument', () => {
 		})
 	})
 
+	/*
+	 * ⚠️ `Model.distinct()` returns a bare array of field values, not an array of documents — the one
+	 * result shape none of the other hooks produce. Without this, ciphertext in that array position
+	 * would come back as a `Binary` instead of being decrypted, since the walk otherwise only ever
+	 * decrypts ciphertext found as an *object property*.
+	 */
+	it('decrypts a bare array of scalars, not only arrays of documents', async () => {
+		const email = await fakeEncryptValue('a@b.test', ALGORITHM_DETERMINISTIC, 'user')
+		const values: unknown[] = [email, 'already plain']
+
+		await decryptDocument(values)
+
+		expect(values).toEqual(['a@b.test', 'already plain'])
+	})
+
 	it('walks an array of documents', async () => {
 		const first = await fakeEncryptValue('a@b.test', ALGORITHM_DETERMINISTIC, 'user')
 		const second = await fakeEncryptValue('c@d.test', ALGORITHM_DETERMINISTIC, 'user')

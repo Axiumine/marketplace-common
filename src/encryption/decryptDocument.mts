@@ -25,7 +25,20 @@ import { isPlainObject } from '@encryption/isPlainObject.mjs'
  */
 export async function decryptDocument(value: unknown): Promise<void> {
 	if (Array.isArray(value)) {
-		await Promise.all(value.map(async (entry) => await decryptDocument(entry)))
+		// `Model.distinct()` returns a bare array of field values rather than of documents — an entry
+		// here can itself be ciphertext, not only an object that holds some further in. The object loop
+		// below does exactly this check for a property; an array element gets no such loop of its own,
+		// so it needs the same check made explicit here.
+		await Promise.all(
+			value.map(async (entry, index) => {
+				if (isCiphertext(entry)) {
+					value[index] = await decryptValue(entry)
+					return
+				}
+
+				await decryptDocument(entry)
+			})
+		)
 		return
 	}
 

@@ -155,9 +155,22 @@ describe.each(['find', 'findOne', 'findOneAndDelete', 'findOneAndReplace', 'find
 
 describe('the count and update kinds', () => {
 	it('have no result hook at all', () => {
-		for (const name of ['countDocuments', 'distinct', 'updateOne', 'updateMany', 'deleteOne', 'deleteMany']) {
+		for (const name of ['countDocuments', 'updateOne', 'updateMany', 'deleteOne', 'deleteMany']) {
 			expect(hooks._posts.get(name)).toBeUndefined()
 		}
+	})
+})
+
+// `distinct` answers a bare array of the field's own values rather than a document, so it is checked
+// on its own rather than folded into "the result of %s" above, which asserts a document shape.
+describe('the result of distinct', () => {
+	it('comes back decrypted, as a bare array rather than a document', async () => {
+		vault.push({ value: 'a@b.test', algorithm: ALGORITHM_DETERMINISTIC, keyAltName: KEY })
+		const result = [new Binary(Buffer.from('0'), Binary.SUBTYPE_ENCRYPTED), 'already plain']
+
+		await hooks.execPost('distinct', null, [result])
+
+		expect(result).toEqual(['a@b.test', 'already plain'])
 	})
 })
 
