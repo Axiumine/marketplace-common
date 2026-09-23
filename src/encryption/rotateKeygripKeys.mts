@@ -27,9 +27,6 @@ const KEYGRIP_MIN_KEYS = 2
 /** Milliseconds in a day, for turning two ISO-8601 stamps into an age the retirement rule can read. */
 const DAY_MS = 86_400_000
 
-/** `k` followed by digits, and nothing else — the id shape both this and the seed script mint. */
-const NUMBERED_ID = /^k(\d+)$/
-
 /**
  * The id a rotation gives the key it mints: one past the highest number already in the array.
  *
@@ -42,9 +39,17 @@ const NUMBERED_ID = /^k(\d+)$/
  * An id that does not match the shape contributes nothing rather than throwing: nothing on the platform
  * mints one, but a hand-written record must still be rotatable — the number is a label, and the only
  * property it owes anybody is being different from the others.
+ *
+ * ⚠️ **The `k` + digits regex is built inside the function, not hoisted to a module-level constant.**
+ * A module-level regex here is a *static* mutant: Stryker's vitest runner has to reload the whole worker
+ * to switch it, and that reload has repeatedly raced the per-test isolation this file otherwise relies on
+ * (see the 2026-09-06 incident above) — reported Survived while the assertions that kill it by hand sit
+ * right there. Built fresh inside the function it runs on every call, inside whichever test's own stack,
+ * which is exactly where the perTest coverage this repo requires can see it.
  */
 const nextKeyId = (keys: readonly IKeygripKeyMaterial[]) => {
-	const highest = keys.reduce((max, key) => Math.max(max, Number(NUMBERED_ID.exec(key.id)?.[1] ?? 0)), 0)
+	const numberedId = /^k(\d+)$/
+	const highest = keys.reduce((max, key) => Math.max(max, Number(numberedId.exec(key.id)?.[1] ?? 0)), 0)
 
 	return `k${highest + 1}`
 }
