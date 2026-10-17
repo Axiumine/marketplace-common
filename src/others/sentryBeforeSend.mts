@@ -12,11 +12,11 @@
  * pulls in this file and no other part of this package.
  */
 export interface ISentryScrubbableEvent {
-	request?: { headers?: unknown; env?: unknown; data?: unknown } | undefined
-	user?: unknown
-	contexts?: { trace?: { data?: unknown } | undefined } | undefined
-	spans?: ReadonlyArray<{ data?: unknown; description?: unknown }> | undefined
-	breadcrumbs?: ReadonlyArray<{ message?: unknown; data?: unknown }> | undefined
+  request?: { headers?: unknown; env?: unknown; data?: unknown } | undefined
+  user?: unknown
+  contexts?: { trace?: { data?: unknown } | undefined } | undefined
+  spans?: ReadonlyArray<{ data?: unknown; description?: unknown }> | undefined
+  breadcrumbs?: ReadonlyArray<{ message?: unknown; data?: unknown }> | undefined
 }
 
 /**
@@ -53,28 +53,28 @@ export interface ISentryScrubbableEvent {
  *   No second spelling: an environment variable cannot contain a `-`, so there is nothing to normalise.
  */
 const REMOVED_KEYS: ReadonlySet<string> = new Set([
-	'authorization',
-	'proxy-authorization',
-	'proxy_authorization',
-	'cookie',
-	'cookies',
-	'set-cookie',
-	'set_cookie',
-	'x-forwarded-for',
-	'x_forwarded_for',
-	'x-real-ip',
-	'x_real_ip',
-	'http.client_ip',
-	'client.address',
-	'client.port',
-	'net.peer.ip',
-	'net.host.ip',
-	'http.user_agent',
-	'user-agent',
-	'user_agent',
-	'ip_address',
-	'remote_addr',
-	'keygrip_kek'
+  'authorization',
+  'proxy-authorization',
+  'proxy_authorization',
+  'cookie',
+  'cookies',
+  'set-cookie',
+  'set_cookie',
+  'x-forwarded-for',
+  'x_forwarded_for',
+  'x-real-ip',
+  'x_real_ip',
+  'http.client_ip',
+  'client.address',
+  'client.port',
+  'net.peer.ip',
+  'net.host.ip',
+  'http.user_agent',
+  'user-agent',
+  'user_agent',
+  'ip_address',
+  'remote_addr',
+  'keygrip_kek'
 ])
 
 /**
@@ -119,11 +119,11 @@ const URL_VALUED_KEYS: ReadonlySet<string> = new Set(['url', 'url.full', 'http.u
  * that throws on the first event holding something else loses that event and the error under it.
  */
 function sanitiseUrl(value: unknown): unknown {
-	if (typeof value !== 'string') return value
+  if (typeof value !== 'string') return value
 
-	const cut = value.search(/[?#]/)
+  const cut = value.search(/[?#]/)
 
-	return cut === -1 ? value : value.slice(0, cut)
+  return cut === -1 ? value : value.slice(0, cut)
 }
 
 /**
@@ -135,7 +135,7 @@ function sanitiseUrl(value: unknown): unknown {
  * that such values exist in the same event.
  */
 function looksLikeUrl(value: unknown): value is string {
-	return typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/'))
+  return typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/'))
 }
 
 /**
@@ -146,12 +146,12 @@ function looksLikeUrl(value: unknown): value is string {
  * breadcrumb of every event — a serialised `null` per breadcrumb per event, sent forever, for nothing.
  */
 function sanitiseKey(bag: unknown, key: string): void {
-	if (typeof bag !== 'object' || bag === null) return
+  if (typeof bag !== 'object' || bag === null) return
 
-	const record = bag as Record<string, unknown>
-	const value = record[key]
+  const record = bag as Record<string, unknown>
+  const value = record[key]
 
-	if (typeof value === 'string') record[key] = sanitiseUrl(value)
+  if (typeof value === 'string') record[key] = sanitiseUrl(value)
 }
 
 /**
@@ -159,9 +159,9 @@ function sanitiseKey(bag: unknown, key: string): void {
  * guarantee must not depend on that staying true.
  */
 function isRemovedKey(key: string): boolean {
-	const lowerKey = key.toLowerCase()
+  const lowerKey = key.toLowerCase()
 
-	return REMOVED_KEYS.has(lowerKey) || REMOVED_PREFIXES.some((prefix) => lowerKey.startsWith(prefix))
+  return REMOVED_KEYS.has(lowerKey) || REMOVED_PREFIXES.some((prefix) => lowerKey.startsWith(prefix))
 }
 
 /**
@@ -173,13 +173,13 @@ function isRemovedKey(key: string): boolean {
  * event **and** the error that produced it.
  */
 function scrubBag(bag: unknown): void {
-	if (typeof bag !== 'object' || bag === null) return
+  if (typeof bag !== 'object' || bag === null) return
 
-	const record = bag as Record<string, unknown>
-	for (const key of Object.keys(record)) {
-		if (isRemovedKey(key)) delete record[key]
-		else if (URL_VALUED_KEYS.has(key.toLowerCase())) record[key] = sanitiseUrl(record[key])
-	}
+  const record = bag as Record<string, unknown>
+  for (const key of Object.keys(record)) {
+    if (isRemovedKey(key)) delete record[key]
+    else if (URL_VALUED_KEYS.has(key.toLowerCase())) record[key] = sanitiseUrl(record[key])
+  }
 }
 
 /**
@@ -199,9 +199,9 @@ function scrubBag(bag: unknown): void {
  * a missing or null bag, and a test says so.
  */
 function deleteKey(bag: unknown, key: string): void {
-	if (typeof bag !== 'object' || bag === null) return
+  if (typeof bag !== 'object' || bag === null) return
 
-	delete (bag as Record<string, unknown>)[key]
+  delete (bag as Record<string, unknown>)[key]
 }
 
 /**
@@ -229,51 +229,51 @@ function deleteKey(bag: unknown, key: string): void {
  * (§9 of the capture).
  */
 export function sentryBeforeSend<TEvent extends ISentryScrubbableEvent>(event: TEvent): TEvent {
-	scrubBag(event.request)
-	scrubBag(event.request?.headers)
-	scrubBag(event.request?.env)
-	scrubBag(event.user)
-	scrubBag(event.contexts?.trace?.data)
-	// The raw request body, whole. `@sentry/core` hard-wires `include.data = true` for events
-	// (`integrations/requestdata.js:27-28`) and `dataCollection.httpBodies` gates the span attribute only,
-	// so every GraphQL POST this platform serves — passwords in `variables` included — arrives here. The
-	// services additionally set `httpIntegration({ maxRequestBodySize: 'none' })`, which is the real gate;
-	// this deletion is the second layer, for the events that reach a hook the first layer never covered.
-	deleteKey(event.request, 'data')
-	// A guard rather than `event.spans ?? []`: the elements of that fallback are never read, so any
-	// array at all satisfies it and the default is unobservable — untestable by construction, and a
-	// permanent mutation survivor. An `if` puts the absent case back under a test that can fail.
-	if (event.spans) {
-		for (const span of event.spans) {
-			scrubBag(span.data)
-			// The description of a browser-metric span is the address bar, verbatim — `browser.request`,
-			// `browser.connect`, `browser.loadEvent` and five more all carry it (§9 of the capture). It is a
-			// free-text field everywhere else, so only a value that starts like a URL is touched: a
-			// description of `first-contentful-paint` or `POST /public-authorization` has to survive whole,
-			// and one of the capture's own attribute values — the LCP element selector — contains a `#`.
-			if (looksLikeUrl(span.description)) span.description = sanitiseUrl(span.description)
-		}
-	}
-	// Breadcrumbs carry the process's own `console` output, arguments verbatim, under `data.arguments` and
-	// `message`. Console output is telemetry the moment the request errors, and part of it is caller-
-	// supplied. `message` goes on every breadcrumb rather than on the console ones alone: the scrubber
-	// cannot tell which breadcrumb text was built from a request, and what survives — category, level,
-	// timestamp, the non-removed `data` keys — still records that the call happened, in order.
-	if (event.breadcrumbs) {
-		for (const breadcrumb of event.breadcrumbs) {
-			delete breadcrumb.message
-			scrubBag(breadcrumb.data)
-			deleteKey(breadcrumb.data, 'arguments')
-			// `from` and `to` on a `navigation` breadcrumb, the pair `url` in `URL_VALUED_KEYS` does not
-			// name. Sanitised here and not in the shared set for the reason `arguments` is deleted here:
-			// two words that mean a URL on this one breadcrumb category and mean anything at all on any
-			// other bag the scrubber walks. ⚠️ This is the pair that outlives the page — a reset link's
-			// credential sits in `from` on **every event of the rest of that session**, measured on both a
-			// later error and a later transaction (§9).
-			sanitiseKey(breadcrumb.data, 'from')
-			sanitiseKey(breadcrumb.data, 'to')
-		}
-	}
+  scrubBag(event.request)
+  scrubBag(event.request?.headers)
+  scrubBag(event.request?.env)
+  scrubBag(event.user)
+  scrubBag(event.contexts?.trace?.data)
+  // The raw request body, whole. `@sentry/core` hard-wires `include.data = true` for events
+  // (`integrations/requestdata.js:27-28`) and `dataCollection.httpBodies` gates the span attribute only,
+  // so every GraphQL POST this platform serves — passwords in `variables` included — arrives here. The
+  // services additionally set `httpIntegration({ maxRequestBodySize: 'none' })`, which is the real gate;
+  // this deletion is the second layer, for the events that reach a hook the first layer never covered.
+  deleteKey(event.request, 'data')
+  // A guard rather than `event.spans ?? []`: the elements of that fallback are never read, so any
+  // array at all satisfies it and the default is unobservable — untestable by construction, and a
+  // permanent mutation survivor. An `if` puts the absent case back under a test that can fail.
+  if (event.spans) {
+    for (const span of event.spans) {
+      scrubBag(span.data)
+      // The description of a browser-metric span is the address bar, verbatim — `browser.request`,
+      // `browser.connect`, `browser.loadEvent` and five more all carry it (§9 of the capture). It is a
+      // free-text field everywhere else, so only a value that starts like a URL is touched: a
+      // description of `first-contentful-paint` or `POST /public-authorization` has to survive whole,
+      // and one of the capture's own attribute values — the LCP element selector — contains a `#`.
+      if (looksLikeUrl(span.description)) span.description = sanitiseUrl(span.description)
+    }
+  }
+  // Breadcrumbs carry the process's own `console` output, arguments verbatim, under `data.arguments` and
+  // `message`. Console output is telemetry the moment the request errors, and part of it is caller-
+  // supplied. `message` goes on every breadcrumb rather than on the console ones alone: the scrubber
+  // cannot tell which breadcrumb text was built from a request, and what survives — category, level,
+  // timestamp, the non-removed `data` keys — still records that the call happened, in order.
+  if (event.breadcrumbs) {
+    for (const breadcrumb of event.breadcrumbs) {
+      delete breadcrumb.message
+      scrubBag(breadcrumb.data)
+      deleteKey(breadcrumb.data, 'arguments')
+      // `from` and `to` on a `navigation` breadcrumb, the pair `url` in `URL_VALUED_KEYS` does not
+      // name. Sanitised here and not in the shared set for the reason `arguments` is deleted here:
+      // two words that mean a URL on this one breadcrumb category and mean anything at all on any
+      // other bag the scrubber walks. ⚠️ This is the pair that outlives the page — a reset link's
+      // credential sits in `from` on **every event of the rest of that session**, measured on both a
+      // later error and a later transaction (§9).
+      sanitiseKey(breadcrumb.data, 'from')
+      sanitiseKey(breadcrumb.data, 'to')
+    }
+  }
 
-	return event
+  return event
 }

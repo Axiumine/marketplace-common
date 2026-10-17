@@ -10,7 +10,7 @@
  * is not a stricter rule this platform is inventing, it is the one the format already has.
  */
 export const PositionType = {
-	Point: 'Point'
+  Point: 'Point'
 } as const
 
 export type PositionType = typeof PositionType // { readonly Point: "Point" }

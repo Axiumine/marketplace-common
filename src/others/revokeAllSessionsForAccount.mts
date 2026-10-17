@@ -15,10 +15,10 @@ import { Tier } from '@others/Tier.mjs'
  * else out of a session on its way past.
  */
 export interface ISessionRevokeStore {
-	hKeys(key: string): Promise<string[]>
-	hGet(key: string, field: string): Promise<string | null>
-	del(key: string): Promise<unknown>
-	hDel(key: string, field: string): Promise<unknown>
+  hKeys(key: string): Promise<string[]>
+  hGet(key: string, field: string): Promise<string | null>
+  del(key: string): Promise<unknown>
+  hDel(key: string, field: string): Promise<unknown>
 }
 
 /**
@@ -39,8 +39,8 @@ export const REVOKE_INDEX_REREAD_ATTEMPTS = 3
  * a stranger's sessions.
  */
 export interface IRevokeTarget {
-	tier: Tier
-	accountId: string
+  tier: Tier
+  accountId: string
 }
 
 /**
@@ -88,42 +88,42 @@ export interface IRevokeTarget {
  * Redis drops a hash the moment its last field goes, so there is no empty key left to tidy.
  */
 export async function revokeAllSessionsForAccount({
-	store,
-	tier,
-	accountId
+  store,
+  tier,
+  accountId
 }: IRevokeTarget & { store: ISessionRevokeStore }): Promise<number> {
-	const indexKey = sessionIndexKey(tier, accountId)
-	const revoked = new Set<string>()
-	let pending = await store.hKeys(indexKey)
+  const indexKey = sessionIndexKey(tier, accountId)
+  const revoked = new Set<string>()
+  let pending = await store.hKeys(indexKey)
 
-	for (let attempt = 0; attempt < REVOKE_INDEX_REREAD_ATTEMPTS && pending.length > 0; attempt++) {
-		const batch = pending
+  for (let attempt = 0; attempt < REVOKE_INDEX_REREAD_ATTEMPTS && pending.length > 0; attempt++) {
+    const batch = pending
 
-		await Promise.all(
-			batch.map(async (field) => {
-				const key = sessionKeyFromIndexField(field)
+    await Promise.all(
+      batch.map(async (field) => {
+        const key = sessionKeyFromIndexField(field)
 
-				// The access half before the refresh half, because the name of the first is stored inside the
-				// second — see `retireAccessSession`, which is also where the crash-order argument lives.
-				await retireAccessSession(store, key)
-				await store.del(key)
-			})
-		)
-		batch.forEach((field) => revoked.add(field))
+        // The access half before the refresh half, because the name of the first is stored inside the
+        // second — see `retireAccessSession`, which is also where the crash-order argument lives.
+        await retireAccessSession(store, key)
+        await store.del(key)
+      })
+    )
+    batch.forEach((field) => revoked.add(field))
 
-		pending = (await store.hKeys(indexKey)).filter((field) => !revoked.has(field))
+    pending = (await store.hKeys(indexKey)).filter((field) => !revoked.has(field))
 
-		if (pending.length === 0) {
-			await store.del(indexKey)
+    if (pending.length === 0) {
+      await store.del(indexKey)
 
-			return revoked.size
-		}
+      return revoked.size
+    }
 
-		// Newcomers exist, so the key must survive — but the sessions just ended must stop being listed as
-		// open. One `hDel` per field, for the reason the `del`s above are one per key, and only this round's
-		// batch: earlier rounds already pruned theirs.
-		await Promise.all(batch.map((field) => store.hDel(indexKey, field)))
-	}
+    // Newcomers exist, so the key must survive — but the sessions just ended must stop being listed as
+    // open. One `hDel` per field, for the reason the `del`s above are one per key, and only this round's
+    // batch: earlier rounds already pruned theirs.
+    await Promise.all(batch.map((field) => store.hDel(indexKey, field)))
+  }
 
-	return revoked.size
+  return revoked.size
 }

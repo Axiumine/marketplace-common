@@ -1,4 +1,4 @@
 export interface IRedisDataShopOwnerCommon {
-	email: string
-	onboardingStep?: string
+  email: string
+  onboardingStep?: string
 }

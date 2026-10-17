@@ -72,7 +72,7 @@ export const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
  * real checkbox to it; this is the second lock, for the callers that are not those forms.
  */
 export const resolveSessionCapDays = (rememberMe: unknown): number =>
-	rememberMe === true ? SESSION_CAP_DAYS_REMEMBERED : SESSION_CAP_DAYS_DEFAULT
+  rememberMe === true ? SESSION_CAP_DAYS_REMEMBERED : SESSION_CAP_DAYS_DEFAULT
 
 /**
  * The instant a session stops being usable, in epoch milliseconds: the login it descends from plus its
@@ -88,7 +88,7 @@ export const resolveSessionCapDays = (rememberMe: unknown): number =>
  * what makes the cap absolute rather than a sliding window a refreshing client can extend for ever.
  */
 export const sessionCapDeadline = (originalLogin: string, sessionCapDays: string) =>
-	Number(originalLogin) + Number(sessionCapDays) * MILLISECONDS_PER_DAY
+  Number(originalLogin) + Number(sessionCapDays) * MILLISECONDS_PER_DAY
 
 /**
  * How much of a session's absolute cap is left, in whole seconds, floored at one.
@@ -106,4 +106,4 @@ export const sessionCapDeadline = (originalLogin: string, sessionCapDays: string
  * direct caller gets, not a branch the platform walks.
  */
 export const sessionCapRemainingSeconds = (originalLogin: string, sessionCapDays: string) =>
-	Math.max(1, Math.ceil((sessionCapDeadline(originalLogin, sessionCapDays) - Date.now()) / 1000))
+  Math.max(1, Math.ceil((sessionCapDeadline(originalLogin, sessionCapDays) - Date.now()) / 1000))

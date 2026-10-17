@@ -23,12 +23,12 @@
  * millis written out, not a number.
  */
 export interface ITombstoneData {
-	/** The lineage to revoke when this token is presented again outside the grace window. */
-	familyId: string
-	/** When the rotation consumed the token, epoch millis as a string. The grace window is measured from it. */
-	consumedAt: string
-	/** The account the consumed session belonged to, so a replay can be filed under it. */
-	_id: string
-	/** Which collection that account lives in — half the trail's key, for the reason `sessionIndexKey` gives. */
-	tier: string
+  /** The lineage to revoke when this token is presented again outside the grace window. */
+  familyId: string
+  /** When the rotation consumed the token, epoch millis as a string. The grace window is measured from it. */
+  consumedAt: string
+  /** The account the consumed session belonged to, so a replay can be filed under it. */
+  _id: string
+  /** Which collection that account lives in — half the trail's key, for the reason `sessionIndexKey` gives. */
+  tier: string
 }

@@ -16,14 +16,14 @@
  * that is a rejected write.
  */
 export interface IEmailVerifySubDocSchema {
-	/** Flipped to `true` once a verification link has been honoured. Never `$unset`. */
-	valid?: boolean
-	/** Inbox-proof token, `EMAIL_HASH_LEN` (50) chars. Must never share a slot with `resetPwd.resetHash`. */
-	hash?: string
-	/** When the current token was issued. Drives the 3-day link window. */
-	dateLastReq?: Date
-	/** Wrong-hash strike counter. Five strikes delete the account. */
-	requestTimes?: number
-	/** Address awaiting confirmation during an email change. */
-	newEmailTmp?: string
+  /** Flipped to `true` once a verification link has been honoured. Never `$unset`. */
+  valid?: boolean
+  /** Inbox-proof token, `EMAIL_HASH_LEN` (50) chars. Must never share a slot with `resetPwd.resetHash`. */
+  hash?: string
+  /** When the current token was issued. Drives the 3-day link window. */
+  dateLastReq?: Date
+  /** Wrong-hash strike counter. Five strikes delete the account. */
+  requestTimes?: number
+  /** Address awaiting confirmation during an email change. */
+  newEmailTmp?: string
 }

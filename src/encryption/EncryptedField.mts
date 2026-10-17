@@ -5,7 +5,7 @@ import { Error as MongooseError, Schema, SchemaType } from 'mongoose'
 export const ENCRYPTED_FIELD_TYPE = 'EncryptedField'
 
 interface IEncryptedFieldOptions {
-	plaintext?: IEncryptedFieldSpec['plaintext']
+  plaintext?: IEncryptedFieldSpec['plaintext']
 }
 
 /**
@@ -22,29 +22,29 @@ interface IEncryptedFieldOptions {
  * reason — see its own comment.
  */
 export function castPlaintext(value: unknown, plaintext: IEncryptedFieldSpec['plaintext'] | undefined, path: string): unknown {
-	if (value === null || value === undefined || isCiphertext(value)) {
-		return value
-	}
+  if (value === null || value === undefined || isCiphertext(value)) {
+    return value
+  }
 
-	if (plaintext === 'date') {
-		const date = value instanceof Date ? value : new Date(value as string)
-		if (Number.isNaN(date.getTime())) {
-			throw new MongooseError.CastError(ENCRYPTED_FIELD_TYPE, value, path)
-		}
-		return date
-	}
+  if (plaintext === 'date') {
+    const date = value instanceof Date ? value : new Date(value as string)
+    if (Number.isNaN(date.getTime())) {
+      throw new MongooseError.CastError(ENCRYPTED_FIELD_TYPE, value, path)
+    }
+    return date
+  }
 
-	if (plaintext === 'string') {
-		if (typeof value === 'string') {
-			return value
-		}
-		if (typeof value === 'number' || typeof value === 'boolean') {
-			return String(value)
-		}
-		throw new MongooseError.CastError(ENCRYPTED_FIELD_TYPE, value, path)
-	}
+  if (plaintext === 'string') {
+    if (typeof value === 'string') {
+      return value
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value)
+    }
+    throw new MongooseError.CastError(ENCRYPTED_FIELD_TYPE, value, path)
+  }
 
-	return value
+  return value
 }
 
 /**
@@ -68,15 +68,15 @@ export function castPlaintext(value: unknown, plaintext: IEncryptedFieldSpec['pl
  * way every other path on these models works.
  */
 export class EncryptedField extends SchemaType {
-	static schemaName = ENCRYPTED_FIELD_TYPE
+  static schemaName = ENCRYPTED_FIELD_TYPE
 
-	constructor(path: string, options?: IEncryptedFieldOptions) {
-		super(path, options, ENCRYPTED_FIELD_TYPE)
-	}
+  constructor(path: string, options?: IEncryptedFieldOptions) {
+    super(path, options, ENCRYPTED_FIELD_TYPE)
+  }
 
-	override cast(value: unknown): unknown {
-		return castPlaintext(value, (this.options as IEncryptedFieldOptions).plaintext, this.path)
-	}
+  override cast(value: unknown): unknown {
+    return castPlaintext(value, (this.options as IEncryptedFieldOptions).plaintext, this.path)
+  }
 }
 
 /**
@@ -88,8 +88,8 @@ export class EncryptedField extends SchemaType {
 ;(Schema.Types as unknown as Record<string, unknown>)[ENCRYPTED_FIELD_TYPE] = EncryptedField
 
 export interface IEncryptedPathOptions extends IEncryptedFieldOptions {
-	plaintext: IEncryptedFieldSpec['plaintext']
-	required?: true
+  plaintext: IEncryptedFieldSpec['plaintext']
+  required?: true
 }
 
 /**
@@ -107,5 +107,5 @@ export interface IEncryptedPathOptions extends IEncryptedFieldOptions {
  * are untouched by this change.
  */
 export function encryptedPath<T>(options: IEncryptedPathOptions): T {
-	return { type: EncryptedField, ...options } as unknown as T
+  return { type: EncryptedField, ...options } as unknown as T
 }

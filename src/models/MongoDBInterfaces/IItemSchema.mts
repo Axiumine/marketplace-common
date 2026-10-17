@@ -22,39 +22,39 @@ import { Types } from 'mongoose'
  * arrangement `ICompanySchema.idShopOwner` has.
  */
 export interface IItemSchema {
-	_id: Types.ObjectId
-	/** The company that sells this — the shop, since a company IS the shop on this platform. */
-	idCompany: ICompanySchema['_id']
-	/** An `itemCategory` document, at either of its two levels. */
-	idCategory: IItemCategorySchema['_id']
-	name: string
-	description: string
-	/**
-	 * URL segment of `/shop/:slug/item/:itemSlug`, unique **per company** rather than globally — the
-	 * one place this collection's URL rules differ from `company`'s and `itemCategory`'s. The company
-	 * segment already disambiguates, so two shops may both sell a "blue shirt" and neither has its URL
-	 * at the mercy of the other's catalogue.
-	 */
-	slug: string
-	/**
-	 * False while a draft. It composes with the company's own flag: an item is publicly visible only
-	 * if this is true AND its company is published, which the public resolvers filter for — no
-	 * validator can state a rule that reads another document.
-	 */
-	published: boolean
-	/**
-	 * File name of the item's picture — `<_id>.webp` — and never a path or a URL. The bytes live
-	 * under `STATIC_FOLDER/item/<idCompany>/`, so both directory segments are already fields of this
-	 * document and storing them again would only give them a second place to go stale.
-	 *
-	 * Optional, and the optionality is the whole reason the field exists: the name is derivable from
-	 * `_id`, but *whether there is a file at all* is not, and a catalogue card has to pick between a
-	 * picture and a placeholder before it renders. The validator pins the shape to 24 hex characters
-	 * plus a short extension, which is what keeps a traversal segment out of a value three frontends
-	 * interpolate into a URL.
-	 */
-	image?: string
-	/** Soft delete: the instant the item was withdrawn, absent while it is live. */
-	deleted?: Date
-	__v?: number
+  _id: Types.ObjectId
+  /** The company that sells this — the shop, since a company IS the shop on this platform. */
+  idCompany: ICompanySchema['_id']
+  /** An `itemCategory` document, at either of its two levels. */
+  idCategory: IItemCategorySchema['_id']
+  name: string
+  description: string
+  /**
+   * URL segment of `/shop/:slug/item/:itemSlug`, unique **per company** rather than globally — the
+   * one place this collection's URL rules differ from `company`'s and `itemCategory`'s. The company
+   * segment already disambiguates, so two shops may both sell a "blue shirt" and neither has its URL
+   * at the mercy of the other's catalogue.
+   */
+  slug: string
+  /**
+   * False while a draft. It composes with the company's own flag: an item is publicly visible only
+   * if this is true AND its company is published, which the public resolvers filter for — no
+   * validator can state a rule that reads another document.
+   */
+  published: boolean
+  /**
+   * File name of the item's picture — `<_id>.webp` — and never a path or a URL. The bytes live
+   * under `STATIC_FOLDER/item/<idCompany>/`, so both directory segments are already fields of this
+   * document and storing them again would only give them a second place to go stale.
+   *
+   * Optional, and the optionality is the whole reason the field exists: the name is derivable from
+   * `_id`, but *whether there is a file at all* is not, and a catalogue card has to pick between a
+   * picture and a placeholder before it renders. The validator pins the shape to 24 hex characters
+   * plus a short extension, which is what keeps a traversal segment out of a value three frontends
+   * interpolate into a URL.
+   */
+  image?: string
+  /** Soft delete: the instant the item was withdrawn, absent while it is live. */
+  deleted?: Date
+  __v?: number
 }

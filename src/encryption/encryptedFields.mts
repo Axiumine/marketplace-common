@@ -36,9 +36,9 @@ import { IEncryptedFieldSpec } from '@encryption/IEncryptedFieldSpec.mjs'
  * table over this collection, so nothing sorts or searches them.
  */
 export const ENCRYPTED_FIELDS_ADMIN: IEncryptedFieldSpec[] = [
-	{ path: 'login.email', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
-	{ path: 'personalData.firstName', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.lastName', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }
+  { path: 'login.email', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
+  { path: 'personalData.firstName', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.lastName', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }
 ]
 
 /**
@@ -58,23 +58,23 @@ export const ENCRYPTED_FIELDS_ADMIN: IEncryptedFieldSpec[] = [
  * there is no `2dsphere` on this collection.
  */
 export const ENCRYPTED_FIELDS_SHOP_OWNER: IEncryptedFieldSpec[] = [
-	{ path: 'login.email', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
-	{ path: 'emailVerify.newEmailTmp', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
-	{ path: 'personalData.birth.date', algorithm: ALGORITHM_RANDOM, plaintext: 'date' },
-	{ path: 'personalData.address.street', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.address.postalCode', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.address.province', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.address.position', algorithm: ALGORITHM_RANDOM, plaintext: 'object' },
-	{ path: 'personalData.contacts.mobile', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.contacts.landline', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.contacts.email', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	// What an admin wrote *about* this person, which is why these are the encrypted fields here
-	// that the subject never sees. The ShopOwner tier does not load this model at all.
-	{ path: 'notes', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	// Why an admin suspended the account. Random, not deterministic: nothing filters on it, and
-	// deterministic would make two accounts suspended for the same reason visibly equal. The
-	// 1000-character cap it carries is a service-side rule — see the model, and ADR-044.
-	{ path: 'disabledReason', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }
+  { path: 'login.email', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
+  { path: 'emailVerify.newEmailTmp', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
+  { path: 'personalData.birth.date', algorithm: ALGORITHM_RANDOM, plaintext: 'date' },
+  { path: 'personalData.address.street', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.address.postalCode', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.address.province', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.address.position', algorithm: ALGORITHM_RANDOM, plaintext: 'object' },
+  { path: 'personalData.contacts.mobile', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.contacts.landline', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.contacts.email', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  // What an admin wrote *about* this person, which is why these are the encrypted fields here
+  // that the subject never sees. The ShopOwner tier does not load this model at all.
+  { path: 'notes', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  // Why an admin suspended the account. Random, not deterministic: nothing filters on it, and
+  // deterministic would make two accounts suspended for the same reason visibly equal. The
+  // 1000-character cap it carries is a service-side rule — see the model, and ADR-044.
+  { path: 'disabledReason', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }
 ]
 
 /**
@@ -91,24 +91,24 @@ export const ENCRYPTED_FIELDS_SHOP_OWNER: IEncryptedFieldSpec[] = [
  * the server is not personal data on its own, so nothing is given up.
  */
 export const ENCRYPTED_FIELDS_USER: IEncryptedFieldSpec[] = [
-	{ path: 'login.email', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
-	{ path: 'emailVerify.newEmailTmp', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
-	{ path: 'personalData.firstName', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.lastName', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.birth.date', algorithm: ALGORITHM_RANDOM, plaintext: 'date' },
-	{ path: 'personalData.contacts.mobile', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.contacts.landline', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'personalData.contacts.email', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'addresses.[].label', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'addresses.[].street', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'addresses.[].postalCode', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'addresses.[].city', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'addresses.[].province', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'addresses.[].position', algorithm: ALGORITHM_RANDOM, plaintext: 'object' },
-	// Why an admin suspended the account — the one field on `user` the subject never sees. Random:
-	// nothing filters on it, and deterministic would make two accounts suspended for the same reason
-	// visibly equal. Its 1000-character cap is a service-side rule, see ADR-044.
-	{ path: 'disabledReason', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }
+  { path: 'login.email', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
+  { path: 'emailVerify.newEmailTmp', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
+  { path: 'personalData.firstName', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.lastName', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.birth.date', algorithm: ALGORITHM_RANDOM, plaintext: 'date' },
+  { path: 'personalData.contacts.mobile', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.contacts.landline', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'personalData.contacts.email', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'addresses.[].label', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'addresses.[].street', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'addresses.[].postalCode', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'addresses.[].city', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'addresses.[].province', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'addresses.[].position', algorithm: ALGORITHM_RANDOM, plaintext: 'object' },
+  // Why an admin suspended the account — the one field on `user` the subject never sees. Random:
+  // nothing filters on it, and deterministic would make two accounts suspended for the same reason
+  // visibly equal. Its 1000-character cap is a service-side rule, see ADR-044.
+  { path: 'disabledReason', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }
 ]
 
 /**
@@ -123,8 +123,8 @@ export const ENCRYPTED_FIELDS_USER: IEncryptedFieldSpec[] = [
  * city listing and the search.
  */
 export const ENCRYPTED_FIELDS_COMPANY: IEncryptedFieldSpec[] = [
-	{ path: 'contactPerson', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'administrator', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }
+  { path: 'contactPerson', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'administrator', algorithm: ALGORITHM_RANDOM, plaintext: 'string' }
 ]
 
 /**

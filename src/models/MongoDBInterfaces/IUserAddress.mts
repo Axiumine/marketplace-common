@@ -22,10 +22,10 @@ import { Types } from 'mongoose'
  * it is re-picked. Requiring it would make every other write path unable to save an address at all.
  */
 export interface IUserAddress extends IBaseAddressSchema {
-	_id?: Types.ObjectId
-	label?: string
-	position?: {
-		type: typeof PositionType.Point
-		coordinates: number[]
-	}
+  _id?: Types.ObjectId
+  label?: string
+  position?: {
+    type: typeof PositionType.Point
+    coordinates: number[]
+  }
 }

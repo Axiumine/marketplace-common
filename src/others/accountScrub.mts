@@ -100,8 +100,8 @@ export type ScrubbableTier = typeof TIER.user | typeof TIER.shopOwner
 
 /** The update a scrub is: values overwritten, and paths removed outright. */
 export interface IAccountScrub {
-	$set: Record<string, unknown>
-	$unset: Record<string, ''>
+  $set: Record<string, unknown>
+  $unset: Record<string, ''>
 }
 
 /**
@@ -111,11 +111,11 @@ export interface IAccountScrub {
  * halves of this routine, and the reason it is a `$set` **and** a `$unset` rather than either alone.
  */
 const LOGIN_ACTIVITY = [
-	'login.firstLogin',
-	'login.lastLogin',
-	'login.rememberMe',
-	'login.onboardingStep',
-	'login.onboardingDone'
+  'login.firstLogin',
+  'login.lastLogin',
+  'login.rememberMe',
+  'login.onboardingStep',
+  'login.onboardingDone'
 ]
 
 /**
@@ -151,8 +151,8 @@ const unsetMap = (paths: readonly string[]): Record<string, ''> => Object.fromEn
  * held them.
  */
 const scrubbedPersonalDataUser = () => ({
-	firstName: SCRUBBED_FIRST_NAME,
-	lastName: SCRUBBED_LAST_NAME
+  firstName: SCRUBBED_FIRST_NAME,
+  lastName: SCRUBBED_LAST_NAME
 })
 
 /**
@@ -164,19 +164,19 @@ const scrubbedPersonalDataUser = () => ({
  * choice made here — `lib/schemas/shopOwner.js` records why.
  */
 const scrubbedPersonalDataShopOwner = (accountId: string) => ({
-	firstName: SCRUBBED_FIRST_NAME,
-	lastName: SCRUBBED_LAST_NAME,
-	birth: { date: scrubbedBirthDate() },
-	address: {
-		street: SCRUBBED_TEXT,
-		postalCode: SCRUBBED_POSTAL_CODE,
-		city: SCRUBBED_TEXT,
-		province: SCRUBBED_PROVINCE
-	},
-	contacts: {
-		mobile: SCRUBBED_TEXT,
-		email: scrubbedEmail(accountId)
-	}
+  firstName: SCRUBBED_FIRST_NAME,
+  lastName: SCRUBBED_LAST_NAME,
+  birth: { date: scrubbedBirthDate() },
+  address: {
+    street: SCRUBBED_TEXT,
+    postalCode: SCRUBBED_POSTAL_CODE,
+    city: SCRUBBED_TEXT,
+    province: SCRUBBED_PROVINCE
+  },
+  contacts: {
+    mobile: SCRUBBED_TEXT,
+    email: scrubbedEmail(accountId)
+  }
 })
 
 /**
@@ -218,19 +218,19 @@ const scrubbedPersonalDataShopOwner = (accountId: string) => ({
  * finds the candidate, which is why the candidate query selects `_id disabled` and not `_id` alone.
  */
 export function buildAccountScrub(tier: ScrubbableTier, accountId: string, at: Date, disabled: boolean): IAccountScrub {
-	const isUser = tier === TIER.user
+  const isUser = tier === TIER.user
 
-	const $set: Record<string, unknown> = {
-		'login.email': scrubbedEmail(accountId),
-		'login.password': SCRUBBED_PASSWORD_HASH,
-		personalData: isUser ? scrubbedPersonalDataUser() : scrubbedPersonalDataShopOwner(accountId),
-		scrubbedAt: at
-	}
+  const $set: Record<string, unknown> = {
+    'login.email': scrubbedEmail(accountId),
+    'login.password': SCRUBBED_PASSWORD_HASH,
+    personalData: isUser ? scrubbedPersonalDataUser() : scrubbedPersonalDataShopOwner(accountId),
+    scrubbedAt: at
+  }
 
-	const $unset = unsetMap(isUser ? USER_UNSET : SHOP_OWNER_UNSET)
+  const $unset = unsetMap(isUser ? USER_UNSET : SHOP_OWNER_UNSET)
 
-	if (disabled) $set.disabledReason = SCRUBBED_DISABLED_REASON
-	else $unset.disabledReason = ''
+  if (disabled) $set.disabledReason = SCRUBBED_DISABLED_REASON
+  else $unset.disabledReason = ''
 
-	return { $set, $unset }
+  return { $set, $unset }
 }

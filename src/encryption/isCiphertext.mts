@@ -14,5 +14,5 @@ import { Binary } from 'mongodb'
  * the first place, which is the failure this cannot fix and the field map's own comment warns about.
  */
 export function isCiphertext(value: unknown): value is Binary {
-	return value instanceof Binary && value.sub_type === Binary.SUBTYPE_ENCRYPTED
+  return value instanceof Binary && value.sub_type === Binary.SUBTYPE_ENCRYPTED
 }

@@ -48,10 +48,10 @@ const DAY_MS = 86_400_000
  * which is exactly where the perTest coverage this repo requires can see it.
  */
 const nextKeyId = (keys: readonly IKeygripKeyMaterial[]) => {
-	const numberedId = /^k(\d+)$/
-	const highest = keys.reduce((max, key) => Math.max(max, Number(numberedId.exec(key.id)?.[1] ?? 0)), 0)
+  const numberedId = /^k(\d+)$/
+  const highest = keys.reduce((max, key) => Math.max(max, Number(numberedId.exec(key.id)?.[1] ?? 0)), 0)
 
-	return `k${highest + 1}`
+  return `k${highest + 1}`
 }
 
 /**
@@ -78,7 +78,7 @@ const nextKeyId = (keys: readonly IKeygripKeyMaterial[]) => {
  * millisecond today. The boundary belongs on the side that keeps the key.
  */
 const isTailRetirable = (keys: readonly IKeygripKeyMaterial[], now: Date) =>
-	now.getTime() - new Date(keys[keys.length - 2].createdAt).getTime() > SESSION_CAP_DAYS_REMEMBERED * DAY_MS
+  now.getTime() - new Date(keys[keys.length - 2].createdAt).getTime() > SESSION_CAP_DAYS_REMEMBERED * DAY_MS
 
 /**
  * The next key array: a freshly minted key at index 0, the survivors behind it (ADR-034).
@@ -102,29 +102,29 @@ const isTailRetirable = (keys: readonly IKeygripKeyMaterial[], now: Date) =>
  * tested by moving the clock.
  */
 export function rotateKeygripKeys(keys: readonly IKeygripKeyMaterial[], now: Date): IKeygripKeyMaterial[] {
-	const minted: IKeygripKeyMaterial = {
-		id: nextKeyId(keys),
-		material: randomBytes(KEYGRIP_KEY_BYTES).toString('base64'),
-		createdAt: now.toISOString()
-	}
+  const minted: IKeygripKeyMaterial = {
+    id: nextKeyId(keys),
+    material: randomBytes(KEYGRIP_KEY_BYTES).toString('base64'),
+    createdAt: now.toISOString()
+  }
 
-	const next = [minted, ...keys]
+  const next = [minted, ...keys]
 
-	// The floor is `>` and never `>=`, and the difference is unobservable rather than arbitrary: at two
-	// entries the key whose demotion instant `isTailRetirable` reads is `next[0]`, which is the key this
-	// call has just minted with `createdAt === now`, so the age it measures is zero and the second test
-	// is false whatever the first one says. `>=` would therefore pop nothing extra on any input — an
-	// equivalent mutant, and the only one on this line, which is why the annotation names one mutator
-	// rather than disabling the condition wholesale. The left test itself is live: handed an empty set
-	// the array holds one entry and `isTailRetirable` would read past its start, which is the case the
-	// suite covers.
-	// Stryker disable next-line EqualityOperator: at two entries the tail's demoting key is the one just minted, so the age test is false either way
-	while (next.length > KEYGRIP_MIN_KEYS && isTailRetirable(next, now)) next.pop()
+  // The floor is `>` and never `>=`, and the difference is unobservable rather than arbitrary: at two
+  // entries the key whose demotion instant `isTailRetirable` reads is `next[0]`, which is the key this
+  // call has just minted with `createdAt === now`, so the age it measures is zero and the second test
+  // is false whatever the first one says. `>=` would therefore pop nothing extra on any input — an
+  // equivalent mutant, and the only one on this line, which is why the annotation names one mutator
+  // rather than disabling the condition wholesale. The left test itself is live: handed an empty set
+  // the array holds one entry and `isTailRetirable` would read past its start, which is the case the
+  // suite covers.
+  // Stryker disable next-line EqualityOperator: at two entries the tail's demoting key is the one just minted, so the age test is false either way
+  while (next.length > KEYGRIP_MIN_KEYS && isTailRetirable(next, now)) next.pop()
 
-	if (next.length > KEYGRIP_MAX_KEYS)
-		throw new Error(
-			`KEYGRIP_ROTATE_CAP: the key set already holds ${KEYGRIP_MAX_KEYS} keys and none of them stopped signing more than ${SESSION_CAP_DAYS_REMEMBERED} days ago. Rotating now would retire a key that is still verifying sessions; wait until the oldest one ages out.`
-		)
+  if (next.length > KEYGRIP_MAX_KEYS)
+    throw new Error(
+      `KEYGRIP_ROTATE_CAP: the key set already holds ${KEYGRIP_MAX_KEYS} keys and none of them stopped signing more than ${SESSION_CAP_DAYS_REMEMBERED} days ago. Rotating now would retire a key that is still verifying sessions; wait until the oldest one ages out.`
+    )
 
-	return next
+  return next
 }

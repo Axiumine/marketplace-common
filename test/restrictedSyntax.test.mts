@@ -33,37 +33,37 @@ const PII_MESSAGE = 'The blanket Sentry PII flag is absent by decision, not set 
 const eslint = new ESLint()
 
 const lintFixture = async (name: string) => {
-	const code = await readFile(new URL(`${name}.mts.fixture`, FIXTURES), 'utf8')
-	const [result] = await eslint.lintText(code, { filePath: 'test/restrictedSyntaxFixture.mts' })
+  const code = await readFile(new URL(`${name}.mts.fixture`, FIXTURES), 'utf8')
+  const [result] = await eslint.lintText(code, { filePath: 'test/restrictedSyntaxFixture.mts' })
 
-	return (result?.messages ?? []).filter((message) => message.ruleId === 'no-restricted-syntax')
+  return (result?.messages ?? []).filter((message) => message.ruleId === 'no-restricted-syntax')
 }
 
 describe('the no-restricted-syntax block fires on every shape it names', () => {
-	it.each([
-		['assignment-reject-unauthorized', TLS_MESSAGE],
-		['property-reject-unauthorized', TLS_MESSAGE],
-		['computed-property-reject-unauthorized', TLS_MESSAGE],
-		['send-default-pii', PII_MESSAGE],
-		['member-node-tls-reject-unauthorized', TLS_MESSAGE],
-		['literal-node-tls-reject-unauthorized', TLS_MESSAGE]
-	])(
-		'reports %s exactly once',
-		async (fixture, expected) => {
-			const messages = await lintFixture(fixture)
+  it.each([
+    ['assignment-reject-unauthorized', TLS_MESSAGE],
+    ['property-reject-unauthorized', TLS_MESSAGE],
+    ['computed-property-reject-unauthorized', TLS_MESSAGE],
+    ['send-default-pii', PII_MESSAGE],
+    ['member-node-tls-reject-unauthorized', TLS_MESSAGE],
+    ['literal-node-tls-reject-unauthorized', TLS_MESSAGE]
+  ])(
+    'reports %s exactly once',
+    async (fixture, expected) => {
+      const messages = await lintFixture(fixture)
 
-			expect(messages).toHaveLength(1)
-			expect(messages[0]?.message).toContain(expected)
-			expect(messages[0]?.severity).toBe(2)
-		},
-		30_000
-	)
+      expect(messages).toHaveLength(1)
+      expect(messages[0]?.message).toContain(expected)
+      expect(messages[0]?.severity).toBe(2)
+    },
+    30_000
+  )
 })
 
 describe('the block stays silent on the shape the services carry', () => {
-	it('reports nothing on the compliant init options', async () => {
-		expect(await lintFixture('compliant')).toStrictEqual([])
-	}, 30_000)
+  it('reports nothing on the compliant init options', async () => {
+    expect(await lintFixture('compliant')).toStrictEqual([])
+  }, 30_000)
 })
 
 const REDIS_DEL_MESSAGE = 'BCON-08: one Redis key per `del`.'
@@ -83,23 +83,23 @@ const REDIS_DEL_MESSAGE = 'BCON-08: one Redis key per `del`.'
  * test never catches.
  */
 describe('the one-key-per-del rule fires on every batched shape', () => {
-	it.each([
-		['redis-del-two-arguments', REDIS_DEL_MESSAGE],
-		['redis-del-array-argument', REDIS_DEL_MESSAGE],
-		['redis-del-spread-argument', REDIS_DEL_MESSAGE]
-	])(
-		'reports %s exactly once',
-		async (fixture, expected) => {
-			const messages = await lintFixture(fixture)
+  it.each([
+    ['redis-del-two-arguments', REDIS_DEL_MESSAGE],
+    ['redis-del-array-argument', REDIS_DEL_MESSAGE],
+    ['redis-del-spread-argument', REDIS_DEL_MESSAGE]
+  ])(
+    'reports %s exactly once',
+    async (fixture, expected) => {
+      const messages = await lintFixture(fixture)
 
-			expect(messages).toHaveLength(1)
-			expect(messages[0]?.message).toContain(expected)
-			expect(messages[0]?.severity).toBe(2)
-		},
-		30_000
-	)
+      expect(messages).toHaveLength(1)
+      expect(messages[0]?.message).toContain(expected)
+      expect(messages[0]?.severity).toBe(2)
+    },
+    30_000
+  )
 
-	it('reports nothing on the per-key shape the session code carries', async () => {
-		expect(await lintFixture('redis-del-compliant')).toStrictEqual([])
-	}, 30_000)
+  it('reports nothing on the per-key shape the session code carries', async () => {
+    expect(await lintFixture('redis-del-compliant')).toStrictEqual([])
+  }, 30_000)
 })

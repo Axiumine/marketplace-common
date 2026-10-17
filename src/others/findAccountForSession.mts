@@ -14,7 +14,7 @@ import { Types } from 'mongoose'
  * thenable with no `[Symbol.toStringTag]` and therefore not assignable to `Promise`.
  */
 export interface ISessionAccountModel<TAccount> {
-	findById(filter: { _id: Types.ObjectId }, projection: string): { lean(): PromiseLike<TAccount | null> }
+  findById(filter: { _id: Types.ObjectId }, projection: string): { lean(): PromiseLike<TAccount | null> }
 }
 
 /**
@@ -36,15 +36,15 @@ export interface ISessionAccountModel<TAccount> {
  * the mistake is.
  */
 export async function findAccountForSession<TAccount extends IAuthorizationDisDel>(
-	model: ISessionAccountModel<TAccount>,
-	_id: Types.ObjectId,
-	projection: string
+  model: ISessionAccountModel<TAccount>,
+  _id: Types.ObjectId,
+  projection: string
 ): Promise<TAccount> {
-	const account = await model.findById({ _id: _id }, projection).lean()
+  const account = await model.findById({ _id: _id }, projection).lean()
 
-	if (account === null) {
-		throw throwUnauthorizedError()
-	}
-	checkUserAuthorizationDisDel(account)
-	return account
+  if (account === null) {
+    throw throwUnauthorizedError()
+  }
+  checkUserAuthorizationDisDel(account)
+  return account
 }

@@ -26,9 +26,9 @@ export type { IKeygripRecord }
  * better than not booting.
  */
 export async function loadKeygrip(store: IKeygripLoadStore, serviceName: string): Promise<IKeygripRecord> {
-	const record = await readKeygrip(store)
+  const record = await readKeygrip(store)
 
-	await recordKeygripHolder(store, serviceName, record.fp)
+  await recordKeygripHolder(store, serviceName, record.fp)
 
-	return record
+  return record
 }

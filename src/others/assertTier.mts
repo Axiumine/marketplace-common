@@ -19,5 +19,5 @@ import { Tier } from '@others/Tier.mjs'
  * The distinction matters to the client, which must not try to refresh its way out of this.
  */
 export function assertTier(actual: string | undefined, expected: Tier): void {
-	if (actual !== expected) throw throwForbiddenError()
+  if (actual !== expected) throw throwForbiddenError()
 }

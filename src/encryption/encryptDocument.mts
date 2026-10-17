@@ -25,5 +25,5 @@ import { IEncryptedFieldSpec } from '@encryption/IEncryptedFieldSpec.mjs'
  * mutant to kill for no gain.
  */
 export async function encryptDocument<T>(document: T, fields: IEncryptedFieldSpec[], keyAltName: string): Promise<T> {
-	return (await encryptAtNode(document, buildEncryptedFieldTrie(fields), keyAltName)) as T
+  return (await encryptAtNode(document, buildEncryptedFieldTrie(fields), keyAltName)) as T
 }

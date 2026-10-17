@@ -28,82 +28,82 @@ import { describe, expect, it } from 'vitest'
  */
 
 const MIGRATION =
-	'The Redis TLS surface of @axiumine/koa-utils changed shape again. Re-read `dist/dataSources/Redis.mjs` and `dist/private/dataSources/`, then update R45 in `docs/devprotocol/phase5/RISK_REGISTER.md`, the auth-model section of `docs/architecture.md` and ADR-039 §Context before touching this test.'
+  'The Redis TLS surface of @axiumine/koa-utils changed shape again. Re-read `dist/dataSources/Redis.mjs` and `dist/private/dataSources/`, then update R45 in `docs/devprotocol/phase5/RISK_REGISTER.md`, the auth-model section of `docs/architecture.md` and ADR-039 §Context before touching this test.'
 
 const installed = async (path: string) =>
-	readFile(new URL(`../node_modules/@axiumine/koa-utils/dist/${path}`, import.meta.url), 'utf8')
+  readFile(new URL(`../node_modules/@axiumine/koa-utils/dist/${path}`, import.meta.url), 'utf8')
 
 describe('the Redis connection scheme koa-utils actually builds', () => {
-	/*
-	 * The cluster branch, which is the one every service `env` selects. Three rootNodes, and since 7.1.0
-	 * not one hardcoded scheme among them — this is the assertion whose previous form failed and forced
-	 * the revisit.
-	 */
-	it('builds the cluster rootNodes through redisNodeUrl instead of a hardcoded scheme', async () => {
-		const source = await installed('dataSources/Redis.mjs')
+  /*
+   * The cluster branch, which is the one every service `env` selects. Three rootNodes, and since 7.1.0
+   * not one hardcoded scheme among them — this is the assertion whose previous form failed and forced
+   * the revisit.
+   */
+  it('builds the cluster rootNodes through redisNodeUrl instead of a hardcoded scheme', async () => {
+    const source = await installed('dataSources/Redis.mjs')
 
-		expect(
-			source.match(/url: redisNodeUrl\(process\.env\.REDIS_DB[123]_HOST, process\.env\.REDIS_DB[123]_PORT\)/g),
-			MIGRATION
-		).toHaveLength(3)
-		expect(source, MIGRATION).not.toMatch(/url: `redis:\/\//)
-	})
+    expect(
+      source.match(/url: redisNodeUrl\(process\.env\.REDIS_DB[123]_HOST, process\.env\.REDIS_DB[123]_PORT\)/g),
+      MIGRATION
+    ).toHaveLength(3)
+    expect(source, MIGRATION).not.toMatch(/url: `redis:\/\//)
+  })
 
-	/*
-	 * ⚠️ Separate from the case above, and the reason is the whole of why TLS on a cluster is not one
-	 * decision. `rootNodes` only carries topology discovery; node-redis opens its own connections to the
-	 * nodes it discovers and does not inherit the rootNodes' TLS setting for them. Without `defaults`
-	 * the `rediss://` scheme would be a no-op on every connection that actually serves a request.
-	 */
-	it('carries the flag into defaults.socket, so the discovered nodes are not left plaintext', async () => {
-		expect(await installed('dataSources/Redis.mjs'), MIGRATION).toMatch(
-			/socket: isRedisTlsRequired\(\) \? \{ tls: true } : \{ tls: false }/
-		)
-	})
+  /*
+   * ⚠️ Separate from the case above, and the reason is the whole of why TLS on a cluster is not one
+   * decision. `rootNodes` only carries topology discovery; node-redis opens its own connections to the
+   * nodes it discovers and does not inherit the rootNodes' TLS setting for them. Without `defaults`
+   * the `rediss://` scheme would be a no-op on every connection that actually serves a request.
+   */
+  it('carries the flag into defaults.socket, so the discovered nodes are not left plaintext', async () => {
+    expect(await installed('dataSources/Redis.mjs'), MIGRATION).toMatch(
+      /socket: isRedisTlsRequired\(\) \? \{ tls: true } : \{ tls: false }/
+    )
+  })
 
-	/*
-	 * The single-node branch always took its whole URL from `REDIS_URL` and would have accepted
-	 * `rediss://` at any point. What 7.1.0 added is the refusal: with the flag on, a plaintext URL throws
-	 * at module load rather than connecting. Asserted here because "koa-utils can do TLS now" is too
-	 * coarse a sentence to hang a risk row on — the two branches gained different things.
-	 */
-	it('routes the single-node URL through resolveRedisUrl rather than reading REDIS_URL raw', async () => {
-		const source = await installed('dataSources/Redis.mjs')
+  /*
+   * The single-node branch always took its whole URL from `REDIS_URL` and would have accepted
+   * `rediss://` at any point. What 7.1.0 added is the refusal: with the flag on, a plaintext URL throws
+   * at module load rather than connecting. Asserted here because "koa-utils can do TLS now" is too
+   * coarse a sentence to hang a risk row on — the two branches gained different things.
+   */
+  it('routes the single-node URL through resolveRedisUrl rather than reading REDIS_URL raw', async () => {
+    const source = await installed('dataSources/Redis.mjs')
 
-		expect(source, MIGRATION).toContain('createClient({ url: resolveRedisUrl(process.env.REDIS_URL) })')
-		expect(source, MIGRATION).not.toContain('createClient({ url: process.env.REDIS_URL })')
-	})
+    expect(source, MIGRATION).toContain('createClient({ url: resolveRedisUrl(process.env.REDIS_URL) })')
+    expect(source, MIGRATION).not.toContain('createClient({ url: process.env.REDIS_URL })')
+  })
 })
 
 describe('the flag that decides the scheme', () => {
-	/*
-	 * `docs/architecture.md` and R45 both state the accepted spelling. The match being exact is what makes
-	 * `REDIS_TLS=TRUE` a silent plaintext connection, which is a documented trade-off rather than a bug —
-	 * if this ever widens to a truthiness test, every deployment that wrote `false` gets TLS it never
-	 * asked for, and both documents are wrong in the more dangerous direction.
-	 */
-	it('is off unless REDIS_TLS is exactly the string true', async () => {
-		expect(await installed('private/dataSources/isRedisTlsRequired.mjs'), MIGRATION).toMatch(
-			/process\.env\.REDIS_TLS === 'true'/
-		)
-	})
+  /*
+   * `docs/architecture.md` and R45 both state the accepted spelling. The match being exact is what makes
+   * `REDIS_TLS=TRUE` a silent plaintext connection, which is a documented trade-off rather than a bug —
+   * if this ever widens to a truthiness test, every deployment that wrote `false` gets TLS it never
+   * asked for, and both documents are wrong in the more dangerous direction.
+   */
+  it('is off unless REDIS_TLS is exactly the string true', async () => {
+    expect(await installed('private/dataSources/isRedisTlsRequired.mjs'), MIGRATION).toMatch(
+      /process\.env\.REDIS_TLS === 'true'/
+    )
+  })
 
-	it('picks rediss:// for a cluster node only when that flag is on', async () => {
-		expect(await installed('private/dataSources/redisNodeUrl.mjs'), MIGRATION).toMatch(
-			/isRedisTlsRequired\(\) \? 'rediss' : 'redis'/
-		)
-	})
+  it('picks rediss:// for a cluster node only when that flag is on', async () => {
+    expect(await installed('private/dataSources/redisNodeUrl.mjs'), MIGRATION).toMatch(
+      /isRedisTlsRequired\(\) \? 'rediss' : 'redis'/
+    )
+  })
 
-	/*
-	 * Fail-closed, and the distinction matters to what R45 can claim: a package that silently rewrote
-	 * `redis://` to `rediss://` under an admin who wrote the former would hide the misconfiguration
-	 * until a handshake failed against a host that may not be the intended one. Refusing at load is what
-	 * lets the risk row say the flag either encrypts the leg or stops the boot, with no third outcome.
-	 */
-	it('refuses a plaintext REDIS_URL when TLS is required instead of upgrading it', async () => {
-		const source = await installed('private/dataSources/resolveRedisUrl.mjs')
+  /*
+   * Fail-closed, and the distinction matters to what R45 can claim: a package that silently rewrote
+   * `redis://` to `rediss://` under an admin who wrote the former would hide the misconfiguration
+   * until a handshake failed against a host that may not be the intended one. Refusing at load is what
+   * lets the risk row say the flag either encrypts the leg or stops the boot, with no third outcome.
+   */
+  it('refuses a plaintext REDIS_URL when TLS is required instead of upgrading it', async () => {
+    const source = await installed('private/dataSources/resolveRedisUrl.mjs')
 
-		expect(source, MIGRATION).toMatch(/protocol !== 'rediss:'/)
-		expect(source, MIGRATION).toMatch(/REDIS_TLS is enabled but REDIS_URL uses scheme/)
-	})
+    expect(source, MIGRATION).toMatch(/protocol !== 'rediss:'/)
+    expect(source, MIGRATION).toMatch(/REDIS_TLS is enabled but REDIS_URL uses scheme/)
+  })
 })

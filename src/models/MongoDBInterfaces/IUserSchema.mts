@@ -23,64 +23,64 @@ import { Types } from 'mongoose'
  * has no admin-facing surface.
  */
 export interface IUserSchema {
-	_id?: Types.ObjectId
-	login: ILoginSubDocSchema
-	personalData?: IUserPersonalData
-	addresses?: IUserAddress[]
-	/**
-	 * The `_id` of one element of `addresses`, or absent.
-	 *
-	 * ⚠️ **A pointer, not a boolean on each address**, and the difference is enforced by MongoDB
-	 * rather than by anything in this package. The `user` collection validator is
-	 * `$and: [ {$jsonSchema}, {$expr} ]`, and the second clause refuses any document whose
-	 * `defaultAddress` is neither missing nor present in `addresses[]._id`. Two consequences for
-	 * every caller:
-	 *
-	 * - Setting the default is a single atomic `$set`. There is no "clear the others first" step,
-	 *   so no window in which zero or two addresses are default.
-	 * - **Removing the default address must `$unset` this field in the same update.** A `$pull` on
-	 *   its own leaves the pointer dangling and the write is rejected by the database — which is the
-	 *   point, but it is a rejection you will meet at runtime if the two halves are split.
-	 *
-	 * "Is this address the default?" is therefore a comparison against a sibling field rather than a
-	 * local boolean read, and an API that wants to expose a boolean derives it.
-	 */
-	defaultAddress?: Types.ObjectId
-	registeredAt: Date
-	deleted?: Date
-	/**
-	 * Which admin closed this account — an `admin._id` — and **absent when the account holder closed
-	 * it themselves**. That absence is the whole encoding: there is no actor *type* beside it, because a
-	 * field naming which collection an id came from is a `role` field by the back door, and ADR-002 does
-	 * not have one. ADR-044.
-	 */
-	deletedBy?: Types.ObjectId
-	disabled?: boolean
-	/**
-	 * Which admin suspended this account — an `admin._id`, written with `disabled: true` and always
-	 * present beside it. No self-service counterpart, unlike `deletedBy`: a person closes their own
-	 * account, they never suspend it.
-	 */
-	disabledBy?: Types.ObjectId
-	/**
-	 * Why, in the admin's own words. **Mandatory whenever `disabled` is true**, which the collection
-	 * validator enforces through `dependencies` — presence, without being able to read the value.
-	 *
-	 * ⚠️ **The 1000-character cap lives in the service and nowhere else.** The field is encrypted, so
-	 * the validator sees a `binData` and `maxLength` does not apply to it. ADR-044 records the split;
-	 * ADR-035 is its mirror image. Adding a `maxLength` to the validator refuses every write.
-	 */
-	disabledReason?: string
-	/**
-	 * When the retention sweeper overwrote this document's personal data with placeholders. ADR-041.
-	 *
-	 * ⚠️ **Its absence is the sweeper's own candidate filter**, so it stays in the clear: the sweep
-	 * matches `{ deleted: { $lte: cutoff }, scrubbedAt: { $exists: false } }`, a server-side comparison
-	 * that deterministic ciphertext cannot answer — deterministic supports equality only — and that
-	 * random ciphertext cannot answer at all.
-	 */
-	scrubbedAt?: Date
-	resetPwd?: IResetPwdSubDocSchema
-	emailVerify?: IEmailVerifySubDocSchema
-	__v?: number
+  _id?: Types.ObjectId
+  login: ILoginSubDocSchema
+  personalData?: IUserPersonalData
+  addresses?: IUserAddress[]
+  /**
+   * The `_id` of one element of `addresses`, or absent.
+   *
+   * ⚠️ **A pointer, not a boolean on each address**, and the difference is enforced by MongoDB
+   * rather than by anything in this package. The `user` collection validator is
+   * `$and: [ {$jsonSchema}, {$expr} ]`, and the second clause refuses any document whose
+   * `defaultAddress` is neither missing nor present in `addresses[]._id`. Two consequences for
+   * every caller:
+   *
+   * - Setting the default is a single atomic `$set`. There is no "clear the others first" step,
+   *   so no window in which zero or two addresses are default.
+   * - **Removing the default address must `$unset` this field in the same update.** A `$pull` on
+   *   its own leaves the pointer dangling and the write is rejected by the database — which is the
+   *   point, but it is a rejection you will meet at runtime if the two halves are split.
+   *
+   * "Is this address the default?" is therefore a comparison against a sibling field rather than a
+   * local boolean read, and an API that wants to expose a boolean derives it.
+   */
+  defaultAddress?: Types.ObjectId
+  registeredAt: Date
+  deleted?: Date
+  /**
+   * Which admin closed this account — an `admin._id` — and **absent when the account holder closed
+   * it themselves**. That absence is the whole encoding: there is no actor *type* beside it, because a
+   * field naming which collection an id came from is a `role` field by the back door, and ADR-002 does
+   * not have one. ADR-044.
+   */
+  deletedBy?: Types.ObjectId
+  disabled?: boolean
+  /**
+   * Which admin suspended this account — an `admin._id`, written with `disabled: true` and always
+   * present beside it. No self-service counterpart, unlike `deletedBy`: a person closes their own
+   * account, they never suspend it.
+   */
+  disabledBy?: Types.ObjectId
+  /**
+   * Why, in the admin's own words. **Mandatory whenever `disabled` is true**, which the collection
+   * validator enforces through `dependencies` — presence, without being able to read the value.
+   *
+   * ⚠️ **The 1000-character cap lives in the service and nowhere else.** The field is encrypted, so
+   * the validator sees a `binData` and `maxLength` does not apply to it. ADR-044 records the split;
+   * ADR-035 is its mirror image. Adding a `maxLength` to the validator refuses every write.
+   */
+  disabledReason?: string
+  /**
+   * When the retention sweeper overwrote this document's personal data with placeholders. ADR-041.
+   *
+   * ⚠️ **Its absence is the sweeper's own candidate filter**, so it stays in the clear: the sweep
+   * matches `{ deleted: { $lte: cutoff }, scrubbedAt: { $exists: false } }`, a server-side comparison
+   * that deterministic ciphertext cannot answer — deterministic supports equality only — and that
+   * random ciphertext cannot answer at all.
+   */
+  scrubbedAt?: Date
+  resetPwd?: IResetPwdSubDocSchema
+  emailVerify?: IEmailVerifySubDocSchema
+  __v?: number
 }

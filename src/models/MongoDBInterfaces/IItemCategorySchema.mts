@@ -16,27 +16,27 @@ import { Types } from 'mongoose'
  * sold.
  */
 export interface IItemCategorySchema {
-	_id: Types.ObjectId
-	name: string
-	/**
-	 * URL segment of `/category/:slug` and of `/category/:slug/:subSlug` — globally unique across
-	 * *both* levels rather than within a parent, because two subcategories called "drinks" under two
-	 * different parents would be two URLs that cannot both exist.
-	 */
-	slug: string
-	/** Absent = top-level category; present = subcategory. Nothing below that second level is legal. */
-	idParent?: Types.ObjectId
-	/**
-	 * ⚠️ A SORT ORDINAL, not the GeoJSON `position` that `IUserAddress` and `ICompanyAddress` carry.
-	 * The two share a name and nothing else — this collection stores no coordinates. Required, because
-	 * the alternative is a listing whose order changes between two reads of the same data.
-	 */
-	position: number
-	/**
-	 * Soft delete, spelled the way `company` and `shopOwner` spell it. A category cannot be hard
-	 * deleted: `item.idCategory` is required and nothing enforces the reference, so removing the
-	 * document would leave every item filed under it pointing at nothing.
-	 */
-	deleted?: Date
-	__v?: number
+  _id: Types.ObjectId
+  name: string
+  /**
+   * URL segment of `/category/:slug` and of `/category/:slug/:subSlug` — globally unique across
+   * *both* levels rather than within a parent, because two subcategories called "drinks" under two
+   * different parents would be two URLs that cannot both exist.
+   */
+  slug: string
+  /** Absent = top-level category; present = subcategory. Nothing below that second level is legal. */
+  idParent?: Types.ObjectId
+  /**
+   * ⚠️ A SORT ORDINAL, not the GeoJSON `position` that `IUserAddress` and `ICompanyAddress` carry.
+   * The two share a name and nothing else — this collection stores no coordinates. Required, because
+   * the alternative is a listing whose order changes between two reads of the same data.
+   */
+  position: number
+  /**
+   * Soft delete, spelled the way `company` and `shopOwner` spell it. A category cannot be hard
+   * deleted: `item.idCategory` is required and nothing enforces the reference, so removing the
+   * document would leave every item filed under it pointing at nothing.
+   */
+  deleted?: Date
+  __v?: number
 }

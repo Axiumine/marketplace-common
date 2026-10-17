@@ -24,46 +24,46 @@ import { isPlainObject } from '@encryption/isPlainObject.mjs'
  * through the models, and `fieldEncryptionPlugin` calls it for them on every query hook.
  */
 export async function decryptDocument(value: unknown): Promise<void> {
-	if (Array.isArray(value)) {
-		// `Model.distinct()` returns a bare array of field values rather than of documents — an entry
-		// here can itself be ciphertext, not only an object that holds some further in. The object loop
-		// below does exactly this check for a property; an array element gets no such loop of its own,
-		// so it needs the same check made explicit here.
-		await Promise.all(
-			value.map(async (entry, index) => {
-				if (isCiphertext(entry)) {
-					value[index] = await decryptValue(entry)
-					return
-				}
+  if (Array.isArray(value)) {
+    // `Model.distinct()` returns a bare array of field values rather than of documents — an entry
+    // here can itself be ciphertext, not only an object that holds some further in. The object loop
+    // below does exactly this check for a property; an array element gets no such loop of its own,
+    // so it needs the same check made explicit here.
+    await Promise.all(
+      value.map(async (entry, index) => {
+        if (isCiphertext(entry)) {
+          value[index] = await decryptValue(entry)
+          return
+        }
 
-				await decryptDocument(entry)
-			})
-		)
-		return
-	}
+        await decryptDocument(entry)
+      })
+    )
+    return
+  }
 
-	if (typeof value !== 'object' || value === null) {
-		return
-	}
+  if (typeof value !== 'object' || value === null) {
+    return
+  }
 
-	if (!isPlainObject(value)) {
-		// Anything with an identity of its own: a hydrated document, an ObjectId, a Date, a Buffer.
-		// Only the value bag is walked, and only where there is one — reading and writing `_doc`
-		// directly is what keeps decryption from marking every personal path modified, which a
-		// `doc.login.email = '…'` assignment would, sending the plaintext back on the next `save()`.
-		// Everything else has no `_doc`, so this resolves to `undefined` and the value is a leaf.
-		await decryptDocument((value as { _doc?: unknown })._doc)
-		return
-	}
+  if (!isPlainObject(value)) {
+    // Anything with an identity of its own: a hydrated document, an ObjectId, a Date, a Buffer.
+    // Only the value bag is walked, and only where there is one — reading and writing `_doc`
+    // directly is what keeps decryption from marking every personal path modified, which a
+    // `doc.login.email = '…'` assignment would, sending the plaintext back on the next `save()`.
+    // Everything else has no `_doc`, so this resolves to `undefined` and the value is a leaf.
+    await decryptDocument((value as { _doc?: unknown })._doc)
+    return
+  }
 
-	await Promise.all(
-		Object.entries(value).map(async ([key, entry]) => {
-			if (isCiphertext(entry)) {
-				value[key] = await decryptValue(entry)
-				return
-			}
+  await Promise.all(
+    Object.entries(value).map(async ([key, entry]) => {
+      if (isCiphertext(entry)) {
+        value[key] = await decryptValue(entry)
+        return
+      }
 
-			await decryptDocument(entry)
-		})
-	)
+      await decryptDocument(entry)
+    })
+  )
 }

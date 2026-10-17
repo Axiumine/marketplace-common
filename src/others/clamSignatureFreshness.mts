@@ -26,9 +26,9 @@
 
 /** What a version reply says about the signature database behind it. */
 export type ClamSignatureVerdict =
-	| { state: 'fresh'; ageMs: number; builtAt: Date }
-	| { state: 'stale'; ageMs: number; builtAt: Date }
-	| { state: 'unreadable'; reply: string }
+  | { state: 'fresh'; ageMs: number; builtAt: Date }
+  | { state: 'stale'; ageMs: number; builtAt: Date }
+  | { state: 'unreadable'; reply: string }
 
 /**
  * The build date out of a `nVERSION` reply, or `undefined` when the reply is not one.
@@ -51,10 +51,10 @@ export type ClamSignatureVerdict =
  * that cannot change an answer.
  */
 export const parseClamSignatureDate = (reply: string): Date | undefined => {
-	const builtAtField = reply.split('/').slice(2).join('/')
-	const parsed = Date.parse(builtAtField)
+  const builtAtField = reply.split('/').slice(2).join('/')
+  const parsed = Date.parse(builtAtField)
 
-	return Number.isNaN(parsed) ? undefined : new Date(parsed)
+  return Number.isNaN(parsed) ? undefined : new Date(parsed)
 }
 
 /**
@@ -71,11 +71,11 @@ export const parseClamSignatureDate = (reply: string): Date | undefined => {
  * than the skew.
  */
 export const clamSignatureFreshness = (reply: string, now: number, maxAgeMs: number): ClamSignatureVerdict => {
-	const builtAt = parseClamSignatureDate(reply)
+  const builtAt = parseClamSignatureDate(reply)
 
-	if (builtAt === undefined) return { state: 'unreadable', reply }
+  if (builtAt === undefined) return { state: 'unreadable', reply }
 
-	const ageMs = now - builtAt.getTime()
+  const ageMs = now - builtAt.getTime()
 
-	return { state: ageMs > maxAgeMs ? 'stale' : 'fresh', ageMs, builtAt }
+  return { state: ageMs > maxAgeMs ? 'stale' : 'fresh', ageMs, builtAt }
 }

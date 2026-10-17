@@ -39,13 +39,13 @@ import { ClientSession, trusted, Types } from 'mongoose'
  * every service that calls this sets `sanitizeFilter` globally and would otherwise strip it.
  */
 export async function unpublishOwnerStorefront(idShopOwner: Types.ObjectId, session: ClientSession) {
-	const companies = await Company.find({ idShopOwner: idShopOwner }, '_id').session(session).lean<{ _id: Types.ObjectId }[]>()
+  const companies = await Company.find({ idShopOwner: idShopOwner }, '_id').session(session).lean<{ _id: Types.ObjectId }[]>()
 
-	await Company.updateMany({ idShopOwner: idShopOwner }, { $set: { published: false } })
-		.session(session)
-		.exec()
+  await Company.updateMany({ idShopOwner: idShopOwner }, { $set: { published: false } })
+    .session(session)
+    .exec()
 
-	await Item.updateMany({ idCompany: trusted({ $in: companies.map((company) => company._id) }) }, { $set: { published: false } })
-		.session(session)
-		.exec()
+  await Item.updateMany({ idCompany: trusted({ $in: companies.map((company) => company._id) }) }, { $set: { published: false } })
+    .session(session)
+    .exec()
 }

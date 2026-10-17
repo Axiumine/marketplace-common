@@ -11,23 +11,23 @@ import { nodeNextResolver } from './vitest.shared.mts'
 // validation, the round-trip save, and the pre-save hash hook firing on a real `.save()`, against
 // the same validators and indexes the services write through.
 export default defineConfig({
-	plugins: [nodeNextResolver],
-	resolve: { dedupe: ['graphql'] },
-	test: {
-		include: ['test/integration/**/*.int.test.mts'],
-		// Retimed for a network round-trip to the real cluster, not for booting a local mongod binary.
-		testTimeout: 30_000,
-		hookTimeout: 30_000,
-		fileParallelism: false, // one throwaway database per run; the suite drops it in globalSetup
-		globalSetup: ['./test/integration/globalSetup.mts'],
-		// Caps how long a test's name may be — the mutation gate selects tests by name, and past a
-		// size it cannot; see the file.
-		setupFiles: ['./vitest.testNames.mts'],
-		server: { deps: { inline: ['graphql', 'graphql-scalars'] } },
-		// MONGO_TEST_* connection pieces come from .env; the R/W user is the least-privilege grant
-		// production uses, so a model that quietly needs more than readWrite fails here too.
-		env: {
-			MONGODB_URI: buildTestMongoUrl('rw')
-		}
-	}
+  plugins: [nodeNextResolver],
+  resolve: { dedupe: ['graphql'] },
+  test: {
+    include: ['test/integration/**/*.int.test.mts'],
+    // Retimed for a network round-trip to the real cluster, not for booting a local mongod binary.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+    fileParallelism: false, // one throwaway database per run; the suite drops it in globalSetup
+    globalSetup: ['./test/integration/globalSetup.mts'],
+    // Caps how long a test's name may be — the mutation gate selects tests by name, and past a
+    // size it cannot; see the file.
+    setupFiles: ['./vitest.testNames.mts'],
+    server: { deps: { inline: ['graphql', 'graphql-scalars'] } },
+    // MONGO_TEST_* connection pieces come from .env; the R/W user is the least-privilege grant
+    // production uses, so a model that quietly needs more than readWrite fails here too.
+    env: {
+      MONGODB_URI: buildTestMongoUrl('rw')
+    }
+  }
 })

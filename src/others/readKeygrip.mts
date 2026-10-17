@@ -11,14 +11,14 @@ import { keygripKey } from '@others/sessionKeys.mjs'
  * dependency of the *services*, not of this library.
  */
 export interface IKeygripReadStore {
-	hGetAll(key: string): Promise<Record<string, string>>
+  hGetAll(key: string): Promise<Record<string, string>>
 }
 
 /** What the record holds, unwrapped, as the caller needs it. */
 export interface IKeygripRecord {
-	version: number
-	fp: string
-	keys: IKeygripKeyMaterial[]
+  version: number
+  fp: string
+  keys: IKeygripKeyMaterial[]
 }
 
 /**
@@ -48,31 +48,31 @@ export interface IKeygripRecord {
  * actually needs to tell two records apart.
  */
 export async function readKeygrip(store: IKeygripReadStore): Promise<IKeygripRecord> {
-	const record = await store.hGetAll(keygripKey())
+  const record = await store.hGetAll(keygripKey())
 
-	if (!record?.wrapped || !record.version || !record.fp)
-		throw new Error(
-			`KEYGRIP_RECORD_MISSING: no keygrip key set at "${keygripKey()}". Run "yarn seed:keygrip" in marketplace-db-setup before starting any service.`
-		)
+  if (!record?.wrapped || !record.version || !record.fp)
+    throw new Error(
+      `KEYGRIP_RECORD_MISSING: no keygrip key set at "${keygripKey()}". Run "yarn seed:keygrip" in marketplace-db-setup before starting any service.`
+    )
 
-	const kek = readKek()
+  const kek = readKek()
 
-	const version = Number(record.version)
+  const version = Number(record.version)
 
-	let keys: IKeygripKeyMaterial[]
+  let keys: IKeygripKeyMaterial[]
 
-	try {
-		keys = unwrapKeygripKeys(record.wrapped, version, kek)
-	} catch {
-		throw new Error(
-			`KEYGRIP_KEK_MISMATCH: this service cannot unwrap keygrip record version ${record.version} (${record.fp}). Its KEYGRIP_KEK is not the one the record was written under.`
-		)
-	}
+  try {
+    keys = unwrapKeygripKeys(record.wrapped, version, kek)
+  } catch {
+    throw new Error(
+      `KEYGRIP_KEK_MISMATCH: this service cannot unwrap keygrip record version ${record.version} (${record.fp}). Its KEYGRIP_KEK is not the one the record was written under.`
+    )
+  }
 
-	if (keys.length === 0)
-		throw new Error(
-			`KEYGRIP_RECORD_MISSING: keygrip record version ${record.version} (${record.fp}) holds no keys. Run "yarn seed:keygrip" in marketplace-db-setup.`
-		)
+  if (keys.length === 0)
+    throw new Error(
+      `KEYGRIP_RECORD_MISSING: keygrip record version ${record.version} (${record.fp}) holds no keys. Run "yarn seed:keygrip" in marketplace-db-setup.`
+    )
 
-	return { version, fp: record.fp, keys }
+  return { version, fp: record.fp, keys }
 }

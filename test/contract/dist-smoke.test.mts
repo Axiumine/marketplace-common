@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 const root = fileURLToPath(new URL('../../', import.meta.url))
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as {
-	exports: Record<string, { import?: string; types?: string }>
+  exports: Record<string, { import?: string; types?: string }>
 }
 
 // Same heuristic as test/contract/exports.test.mts: does this compiled file carry a
@@ -18,18 +18,18 @@ const RUNTIME_EXPORT_RE = /export (const|function|class)|\bmodel\(|new Schema|ne
 const entries = Object.entries(packageJson.exports).filter(([, target]) => Boolean(target.import))
 
 describe.each(entries)('dist smoke: %s', (key, target) => {
-	const importPath = target.import as string
-	const abs = path.join(root, importPath)
+  const importPath = target.import as string
+  const abs = path.join(root, importPath)
 
-	it(`import() resolves without throwing`, async () => {
-		await expect(import(pathToFileURL(abs).href)).resolves.toBeDefined()
-	})
+  it(`import() resolves without throwing`, async () => {
+    await expect(import(pathToFileURL(abs).href)).resolves.toBeDefined()
+  })
 
-	it(`exports at least one member if the source has a runtime value export`, async () => {
-		const text = fs.readFileSync(abs, 'utf8')
-		if (!RUNTIME_EXPORT_RE.test(text)) return // pure type-only module, nothing to check at runtime
+  it(`exports at least one member if the source has a runtime value export`, async () => {
+    const text = fs.readFileSync(abs, 'utf8')
+    if (!RUNTIME_EXPORT_RE.test(text)) return // pure type-only module, nothing to check at runtime
 
-		const mod = await import(pathToFileURL(abs).href)
-		expect(Object.keys(mod as object).length).toBeGreaterThanOrEqual(1)
-	})
+    const mod = await import(pathToFileURL(abs).href)
+    expect(Object.keys(mod as object).length).toBeGreaterThanOrEqual(1)
+  })
 })

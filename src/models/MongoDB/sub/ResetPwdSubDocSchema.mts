@@ -2,15 +2,15 @@ import { IResetPwdSubDocSchema } from '@MongoDBInterfaces/sub/IResetPwdSubDocSch
 import { Schema } from 'mongoose'
 
 export const ResetPwdSubDocSchema = new Schema<IResetPwdSubDocSchema>(
-	{
-		resetDateReq: {
-			type: Date
-		},
-		resetHash: {
-			type: String
-		}
-	},
-	{
-		_id: false
-	}
+  {
+    resetDateReq: {
+      type: Date
+    },
+    resetHash: {
+      type: String
+    }
+  },
+  {
+    _id: false
+  }
 )

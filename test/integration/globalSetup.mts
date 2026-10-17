@@ -19,16 +19,16 @@ import { assertTestMongoEnv, buildTestMongoUrl, TEST_DB } from '../../vitest.mon
  *   - the R/W user is the one the models under test connect with (see vitest.integration.config.mts).
  */
 export async function setup(): Promise<void> {
-	// First thing: vitest.integration.config.mts evaluates buildTestMongoUrl('rw') at config-load
-	// time too, but that call never throws on a missing block — it hands back a URL that is never
-	// dialled. This is the one place that actually stops the run with a real message.
-	assertTestMongoEnv()
+  // First thing: vitest.integration.config.mts evaluates buildTestMongoUrl('rw') at config-load
+  // time too, but that call never throws on a missing block — it hands back a URL that is never
+  // dialled. This is the one place that actually stops the run with a real message.
+  assertTestMongoEnv()
 
-	const client = new MongoClient(buildTestMongoUrl('owner'))
-	try {
-		await client.connect()
-		await client.db(TEST_DB).dropDatabase()
-	} finally {
-		await client.close()
-	}
+  const client = new MongoClient(buildTestMongoUrl('owner'))
+  try {
+    await client.connect()
+    await client.db(TEST_DB).dropDatabase()
+  } finally {
+    await client.close()
+  }
 }

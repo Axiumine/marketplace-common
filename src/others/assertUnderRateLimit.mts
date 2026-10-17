@@ -11,9 +11,9 @@ import { sha256Hex } from '@others/sha256Hex.mjs'
  * makes the limiter testable with three stubs instead of a live cluster.
  */
 export interface IRateLimitStore {
-	incr(key: string): Promise<number>
-	ttl(key: string): Promise<number>
-	expire(key: string, seconds: number): Promise<unknown>
+  incr(key: string): Promise<number>
+  ttl(key: string): Promise<number>
+  expire(key: string, seconds: number): Promise<unknown>
 }
 
 /**
@@ -51,22 +51,22 @@ export interface IRateLimitStore {
  * an offline attack wants, and one of a high-entropy one is a stable handle to a live credential.
  */
 export async function assertUnderRateLimit(
-	store: IRateLimitStore,
-	bucket: string,
-	identity: string,
-	limit: number,
-	windowSeconds: number
+  store: IRateLimitStore,
+  bucket: string,
+  identity: string,
+  limit: number,
+  windowSeconds: number
 ) {
-	const key = `${process.env.REDIS_KEY}rl:${bucket}:${sha256Hex(identity)}`
+  const key = `${process.env.REDIS_KEY}rl:${bucket}:${sha256Hex(identity)}`
 
-	const count = await store.incr(key)
+  const count = await store.incr(key)
 
-	// INCR on a missing key creates it with no TTL, so the window has to be armed by hand. Arming it on
-	// every call would push the expiry forward on each request and never let the key die under sustained
-	// traffic; arming it only when the counter reads 1 leaves the key immortal if the process dies between
-	// the two commands, which locks that identity out for good. Checking the TTL covers both: it is
-	// short-circuited away on the first call of a window, and on any later call it repairs a lost EXPIRE.
-	if (count === 1 || (await store.ttl(key)) < 0) await store.expire(key, windowSeconds)
+  // INCR on a missing key creates it with no TTL, so the window has to be armed by hand. Arming it on
+  // every call would push the expiry forward on each request and never let the key die under sustained
+  // traffic; arming it only when the counter reads 1 leaves the key immortal if the process dies between
+  // the two commands, which locks that identity out for good. Checking the TTL covers both: it is
+  // short-circuited away on the first call of a window, and on any later call it repairs a lost EXPIRE.
+  if (count === 1 || (await store.ttl(key)) < 0) await store.expire(key, windowSeconds)
 
-	if (count > limit) throw throwTooManyRequestsError()
+  if (count > limit) throw throwTooManyRequestsError()
 }

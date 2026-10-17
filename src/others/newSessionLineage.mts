@@ -29,7 +29,7 @@ import { resolveSessionCapDays } from '@others/sessionLifetime.mjs'
  * not a non-negative integer written as one.
  */
 export const newSessionLineage = (rememberMe: unknown): Pick<IRefreshData, 'familyId' | 'originalLogin' | 'sessionCapDays'> => ({
-	familyId: randomUUID(),
-	originalLogin: `${Date.now()}`,
-	sessionCapDays: `${resolveSessionCapDays(rememberMe)}`
+  familyId: randomUUID(),
+  originalLogin: `${Date.now()}`,
+  sessionCapDays: `${resolveSessionCapDays(rememberMe)}`
 })

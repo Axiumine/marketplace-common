@@ -9,9 +9,9 @@ const KEY = randomBytes(32)
 
 /** The 32-byte HMAC of one operand. A value that is not a string is folded to the empty string. */
 const digest = (value: string | string[] | undefined) =>
-	createHmac('sha256', KEY)
-		.update(typeof value === 'string' ? value : '')
-		.digest()
+  createHmac('sha256', KEY)
+    .update(typeof value === 'string' ? value : '')
+    .digest()
 
 /**
  * Compares two secrets in constant time, and answers `true` only when they are the same string.
@@ -49,5 +49,5 @@ const digest = (value: string | string[] | undefined) =>
  * comparison in the first place. It is the comparison primitive, never an access control.
  */
 export function constantTimeEquals(a: string | string[] | undefined, b: string | string[] | undefined) {
-	return timingSafeEqual(digest(a), digest(b))
+  return timingSafeEqual(digest(a), digest(b))
 }

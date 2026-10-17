@@ -3,17 +3,17 @@ import { IResetPwdSubDocSchema } from '@MongoDBInterfaces/sub/IResetPwdSubDocSch
 import { Types } from 'mongoose'
 
 interface IPersonalData {
-	_id?: boolean
-	firstName: string
-	lastName: string
+  _id?: boolean
+  firstName: string
+  lastName: string
 }
 
 export interface IAdminSchema {
-	_id: Types.ObjectId
-	login: ILoginSubDocSchema
-	personalData: IPersonalData
-	deleted?: Date
-	disabled?: boolean
-	resetPwd?: IResetPwdSubDocSchema
-	__v?: number
+  _id: Types.ObjectId
+  login: ILoginSubDocSchema
+  personalData: IPersonalData
+  deleted?: Date
+  disabled?: boolean
+  resetPwd?: IResetPwdSubDocSchema
+  __v?: number
 }

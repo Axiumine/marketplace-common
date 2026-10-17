@@ -10,10 +10,10 @@ import { IEncryptedFieldSpec } from '@encryption/IEncryptedFieldSpec.mjs'
  * does, and nothing here depends on it not happening.
  */
 export interface IEncryptedFieldNode {
-	algorithm?: EncryptionAlgorithm
-	plaintext?: IEncryptedFieldSpec['plaintext']
-	children?: Map<string, IEncryptedFieldNode>
-	element?: IEncryptedFieldNode
+  algorithm?: EncryptionAlgorithm
+  plaintext?: IEncryptedFieldSpec['plaintext']
+  children?: Map<string, IEncryptedFieldNode>
+  element?: IEncryptedFieldNode
 }
 
 const ARRAY_ELEMENT_SEGMENT = '[]'
@@ -26,26 +26,26 @@ const ARRAY_ELEMENT_SEGMENT = '[]'
  * what is encrypted is the *field inside* the element and that does not depend on which element.
  */
 function isArrayElementSegment(segment: string): boolean {
-	// The closing bracket is unescaped on purpose: outside a character class it is already a literal,
-	// and escaping it is what the redundant-escape inspection flags.
-	return /^(\d+|\$(\[[^\]]*])?)$/.test(segment)
+  // The closing bracket is unescaped on purpose: outside a character class it is already a literal,
+  // and escaping it is what the redundant-escape inspection flags.
+  return /^(\d+|\$(\[[^\]]*])?)$/.test(segment)
 }
 
 function childNode(node: IEncryptedFieldNode, segment: string): IEncryptedFieldNode {
-	if (segment === ARRAY_ELEMENT_SEGMENT) {
-		node.element = node.element ?? {}
-		return node.element
-	}
+  if (segment === ARRAY_ELEMENT_SEGMENT) {
+    node.element = node.element ?? {}
+    return node.element
+  }
 
-	node.children = node.children ?? new Map<string, IEncryptedFieldNode>()
-	const existing = node.children.get(segment)
-	if (existing !== undefined) {
-		return existing
-	}
+  node.children = node.children ?? new Map<string, IEncryptedFieldNode>()
+  const existing = node.children.get(segment)
+  if (existing !== undefined) {
+    return existing
+  }
 
-	const created: IEncryptedFieldNode = {}
-	node.children.set(segment, created)
-	return created
+  const created: IEncryptedFieldNode = {}
+  node.children.set(segment, created)
+  return created
 }
 
 /**
@@ -55,18 +55,18 @@ function childNode(node: IEncryptedFieldNode, segment: string): IEncryptedFieldN
  * pure setup cost paid at import.
  */
 export function buildEncryptedFieldTrie(specs: IEncryptedFieldSpec[]): IEncryptedFieldNode {
-	const root: IEncryptedFieldNode = {}
+  const root: IEncryptedFieldNode = {}
 
-	for (const spec of specs) {
-		let node = root
-		for (const segment of spec.path.split('.')) {
-			node = childNode(node, segment)
-		}
-		node.algorithm = spec.algorithm
-		node.plaintext = spec.plaintext
-	}
+  for (const spec of specs) {
+    let node = root
+    for (const segment of spec.path.split('.')) {
+      node = childNode(node, segment)
+    }
+    node.algorithm = spec.algorithm
+    node.plaintext = spec.plaintext
+  }
 
-	return root
+  return root
 }
 
 /**
@@ -79,33 +79,33 @@ export function buildEncryptedFieldTrie(specs: IEncryptedFieldSpec[]): IEncrypte
  * unmatched segment retries against the element node before giving up, rather than consuming it.
  */
 export function resolveEncryptedPath(root: IEncryptedFieldNode, key: string): IEncryptedFieldNode | undefined {
-	const segments = key.split('.')
-	let node: IEncryptedFieldNode = root
-	let index = 0
+  const segments = key.split('.')
+  let node: IEncryptedFieldNode = root
+  let index = 0
 
-	while (index < segments.length) {
-		const segment = segments[index] as string
-		const named: IEncryptedFieldNode | undefined = node.children?.get(segment)
+  while (index < segments.length) {
+    const segment = segments[index] as string
+    const named: IEncryptedFieldNode | undefined = node.children?.get(segment)
 
-		if (named !== undefined) {
-			node = named
-			index += 1
-			continue
-		}
+    if (named !== undefined) {
+      node = named
+      index += 1
+      continue
+    }
 
-		const element: IEncryptedFieldNode | undefined = node.element
+    const element: IEncryptedFieldNode | undefined = node.element
 
-		if (element === undefined) {
-			return undefined
-		}
+    if (element === undefined) {
+      return undefined
+    }
 
-		// An explicit subscript consumes the segment; an implicit traversal does not, and is
-		// re-tried against the element's own children on the next turn of the loop.
-		node = element
-		if (isArrayElementSegment(segment)) {
-			index += 1
-		}
-	}
+    // An explicit subscript consumes the segment; an implicit traversal does not, and is
+    // re-tried against the element's own children on the next turn of the loop.
+    node = element
+    if (isArrayElementSegment(segment)) {
+      index += 1
+    }
+  }
 
-	return node
+  return node
 }

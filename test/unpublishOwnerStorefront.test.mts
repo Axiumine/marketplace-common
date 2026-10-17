@@ -30,11 +30,11 @@ const threaded: unknown[] = []
 
 /** `.session()` is a hop on the chain: it records what it was given and answers the rest of the chain. */
 const sessioned = (tail: object) => ({
-	session: vi.fn((clientSession: unknown) => {
-		threaded.push(clientSession)
+  session: vi.fn((clientSession: unknown) => {
+    threaded.push(clientSession)
 
-		return tail
-	})
+    return tail
+  })
 })
 
 /** The caller's transaction, as the cascade receives it — the double is not a `ClientSession`. */
@@ -42,75 +42,75 @@ const inSession = { withTransaction: vi.fn(), endSession: vi.fn() } as never
 
 /** The cascade's three queries, armed with the companies the owner holds. */
 function mockCascade(...ids: Types.ObjectId[]) {
-	companyFind.mockReturnValueOnce(sessioned({ lean: vi.fn().mockResolvedValue(ids.map((idCompany) => ({ _id: idCompany }))) }))
-	companyUpdateMany.mockReturnValueOnce(sessioned({ exec: vi.fn().mockResolvedValue({ matchedCount: ids.length }) }))
-	itemUpdateMany.mockReturnValueOnce(sessioned({ exec: vi.fn().mockResolvedValue({ matchedCount: 0 }) }))
+  companyFind.mockReturnValueOnce(sessioned({ lean: vi.fn().mockResolvedValue(ids.map((idCompany) => ({ _id: idCompany }))) }))
+  companyUpdateMany.mockReturnValueOnce(sessioned({ exec: vi.fn().mockResolvedValue({ matchedCount: ids.length }) }))
+  itemUpdateMany.mockReturnValueOnce(sessioned({ exec: vi.fn().mockResolvedValue({ matchedCount: 0 }) }))
 }
 
 /** Every cascade query ran, once each, against the ids handed to `mockCascade`. */
 function expectCascade(ids: Types.ObjectId[]) {
-	expect(companyFind).toHaveBeenCalledExactlyOnceWith({ idShopOwner: _id }, '_id')
-	expect(companyUpdateMany).toHaveBeenCalledExactlyOnceWith({ idShopOwner: _id }, { $set: { published: false } })
-	expect(itemUpdateMany).toHaveBeenCalledExactlyOnceWith({ idCompany: trusted({ $in: ids }) }, { $set: { published: false } })
+  expect(companyFind).toHaveBeenCalledExactlyOnceWith({ idShopOwner: _id }, '_id')
+  expect(companyUpdateMany).toHaveBeenCalledExactlyOnceWith({ idShopOwner: _id }, { $set: { published: false } })
+  expect(itemUpdateMany).toHaveBeenCalledExactlyOnceWith({ idCompany: trusted({ $in: ids }) }, { $set: { published: false } })
 }
 
 beforeEach(() => {
-	companyFind.mockReset()
-	companyUpdateMany.mockReset()
-	itemUpdateMany.mockReset()
-	threaded.length = 0
+  companyFind.mockReset()
+  companyUpdateMany.mockReset()
+  itemUpdateMany.mockReset()
+  threaded.length = 0
 })
 
 describe('unpublishOwnerStorefront', () => {
-	it('withdraws every company the owner holds and every item filed under one', async () => {
-		mockCascade(...shopIds)
+  it('withdraws every company the owner holds and every item filed under one', async () => {
+    mockCascade(...shopIds)
 
-		await expect(unpublishOwnerStorefront(_id, inSession)).resolves.toBeUndefined()
+    await expect(unpublishOwnerStorefront(_id, inSession)).resolves.toBeUndefined()
 
-		expectCascade(shopIds)
-	})
+    expectCascade(shopIds)
+  })
 
-	/*
-	 * ⚠️ **The `$in` carries mongoose's trusted marker, and the assertion compares it.** Every service that
-	 * calls this sets `sanitizeFilter` globally: an untrusted `$in` is stripped on the way to the driver,
-	 * which turns the item hop into a filter that matches nothing — every item stays published under a shop
-	 * that has just gone dark, and nothing fails. `toEqual` compares symbol-keyed properties, so a dropped
-	 * `trusted()` fails here.
-	 */
-	it('marks the item filter as trusted', async () => {
-		mockCascade(...shopIds)
+  /*
+   * ⚠️ **The `$in` carries mongoose's trusted marker, and the assertion compares it.** Every service that
+   * calls this sets `sanitizeFilter` globally: an untrusted `$in` is stripped on the way to the driver,
+   * which turns the item hop into a filter that matches nothing — every item stays published under a shop
+   * that has just gone dark, and nothing fails. `toEqual` compares symbol-keyed properties, so a dropped
+   * `trusted()` fails here.
+   */
+  it('marks the item filter as trusted', async () => {
+    mockCascade(...shopIds)
 
-		await unpublishOwnerStorefront(_id, inSession)
+    await unpublishOwnerStorefront(_id, inSession)
 
-		const [filter] = itemUpdateMany.mock.calls[0]
+    const [filter] = itemUpdateMany.mock.calls[0]
 
-		expect(filter.idCompany).toEqual(trusted({ $in: shopIds }))
-	})
+    expect(filter.idCompany).toEqual(trusted({ $in: shopIds }))
+  })
 
-	/*
-	 * ⚠️ Every query joins the caller's transaction, this one included. The cascade is the half of the close
-	 * that ADR-045 makes atomic with the stamp: a company read or an item write outside the transaction sees
-	 * — and leaves behind — a state the stamp is still free to roll back.
-	 */
-	it('runs all three queries inside the transaction it was handed', async () => {
-		mockCascade(...shopIds)
+  /*
+   * ⚠️ Every query joins the caller's transaction, this one included. The cascade is the half of the close
+   * that ADR-045 makes atomic with the stamp: a company read or an item write outside the transaction sees
+   * — and leaves behind — a state the stamp is still free to roll back.
+   */
+  it('runs all three queries inside the transaction it was handed', async () => {
+    mockCascade(...shopIds)
 
-		await unpublishOwnerStorefront(_id, inSession)
+    await unpublishOwnerStorefront(_id, inSession)
 
-		expect(threaded).toStrictEqual([inSession, inSession, inSession])
-	})
+    expect(threaded).toStrictEqual([inSession, inSession, inSession])
+  })
 
-	/*
-	 * An owner with no companies is a real account — one that registered and never opened a shop. The company
-	 * ids collapse to `$in: []`, which matches nothing and writes nothing, and both `updateMany` calls are
-	 * still made: a `length > 0` short-circuit would be an extra branch buying nothing the driver does not
-	 * already do.
-	 */
-	it('asks for an empty set when the owner holds no company', async () => {
-		mockCascade()
+  /*
+   * An owner with no companies is a real account — one that registered and never opened a shop. The company
+   * ids collapse to `$in: []`, which matches nothing and writes nothing, and both `updateMany` calls are
+   * still made: a `length > 0` short-circuit would be an extra branch buying nothing the driver does not
+   * already do.
+   */
+  it('asks for an empty set when the owner holds no company', async () => {
+    mockCascade()
 
-		await expect(unpublishOwnerStorefront(_id, inSession)).resolves.toBeUndefined()
+    await expect(unpublishOwnerStorefront(_id, inSession)).resolves.toBeUndefined()
 
-		expectCascade([])
-	})
+    expectCascade([])
+  })
 })

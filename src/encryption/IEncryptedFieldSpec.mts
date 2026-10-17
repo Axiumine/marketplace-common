@@ -15,7 +15,7 @@ import { EncryptionAlgorithm } from '@encryption/EncryptionAlgorithm.mjs'
  * `EncryptedField.mts`.
  */
 export interface IEncryptedFieldSpec {
-	path: string
-	algorithm: EncryptionAlgorithm
-	plaintext: 'string' | 'date' | 'object'
+  path: string
+  algorithm: EncryptionAlgorithm
+  plaintext: 'string' | 'date' | 'object'
 }

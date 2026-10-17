@@ -19,9 +19,9 @@ import { Binary } from 'mongodb'
  * the driver's `ClientEncryption` one level lower down.
  */
 export interface IVaultEntry {
-	value: unknown
-	algorithm: string
-	keyAltName: string
+  value: unknown
+  algorithm: string
+  keyAltName: string
 }
 
 export const vault: IVaultEntry[] = []
@@ -35,32 +35,32 @@ export const vault: IVaultEntry[] = []
 export const POISON = Symbol('poison')
 
 export async function fakeEncryptValue(value: unknown, algorithm: string, keyAltName: string): Promise<Binary> {
-	if (value === POISON) {
-		throw new Error('KMS unreachable')
-	}
+  if (value === POISON) {
+    throw new Error('KMS unreachable')
+  }
 
-	vault.push({ value: value, algorithm: algorithm, keyAltName: keyAltName })
-	return new Binary(Buffer.from(String(vault.length - 1)), Binary.SUBTYPE_ENCRYPTED)
+  vault.push({ value: value, algorithm: algorithm, keyAltName: keyAltName })
+  return new Binary(Buffer.from(String(vault.length - 1)), Binary.SUBTYPE_ENCRYPTED)
 }
 
 export async function fakeDecryptValue(value: Binary): Promise<unknown> {
-	return entryOf(value).value
+  return entryOf(value).value
 }
 
 export function resetVault(): void {
-	vault.length = 0
+  vault.length = 0
 }
 
 /** The vault entry a piece of ciphertext points at, and a readable failure when it is not one. */
 export function entryOf(value: unknown): IVaultEntry {
-	if (!(value instanceof Binary) || value.sub_type !== Binary.SUBTYPE_ENCRYPTED) {
-		throw new Error(`Expected ciphertext, got ${String(JSON.stringify(value))}`)
-	}
+  if (!(value instanceof Binary) || value.sub_type !== Binary.SUBTYPE_ENCRYPTED) {
+    throw new Error(`Expected ciphertext, got ${String(JSON.stringify(value))}`)
+  }
 
-	return vault[Number(value.toString())] as IVaultEntry
+  return vault[Number(value.toString())] as IVaultEntry
 }
 
 /** The plaintext behind a piece of ciphertext. */
 export function plaintextOf(value: unknown): unknown {
-	return entryOf(value).value
+  return entryOf(value).value
 }

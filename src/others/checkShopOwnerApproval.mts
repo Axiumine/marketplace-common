@@ -6,7 +6,7 @@ import { throwUnauthorizedError } from '@axiumine/koa-utils/graphQL/throw/throwU
  * shape and a session shape — without either growing a field it has no other use for.
  */
 export interface IShopOwnerApprovalGated {
-	waitApprov?: boolean
+  waitApprov?: boolean
 }
 
 /**
@@ -33,9 +33,9 @@ export interface IShopOwnerApprovalGated {
  * @param shopOwner the projection result, which must have asked for `waitApprov`
  */
 export function checkShopOwnerApproval(shopOwner: IShopOwnerApprovalGated) {
-	if (shopOwner.waitApprov) {
-		// Same reasoning as the deleted/disabled branches in `checkUserAuthorizationDisDel`: no message
-		// that would tell a caller which accounts exist and are awaiting approval.
-		throw throwUnauthorizedError() // fixme email: 'Account awaiting approval.'
-	}
+  if (shopOwner.waitApprov) {
+    // Same reasoning as the deleted/disabled branches in `checkUserAuthorizationDisDel`: no message
+    // that would tell a caller which accounts exist and are awaiting approval.
+    throw throwUnauthorizedError() // fixme email: 'Account awaiting approval.'
+  }
 }

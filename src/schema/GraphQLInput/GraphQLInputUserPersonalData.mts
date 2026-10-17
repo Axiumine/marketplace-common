@@ -14,20 +14,20 @@ import { GraphQLDate } from 'graphql-scalars'
  * "save my profile" silently able to overwrite an entry in that array.
  */
 export const GraphQLInputUserPersonalData = new GraphQLInputObjectType({
-	name: 'GraphQLInputUserPersonalData',
-	fields: () => ({
-		firstName: { type: new GraphQLNonNull(GraphQLString) },
-		lastName: { type: new GraphQLNonNull(GraphQLString) },
-		birth: { type: GraphQLInputUserBirth },
-		contacts: { type: GraphQLInputUserContacts }
-	})
+  name: 'GraphQLInputUserPersonalData',
+  fields: () => ({
+    firstName: { type: new GraphQLNonNull(GraphQLString) },
+    lastName: { type: new GraphQLNonNull(GraphQLString) },
+    birth: { type: GraphQLInputUserBirth },
+    contacts: { type: GraphQLInputUserContacts }
+  })
 })
 
 const GraphQLInputUserBirth = new GraphQLInputObjectType({
-	name: 'GraphQLInputUserBirth',
-	fields: () => ({
-		date: { type: new GraphQLNonNull(GraphQLDate) }
-	})
+  name: 'GraphQLInputUserBirth',
+  fields: () => ({
+    date: { type: new GraphQLNonNull(GraphQLDate) }
+  })
 })
 
 /*
@@ -40,10 +40,10 @@ const GraphQLInputUserBirth = new GraphQLInputObjectType({
  * profile save.
  */
 const GraphQLInputUserContacts = new GraphQLInputObjectType({
-	name: 'GraphQLInputUserContacts',
-	fields: () => ({
-		mobile: { type: GraphQLString },
-		landline: { type: GraphQLString },
-		email: { type: GraphQLString }
-	})
+  name: 'GraphQLInputUserContacts',
+  fields: () => ({
+    mobile: { type: GraphQLString },
+    landline: { type: GraphQLString },
+    email: { type: GraphQLString }
+  })
 })

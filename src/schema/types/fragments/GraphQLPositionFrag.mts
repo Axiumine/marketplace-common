@@ -14,6 +14,6 @@ import { GraphQLFloat, GraphQLList, GraphQLNonNull, GraphQLString } from 'graphq
 // deserialized reaches this scalar directly. A Decimal128 there throws `Float cannot represent non
 // numeric value`.
 export const GraphQLPositionFrag = {
-	type: { type: new GraphQLNonNull(GraphQLString) },
-	coordinates: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLFloat))) }
+  type: { type: new GraphQLNonNull(GraphQLString) },
+  coordinates: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLFloat))) }
 }

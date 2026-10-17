@@ -10,17 +10,17 @@ import { assertUnderRateLimit, IRateLimitStore } from '../src/others/assertUnder
 import { pendingRegistrationKey } from '../src/others/registrationKeys.mts'
 import { retentionLockKey } from '../src/others/retentionKeys.mts'
 import {
-	familyKey,
-	graceHitsKey,
-	keygripChannel,
-	keygripHoldersKey,
-	keygripKey,
-	refreshClaimKey,
-	reuseEventsKey,
-	sessionIndexKey,
-	sessionKey,
-	sessionKeyFromIndexField,
-	tombstoneKey
+  familyKey,
+  graceHitsKey,
+  keygripChannel,
+  keygripHoldersKey,
+  keygripKey,
+  refreshClaimKey,
+  reuseEventsKey,
+  sessionIndexKey,
+  sessionKey,
+  sessionKeyFromIndexField,
+  tombstoneKey
 } from '../src/others/sessionKeys.mts'
 import { TIER } from '../src/others/Tier.mts'
 
@@ -72,160 +72,160 @@ const SRC = fileURLToPath(new URL('../src/', import.meta.url))
  * asserted as a literal instead.
  */
 const KEY_SHAPES = [
-	{ file: 'others/sessionKeys.mts', name: 'sessionKey', build: () => sessionKey(INPUT), digests: true },
-	{ file: 'others/sessionKeys.mts', name: 'tombstoneKey', build: () => tombstoneKey(INPUT), digests: true },
-	{ file: 'others/sessionKeys.mts', name: 'refreshClaimKey', build: () => refreshClaimKey(INPUT), digests: true },
-	{
-		file: 'others/sessionKeys.mts',
-		name: 'familyKey',
-		build: () => familyKey(INPUT),
-		digests: false,
-		why: 'a randomUUID lineage id, never derived from a token — presenting one grants nothing'
-	},
-	{
-		file: 'others/sessionKeys.mts',
-		name: 'sessionIndexKey',
-		build: () => sessionIndexKey(TIER.user, ACCOUNT_ID),
-		digests: false,
-		why: 'a tier and an account _id, both of which every resource query already carries'
-	},
-	{
-		file: 'others/sessionKeys.mts',
-		name: 'sessionKeyFromIndexField',
-		build: () => sessionKeyFromIndexField(INPUT),
-		digests: false,
-		why: 'the field is already the digest that filed the session — rehashing it would name a key that has never existed'
-	},
-	{
-		file: 'others/sessionKeys.mts',
-		name: 'reuseEventsKey',
-		build: () => reuseEventsKey(TIER.admin, ACCOUNT_ID),
-		digests: false,
-		why: 'a tier and an account _id, as the session index above'
-	},
-	{ file: 'others/sessionKeys.mts', name: 'graceHitsKey', build: graceHitsKey, digests: null },
-	{ file: 'others/sessionKeys.mts', name: 'keygripKey', build: keygripKey, digests: null },
-	{ file: 'others/sessionKeys.mts', name: 'keygripHoldersKey', build: keygripHoldersKey, digests: null },
-	{ file: 'others/sessionKeys.mts', name: 'keygripChannel', build: keygripChannel, digests: null },
-	{
-		file: 'others/assertHashFieldTTLSupport.mts',
-		name: 'HASH_FIELD_TTL_PROBE_KEY',
-		build: HASH_FIELD_TTL_PROBE_KEY,
-		digests: null
-	},
-	{ file: 'others/assertUnderRateLimit.mts', name: 'assertUnderRateLimit', build: null, digests: true },
-	{
-		file: 'others/registrationKeys.mts',
-		name: 'pendingRegistrationKey',
-		build: () => pendingRegistrationKey(TIER.user, EMAIL),
-		digests: false,
-		why: 'the deterministic ciphertext of the address, already the value MongoDB indexes (ADR-043) — not plaintext and not a credential'
-	},
-	{ file: 'others/retentionKeys.mts', name: 'retentionLockKey', build: retentionLockKey, digests: null }
+  { file: 'others/sessionKeys.mts', name: 'sessionKey', build: () => sessionKey(INPUT), digests: true },
+  { file: 'others/sessionKeys.mts', name: 'tombstoneKey', build: () => tombstoneKey(INPUT), digests: true },
+  { file: 'others/sessionKeys.mts', name: 'refreshClaimKey', build: () => refreshClaimKey(INPUT), digests: true },
+  {
+    file: 'others/sessionKeys.mts',
+    name: 'familyKey',
+    build: () => familyKey(INPUT),
+    digests: false,
+    why: 'a randomUUID lineage id, never derived from a token — presenting one grants nothing'
+  },
+  {
+    file: 'others/sessionKeys.mts',
+    name: 'sessionIndexKey',
+    build: () => sessionIndexKey(TIER.user, ACCOUNT_ID),
+    digests: false,
+    why: 'a tier and an account _id, both of which every resource query already carries'
+  },
+  {
+    file: 'others/sessionKeys.mts',
+    name: 'sessionKeyFromIndexField',
+    build: () => sessionKeyFromIndexField(INPUT),
+    digests: false,
+    why: 'the field is already the digest that filed the session — rehashing it would name a key that has never existed'
+  },
+  {
+    file: 'others/sessionKeys.mts',
+    name: 'reuseEventsKey',
+    build: () => reuseEventsKey(TIER.admin, ACCOUNT_ID),
+    digests: false,
+    why: 'a tier and an account _id, as the session index above'
+  },
+  { file: 'others/sessionKeys.mts', name: 'graceHitsKey', build: graceHitsKey, digests: null },
+  { file: 'others/sessionKeys.mts', name: 'keygripKey', build: keygripKey, digests: null },
+  { file: 'others/sessionKeys.mts', name: 'keygripHoldersKey', build: keygripHoldersKey, digests: null },
+  { file: 'others/sessionKeys.mts', name: 'keygripChannel', build: keygripChannel, digests: null },
+  {
+    file: 'others/assertHashFieldTTLSupport.mts',
+    name: 'HASH_FIELD_TTL_PROBE_KEY',
+    build: HASH_FIELD_TTL_PROBE_KEY,
+    digests: null
+  },
+  { file: 'others/assertUnderRateLimit.mts', name: 'assertUnderRateLimit', build: null, digests: true },
+  {
+    file: 'others/registrationKeys.mts',
+    name: 'pendingRegistrationKey',
+    build: () => pendingRegistrationKey(TIER.user, EMAIL),
+    digests: false,
+    why: 'the deterministic ciphertext of the address, already the value MongoDB indexes (ADR-043) — not plaintext and not a credential'
+  },
+  { file: 'others/retentionKeys.mts', name: 'retentionLockKey', build: retentionLockKey, digests: null }
 ] as const
 
 /** How many `process.env.REDIS_KEY` interpolations each source file is allowed to carry. */
 const ALLOWED_PER_FILE = KEY_SHAPES.reduce<Record<string, number>>(
-	(counts, shape) => ({ ...counts, [shape.file]: (counts[shape.file] ?? 0) + 1 }),
-	{}
+  (counts, shape) => ({ ...counts, [shape.file]: (counts[shape.file] ?? 0) + 1 }),
+  {}
 )
 
 const mtsFilesUnder = (dir: string): string[] =>
-	readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-		entry.isDirectory() ? mtsFilesUnder(join(dir, entry.name)) : entry.name.endsWith('.mts') ? [join(dir, entry.name)] : []
-	)
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+    entry.isDirectory() ? mtsFilesUnder(join(dir, entry.name)) : entry.name.endsWith('.mts') ? [join(dir, entry.name)] : []
+  )
 
 /** Every source file that interpolates the prefix, with how many times it does it. */
 const keyBuildingFiles = () => {
-	const found: Record<string, number> = {}
+  const found: Record<string, number> = {}
 
-	for (const path of mtsFilesUnder(SRC)) {
-		const occurrences = readFileSync(path, 'utf8').match(/\$\{process\.env\.REDIS_KEY}/g)
+  for (const path of mtsFilesUnder(SRC)) {
+    const occurrences = readFileSync(path, 'utf8').match(/\$\{process\.env\.REDIS_KEY}/g)
 
-		if (occurrences) found[path.slice(SRC.length).replaceAll('\\', '/')] = occurrences.length
-	}
+    if (occurrences) found[path.slice(SRC.length).replaceAll('\\', '/')] = occurrences.length
+  }
 
-	return found
+  return found
 }
 
 beforeEach(() => {
-	vi.stubEnv('REDIS_KEY', PREFIX)
+  vi.stubEnv('REDIS_KEY', PREFIX)
 })
 
 describe('the registry is the whole keyspace', () => {
-	it('finds no file building a key that the registry does not name', () => {
-		expect(Object.keys(keyBuildingFiles()).sort()).toStrictEqual(Object.keys(ALLOWED_PER_FILE).sort())
-	})
+  it('finds no file building a key that the registry does not name', () => {
+    expect(Object.keys(keyBuildingFiles()).sort()).toStrictEqual(Object.keys(ALLOWED_PER_FILE).sort())
+  })
 
-	// The count, not the names — see the ⚠️ at the top. An eleventh builder in sessionKeys.mts fails
-	// here whether or not it is exported, which is the only version of this check worth having.
-	it.each(Object.entries(ALLOWED_PER_FILE))('%s builds exactly %s key shapes', (file, allowed) => {
-		expect(keyBuildingFiles()[file]).toBe(allowed)
-	})
+  // The count, not the names — see the ⚠️ at the top. An eleventh builder in sessionKeys.mts fails
+  // here whether or not it is exported, which is the only version of this check worth having.
+  it.each(Object.entries(ALLOWED_PER_FILE))('%s builds exactly %s key shapes', (file, allowed) => {
+    expect(keyBuildingFiles()[file]).toBe(allowed)
+  })
 })
 
 describe('no raw token reaches a key name', () => {
-	it.each(KEY_SHAPES.filter((shape) => shape.digests === true && shape.build).map((shape) => [shape.name, shape.build]))(
-		'%s digests its argument',
-		(_name, build) => {
-			const key = build!()
+  it.each(KEY_SHAPES.filter((shape) => shape.digests === true && shape.build).map((shape) => [shape.name, shape.build]))(
+    '%s digests its argument',
+    (_name, build) => {
+      const key = build!()
 
-			expect(key).not.toContain(INPUT)
-			expect(key.slice(PREFIX.length)).toMatch(/(^|:)[0-9a-f]{64}$/)
-		}
-	)
+      expect(key).not.toContain(INPUT)
+      expect(key.slice(PREFIX.length)).toMatch(/(^|:)[0-9a-f]{64}$/)
+    }
+  )
 
-	// `assertUnderRateLimit` builds its key inline rather than through a builder, so it is driven instead
-	// of called. The bucket name stays legible on purpose — an admin counts a bucket without being able
-	// to name anybody in one — and the identity, which is the half a caller could get wrong, does not.
-	it('assertUnderRateLimit digests the identity and leaves the bucket readable', async () => {
-		const store = {
-			incr: vi.fn().mockResolvedValue(1),
-			expire: vi.fn().mockResolvedValue(1),
-			ttl: vi.fn().mockResolvedValue(-1)
-		} satisfies IRateLimitStore
+  // `assertUnderRateLimit` builds its key inline rather than through a builder, so it is driven instead
+  // of called. The bucket name stays legible on purpose — an admin counts a bucket without being able
+  // to name anybody in one — and the identity, which is the half a caller could get wrong, does not.
+  it('assertUnderRateLimit digests the identity and leaves the bucket readable', async () => {
+    const store = {
+      incr: vi.fn().mockResolvedValue(1),
+      expire: vi.fn().mockResolvedValue(1),
+      ttl: vi.fn().mockResolvedValue(-1)
+    } satisfies IRateLimitStore
 
-		await assertUnderRateLimit(store, 'login', INPUT, 5, 60)
+    await assertUnderRateLimit(store, 'login', INPUT, 5, 60)
 
-		const key = store.incr.mock.calls[0]![0] as string
+    const key = store.incr.mock.calls[0]![0] as string
 
-		expect(key).not.toContain(INPUT)
-		expect(key.startsWith(`${PREFIX}rl:login:`)).toBe(true)
-		expect(key.slice(`${PREFIX}rl:login:`.length)).toMatch(/^[0-9a-f]{64}$/)
-	})
+    expect(key).not.toContain(INPUT)
+    expect(key.startsWith(`${PREFIX}rl:login:`)).toBe(true)
+    expect(key.slice(`${PREFIX}rl:login:`.length)).toMatch(/^[0-9a-f]{64}$/)
+  })
 
-	/*
-	 * ⚠️ The check this pair cannot make: *whether the caller passed something network-derived*. Nothing
-	 * here can see a client address arriving as an `identity` — the digest would hide it just as well as it
-	 * hides an email. What holds that line is one layer up and structural: `app.proxy` stays off in all
-	 * nine services, so a resolver has no client address to pass. That is a manual check, and
-	 * `docs/testing.md` says so rather than implying this suite covers it.
-	 */
-	it('lets a builder pass its argument through only with a written reason, never an empty cell', () => {
-		const passThrough = KEY_SHAPES.filter((shape) => shape.digests === false)
+  /*
+   * ⚠️ The check this pair cannot make: *whether the caller passed something network-derived*. Nothing
+   * here can see a client address arriving as an `identity` — the digest would hide it just as well as it
+   * hides an email. What holds that line is one layer up and structural: `app.proxy` stays off in all
+   * nine services, so a resolver has no client address to pass. That is a manual check, and
+   * `docs/testing.md` says so rather than implying this suite covers it.
+   */
+  it('lets a builder pass its argument through only with a written reason, never an empty cell', () => {
+    const passThrough = KEY_SHAPES.filter((shape) => shape.digests === false)
 
-		expect(passThrough.map((shape) => shape.name)).toStrictEqual([
-			'familyKey',
-			'sessionIndexKey',
-			'sessionKeyFromIndexField',
-			'reuseEventsKey',
-			'pendingRegistrationKey'
-		])
-		expect(passThrough.filter((shape) => !shape.why?.trim())).toStrictEqual([])
-	})
+    expect(passThrough.map((shape) => shape.name)).toStrictEqual([
+      'familyKey',
+      'sessionIndexKey',
+      'sessionKeyFromIndexField',
+      'reuseEventsKey',
+      'pendingRegistrationKey'
+    ])
+    expect(passThrough.filter((shape) => !shape.why?.trim())).toStrictEqual([])
+  })
 })
 
 describe('the constant key shapes', () => {
-	it('are the prefix and a word, with nothing interpolated', () => {
-		const constants = KEY_SHAPES.filter((shape) => shape.digests === null)
+  it('are the prefix and a word, with nothing interpolated', () => {
+    const constants = KEY_SHAPES.filter((shape) => shape.digests === null)
 
-		expect(constants.map((shape) => shape.build!())).toStrictEqual([
-			`${PREFIX}grace-hits`,
-			`${PREFIX}keygrip`,
-			`${PREFIX}keygrip:holders`,
-			`${PREFIX}keygrip:rotated`,
-			`${PREFIX}hash-field-ttl-probe`,
-			`${PREFIX}retention:lock`
-		])
-	})
+    expect(constants.map((shape) => shape.build!())).toStrictEqual([
+      `${PREFIX}grace-hits`,
+      `${PREFIX}keygrip`,
+      `${PREFIX}keygrip:holders`,
+      `${PREFIX}keygrip:rotated`,
+      `${PREFIX}hash-field-ttl-probe`,
+      `${PREFIX}retention:lock`
+    ])
+  })
 })

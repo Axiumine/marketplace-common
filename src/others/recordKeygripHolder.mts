@@ -28,8 +28,8 @@ export const KEYGRIP_HOLDER_TTL_SECONDS = 3_600
  * every service that is still alive.
  */
 export interface IKeygripHolderStore {
-	hSet(key: string, field: string, value: string): Promise<unknown>
-	hExpire(key: string, fields: string, seconds: number): Promise<unknown>
+  hSet(key: string, field: string, value: string): Promise<unknown>
+  hExpire(key: string, fields: string, seconds: number): Promise<unknown>
 }
 
 /**
@@ -51,7 +51,7 @@ export interface IKeygripHolderStore {
  * supposed to describe.
  */
 export const recordKeygripHolder = async (store: IKeygripHolderStore, serviceName: string, fp: string) => {
-	await store.hSet(keygripHoldersKey(), serviceName, `${fp}@${new Date().toISOString()}`)
+  await store.hSet(keygripHoldersKey(), serviceName, `${fp}@${new Date().toISOString()}`)
 
-	return store.hExpire(keygripHoldersKey(), serviceName, KEYGRIP_HOLDER_TTL_SECONDS)
+  return store.hExpire(keygripHoldersKey(), serviceName, KEYGRIP_HOLDER_TTL_SECONDS)
 }

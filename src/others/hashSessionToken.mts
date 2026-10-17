@@ -26,5 +26,5 @@ import { sha256Hex } from '@others/sha256Hex.mjs'
  * direction: the store no longer hands out credentials to whoever reads it.
  */
 export function hashSessionToken(value: string) {
-	return sha256Hex(value)
+  return sha256Hex(value)
 }
