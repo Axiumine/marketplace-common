@@ -10,12 +10,12 @@ import { expect } from 'vitest'
  * the guard exactly once: several callers also count how many times a collaborator was called.
  */
 export async function rejection(run: () => unknown): Promise<GraphQLError> {
-	try {
-		await run()
-	} catch (error) {
-		return error as GraphQLError
-	}
-	throw new Error('expected the guard to reject, and it returned')
+  try {
+    await run()
+  } catch (error) {
+    return error as GraphQLError
+  }
+  throw new Error('expected the guard to reject, and it returned')
 }
 
 /*
@@ -29,7 +29,7 @@ export async function rejection(run: () => unknown): Promise<GraphQLError> {
  * half a bare `rejects.toThrow()` would not have looked at.
  */
 export function expectStatus(error: GraphQLError, status: number, message: string) {
-	expect(error.name).toBe('GraphQLError')
-	expect(error.message).toBe(message)
-	expect(error.extensions.http).toEqual({ status })
+  expect(error.name).toBe('GraphQLError')
+  expect(error.message).toBe(message)
+  expect(error.extensions.http).toEqual({ status })
 }

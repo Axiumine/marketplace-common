@@ -19,32 +19,32 @@ import { isPlainObject } from '@encryption/isPlainObject.mjs'
  * to nothing, at which point `$exists` stops meaning what it says.
  */
 export async function encryptAtNode(value: unknown, node: IEncryptedFieldNode, keyAltName: string): Promise<unknown> {
-	if (value === null || value === undefined) {
-		return value
-	}
+  if (value === null || value === undefined) {
+    return value
+  }
 
-	if (node.algorithm !== undefined) {
-		// Already ciphertext: a value read out of the database and written straight back. Encrypting
-		// it again would produce a `binData` that decrypts to a `binData`.
-		return isCiphertext(value) ? value : await encryptValue(value, node.algorithm, keyAltName)
-	}
+  if (node.algorithm !== undefined) {
+    // Already ciphertext: a value read out of the database and written straight back. Encrypting
+    // it again would produce a `binData` that decrypts to a `binData`.
+    return isCiphertext(value) ? value : await encryptValue(value, node.algorithm, keyAltName)
+  }
 
-	if (Array.isArray(value)) {
-		if (node.element === undefined) {
-			return value
-		}
+  if (Array.isArray(value)) {
+    if (node.element === undefined) {
+      return value
+    }
 
-		const element = node.element
-		return await Promise.all(value.map(async (entry) => await encryptAtNode(entry, element, keyAltName)))
-	}
+    const element = node.element
+    return await Promise.all(value.map(async (entry) => await encryptAtNode(entry, element, keyAltName)))
+  }
 
-	if (isPlainObject(value) && node.children !== undefined) {
-		for (const [key, child] of node.children) {
-			if (Object.hasOwn(value, key)) {
-				value[key] = await encryptAtNode(value[key], child, keyAltName)
-			}
-		}
-	}
+  if (isPlainObject(value) && node.children !== undefined) {
+    for (const [key, child] of node.children) {
+      if (Object.hasOwn(value, key)) {
+        value[key] = await encryptAtNode(value[key], child, keyAltName)
+      }
+    }
+  }
 
-	return value
+  return value
 }

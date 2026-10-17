@@ -16,7 +16,7 @@
  * longest session this platform issues can no longer be verifying anything.
  */
 export interface IKeygripKeyMaterial {
-	id: string
-	material: string
-	createdAt: string
+  id: string
+  material: string
+  createdAt: string
 }

@@ -13,8 +13,8 @@ import { User } from '../src/models/MongoDB/User.mts'
 import { entryOf, plaintextOf, POISON, resetVault, vault } from './encryptionHarness.mts'
 
 vi.mock('@encryption/fieldEncryption.mjs', async () => {
-	const harness = await import('./encryptionHarness.mts')
-	return { encryptValue: harness.fakeEncryptValue, decryptValue: harness.fakeDecryptValue }
+  const harness = await import('./encryptionHarness.mts')
+  return { encryptValue: harness.fakeEncryptValue, decryptValue: harness.fakeDecryptValue }
 })
 
 const KEY = 'testKey'
@@ -26,14 +26,14 @@ const KEY = 'testKey'
  * is being asserted than a hydrated model would be.
  */
 interface IKareem {
-	_pres: Map<string, unknown[]>
-	_posts: Map<string, unknown[]>
-	execPre(name: string, context: unknown, args?: unknown[]): Promise<unknown>
-	execPost(name: string, context: unknown, args: unknown[]): Promise<unknown>
+  _pres: Map<string, unknown[]>
+  _posts: Map<string, unknown[]>
+  execPre(name: string, context: unknown, args?: unknown[]): Promise<unknown>
+  execPost(name: string, context: unknown, args: unknown[]): Promise<unknown>
 }
 
 function hooksOf(schema: Schema): IKareem {
-	return (schema as unknown as { s: { hooks: IKareem } }).s.hooks
+  return (schema as unknown as { s: { hooks: IKareem } }).s.hooks
 }
 
 /**
@@ -42,16 +42,16 @@ function hooksOf(schema: Schema): IKareem {
  * alongside ours is the price of driving Kareem directly, and an empty bag makes them no-ops.
  */
 function queryContext(filter: unknown, update: unknown = null): unknown {
-	return { getFilter: () => filter, getUpdate: () => update, $__: {} }
+  return { getFilter: () => filter, getUpdate: () => update, $__: {} }
 }
 
 function valueAt(data: unknown, path: string): unknown {
-	return path
-		.split('.')
-		.reduce<unknown>(
-			(node, key) => (node === null || node === undefined ? undefined : (node as Record<string, unknown>)[key]),
-			data
-		)
+  return path
+    .split('.')
+    .reduce<unknown>(
+      (node, key) => (node === null || node === undefined ? undefined : (node as Record<string, unknown>)[key]),
+      data
+    )
 }
 
 /**
@@ -59,27 +59,27 @@ function valueAt(data: unknown, path: string): unknown {
  * a spy because *which* paths it is asked for is itself part of the contract — see the array test.
  */
 interface IDocumentContext {
-	get: Mock<(path: string) => unknown>
-	set: (path: string, value: unknown) => void
+  get: Mock<(path: string) => unknown>
+  set: (path: string, value: unknown) => void
 }
 
 function documentContext(data: Record<string, unknown>): IDocumentContext {
-	return {
-		get: vi.fn((path: string) => valueAt(data, path)),
-		set: (path: string, value: unknown) => {
-			const keys = path.split('.')
-			const last = keys.pop() as string
-			const parent = keys.length === 0 ? data : (valueAt(data, keys.join('.')) as Record<string, unknown>)
-			parent[last] = value
-		}
-	}
+  return {
+    get: vi.fn((path: string) => valueAt(data, path)),
+    set: (path: string, value: unknown) => {
+      const keys = path.split('.')
+      const last = keys.pop() as string
+      const parent = keys.length === 0 ? data : (valueAt(data, keys.join('.')) as Record<string, unknown>)
+      parent[last] = value
+    }
+  }
 }
 
 const FIELDS: IEncryptedFieldSpec[] = [
-	{ path: 'login.email', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
-	{ path: 'notes', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'addresses.[].street', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
-	{ path: 'position', algorithm: ALGORITHM_RANDOM, plaintext: 'object' }
+  { path: 'login.email', algorithm: ALGORITHM_DETERMINISTIC, plaintext: 'string' },
+  { path: 'notes', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'addresses.[].street', algorithm: ALGORITHM_RANDOM, plaintext: 'string' },
+  { path: 'position', algorithm: ALGORITHM_RANDOM, plaintext: 'object' }
 ]
 
 const schema = new Schema({}, { strict: false })
@@ -88,7 +88,7 @@ schema.plugin(fieldEncryptionPlugin, { fields: FIELDS, keyAltName: KEY })
 const hooks = hooksOf(schema)
 
 beforeEach(() => {
-	resetVault()
+  resetVault()
 })
 
 /*
@@ -100,42 +100,42 @@ beforeEach(() => {
  * `estimatedDocumentCount` is absent because it takes no filter at all.
  */
 describe.each([
-	'find',
-	'findOne',
-	'findOneAndDelete',
-	'findOneAndReplace',
-	'findOneAndUpdate',
-	'replaceOne',
-	'updateOne',
-	'updateMany',
-	'deleteOne',
-	'deleteMany',
-	'countDocuments',
-	'distinct'
+  'find',
+  'findOne',
+  'findOneAndDelete',
+  'findOneAndReplace',
+  'findOneAndUpdate',
+  'replaceOne',
+  'updateOne',
+  'updateMany',
+  'deleteOne',
+  'deleteMany',
+  'countDocuments',
+  'distinct'
 ])('the filter of %s', (name) => {
-	it('is rewritten to ciphertext before it leaves the process', async () => {
-		const filter: Record<string, unknown> = { 'login.email': 'a@b.test', deleted: { $exists: false } }
+  it('is rewritten to ciphertext before it leaves the process', async () => {
+    const filter: Record<string, unknown> = { 'login.email': 'a@b.test', deleted: { $exists: false } }
 
-		await hooks.execPre(name, queryContext(filter))
+    await hooks.execPre(name, queryContext(filter))
 
-		expect(plaintextOf(filter['login.email'])).toBe('a@b.test')
-		expect(entryOf(filter['login.email'])).toEqual({ value: 'a@b.test', algorithm: ALGORITHM_DETERMINISTIC, keyAltName: KEY })
+    expect(plaintextOf(filter['login.email'])).toBe('a@b.test')
+    expect(entryOf(filter['login.email'])).toEqual({ value: 'a@b.test', algorithm: ALGORITHM_DETERMINISTIC, keyAltName: KEY })
 
-		// A field nobody declared is left exactly as it was, which is almost every filter here.
-		expect(filter.deleted).toEqual({ $exists: false })
-	})
+    // A field nobody declared is left exactly as it was, which is almost every filter here.
+    expect(filter.deleted).toEqual({ $exists: false })
+  })
 })
 
 describe.each(['findOneAndUpdate', 'findOneAndReplace', 'replaceOne', 'updateOne', 'updateMany'])('the update of %s', (name) => {
-	it('is rewritten to ciphertext before it leaves the process', async () => {
-		const update: Record<string, unknown> = { $set: { notes: 'a note', 'company.slug': 'a-shop' } }
+  it('is rewritten to ciphertext before it leaves the process', async () => {
+    const update: Record<string, unknown> = { $set: { notes: 'a note', 'company.slug': 'a-shop' } }
 
-		await hooks.execPre(name, queryContext({}, update))
+    await hooks.execPre(name, queryContext({}, update))
 
-		const set = update.$set as Record<string, unknown>
-		expect(entryOf(set.notes)).toEqual({ value: 'a note', algorithm: ALGORITHM_RANDOM, keyAltName: KEY })
-		expect(set['company.slug']).toBe('a-shop')
-	})
+    const set = update.$set as Record<string, unknown>
+    expect(entryOf(set.notes)).toEqual({ value: 'a note', algorithm: ALGORITHM_RANDOM, keyAltName: KEY })
+    expect(set['company.slug']).toBe('a-shop')
+  })
 })
 
 /*
@@ -143,195 +143,195 @@ describe.each(['findOneAndUpdate', 'findOneAndReplace', 'replaceOne', 'updateOne
  * is wasted work on the hottest path there is.
  */
 describe.each(['find', 'findOne', 'findOneAndDelete', 'findOneAndReplace', 'findOneAndUpdate'])('the result of %s', (name) => {
-	it('comes back decrypted', async () => {
-		vault.push({ value: 'a@b.test', algorithm: ALGORITHM_DETERMINISTIC, keyAltName: KEY })
-		const result = { login: { email: new Binary(Buffer.from('0'), Binary.SUBTYPE_ENCRYPTED) } }
+  it('comes back decrypted', async () => {
+    vault.push({ value: 'a@b.test', algorithm: ALGORITHM_DETERMINISTIC, keyAltName: KEY })
+    const result = { login: { email: new Binary(Buffer.from('0'), Binary.SUBTYPE_ENCRYPTED) } }
 
-		await hooks.execPost(name, null, [result])
+    await hooks.execPost(name, null, [result])
 
-		expect(result.login.email).toBe('a@b.test')
-	})
+    expect(result.login.email).toBe('a@b.test')
+  })
 })
 
 describe('the count and update kinds', () => {
-	it('have no result hook at all', () => {
-		for (const name of ['countDocuments', 'updateOne', 'updateMany', 'deleteOne', 'deleteMany']) {
-			expect(hooks._posts.get(name)).toBeUndefined()
-		}
-	})
+  it('have no result hook at all', () => {
+    for (const name of ['countDocuments', 'updateOne', 'updateMany', 'deleteOne', 'deleteMany']) {
+      expect(hooks._posts.get(name)).toBeUndefined()
+    }
+  })
 })
 
 // `distinct` answers a bare array of the field's own values rather than a document, so it is checked
 // on its own rather than folded into "the result of %s" above, which asserts a document shape.
 describe('the result of distinct', () => {
-	it('comes back decrypted, as a bare array rather than a document', async () => {
-		vault.push({ value: 'a@b.test', algorithm: ALGORITHM_DETERMINISTIC, keyAltName: KEY })
-		const result = [new Binary(Buffer.from('0'), Binary.SUBTYPE_ENCRYPTED), 'already plain']
+  it('comes back decrypted, as a bare array rather than a document', async () => {
+    vault.push({ value: 'a@b.test', algorithm: ALGORITHM_DETERMINISTIC, keyAltName: KEY })
+    const result = [new Binary(Buffer.from('0'), Binary.SUBTYPE_ENCRYPTED), 'already plain']
 
-		await hooks.execPost('distinct', null, [result])
+    await hooks.execPost('distinct', null, [result])
 
-		expect(result).toEqual(['a@b.test', 'already plain'])
-	})
+    expect(result).toEqual(['a@b.test', 'already plain'])
+  })
 })
 
 describe('save', () => {
-	// `Model.create()` routes through `save()`, so this one hook covers both.
-	it('encrypts every declared field, each under its own algorithm', async () => {
-		const data: Record<string, unknown> = {
-			login: { email: 'a@b.test', password: '$2b$14$hash' },
-			notes: 'a note',
-			position: { type: 'Point', coordinates: [9.19, 45.46] }
-		}
+  // `Model.create()` routes through `save()`, so this one hook covers both.
+  it('encrypts every declared field, each under its own algorithm', async () => {
+    const data: Record<string, unknown> = {
+      login: { email: 'a@b.test', password: '$2b$14$hash' },
+      notes: 'a note',
+      position: { type: 'Point', coordinates: [9.19, 45.46] }
+    }
 
-		await hooks.execPre('save', documentContext(data))
+    await hooks.execPre('save', documentContext(data))
 
-		expect(entryOf(valueAt(data, 'login.email'))).toEqual({
-			value: 'a@b.test',
-			algorithm: ALGORITHM_DETERMINISTIC,
-			keyAltName: KEY
-		})
-		expect(entryOf(data.notes)).toEqual({ value: 'a note', algorithm: ALGORITHM_RANDOM, keyAltName: KEY })
-		expect(entryOf(data.position)).toEqual({
-			value: { type: 'Point', coordinates: [9.19, 45.46] },
-			algorithm: ALGORITHM_RANDOM,
-			keyAltName: KEY
-		})
+    expect(entryOf(valueAt(data, 'login.email'))).toEqual({
+      value: 'a@b.test',
+      algorithm: ALGORITHM_DETERMINISTIC,
+      keyAltName: KEY
+    })
+    expect(entryOf(data.notes)).toEqual({ value: 'a note', algorithm: ALGORITHM_RANDOM, keyAltName: KEY })
+    expect(entryOf(data.position)).toEqual({
+      value: { type: 'Point', coordinates: [9.19, 45.46] },
+      algorithm: ALGORITHM_RANDOM,
+      keyAltName: KEY
+    })
 
-		// A bcrypt hash is not personal data, and every login compares against it.
-		expect(valueAt(data, 'login.password')).toBe('$2b$14$hash')
-	})
+    // A bcrypt hash is not personal data, and every login compares against it.
+    expect(valueAt(data, 'login.password')).toBe('$2b$14$hash')
+  })
 
-	// `addresses.[].street` is not a path mongoose can `get`; `addresses.0.street` is, and which of
-	// those exist depends on the document in hand.
-	it('expands an array path into the elements the document actually has', async () => {
-		const data: Record<string, unknown> = { addresses: [{ street: 'One Road' }, { street: 'Two Road' }] }
-		const context = documentContext(data)
+  // `addresses.[].street` is not a path mongoose can `get`; `addresses.0.street` is, and which of
+  // those exist depends on the document in hand.
+  it('expands an array path into the elements the document actually has', async () => {
+    const data: Record<string, unknown> = { addresses: [{ street: 'One Road' }, { street: 'Two Road' }] }
+    const context = documentContext(data)
 
-		await hooks.execPre('save', context)
+    await hooks.execPre('save', context)
 
-		const addresses = data.addresses as Array<{ street: unknown }>
-		expect(plaintextOf(addresses[0]?.street)).toBe('One Road')
-		expect(plaintextOf(addresses[1]?.street)).toBe('Two Road')
-		expect(vault).toHaveLength(2)
+    const addresses = data.addresses as Array<{ street: unknown }>
+    expect(plaintextOf(addresses[0]?.street)).toBe('One Road')
+    expect(plaintextOf(addresses[1]?.street)).toBe('Two Road')
+    expect(vault).toHaveLength(2)
 
-		// ⚠️ Asked for two elements and no third. One past the end reads `undefined`, which the loop
-		// skips as an absent value — so an off-by-one costs nothing here and everything on a document
-		// whose array is the last thing a resolver iterates.
-		expect(context.get).not.toHaveBeenCalledWith('addresses.2.street')
-	})
+    // ⚠️ Asked for two elements and no third. One past the end reads `undefined`, which the loop
+    // skips as an absent value — so an off-by-one costs nothing here and everything on a document
+    // whose array is the last thing a resolver iterates.
+    expect(context.get).not.toHaveBeenCalledWith('addresses.2.street')
+  })
 
-	it('writes a customer with no addresses through untouched', async () => {
-		const data: Record<string, unknown> = { addresses: [] }
+  it('writes a customer with no addresses through untouched', async () => {
+    const data: Record<string, unknown> = { addresses: [] }
 
-		await hooks.execPre('save', documentContext(data))
+    await hooks.execPre('save', documentContext(data))
 
-		expect(data.addresses).toEqual([])
-		expect(vault).toHaveLength(0)
-	})
+    expect(data.addresses).toEqual([])
+    expect(vault).toHaveLength(0)
+  })
 
-	it('leaves an array path alone when the value is not an array', async () => {
-		const data: Record<string, unknown> = { addresses: 'not an array' }
+  it('leaves an array path alone when the value is not an array', async () => {
+    const data: Record<string, unknown> = { addresses: 'not an array' }
 
-		await hooks.execPre('save', documentContext(data))
+    await hooks.execPre('save', documentContext(data))
 
-		expect(data.addresses).toBe('not an array')
-		expect(vault).toHaveLength(0)
-	})
+    expect(data.addresses).toBe('not an array')
+    expect(vault).toHaveLength(0)
+  })
 
-	/*
-	 * ⚠️ `null` and `undefined` pass through unencrypted, deliberately. Every one of these fields is
-	 * optional somewhere — `notes` is absent on most shop owners — and encrypting an absent value
-	 * would turn "this person gave no notes" into a `binData` that decrypts to nothing, at which
-	 * point `$exists` stops meaning what it says.
-	 */
-	it('leaves an absent field absent', async () => {
-		const data: Record<string, unknown> = { login: { email: 'a@b.test' }, notes: null, position: undefined }
+  /*
+   * ⚠️ `null` and `undefined` pass through unencrypted, deliberately. Every one of these fields is
+   * optional somewhere — `notes` is absent on most shop owners — and encrypting an absent value
+   * would turn "this person gave no notes" into a `binData` that decrypts to nothing, at which
+   * point `$exists` stops meaning what it says.
+   */
+  it('leaves an absent field absent', async () => {
+    const data: Record<string, unknown> = { login: { email: 'a@b.test' }, notes: null, position: undefined }
 
-		await hooks.execPre('save', documentContext(data))
+    await hooks.execPre('save', documentContext(data))
 
-		expect(data.notes).toBeNull()
-		expect(data.position).toBeUndefined()
-		expect(vault).toHaveLength(1)
-	})
+    expect(data.notes).toBeNull()
+    expect(data.position).toBeUndefined()
+    expect(vault).toHaveLength(1)
+  })
 
-	/*
-	 * ⚠️ The regression test for the mid-loop failure this hook now guards against. `login.email` is
-	 * declared before `notes` in `FIELDS`, so it is already ciphertext on the document by the time
-	 * `notes`'s encryption throws — without the fix, `login.email` would stay ciphertext even though
-	 * the `save()` this hook belongs to never happens, leaving the in-memory document a silent mix of
-	 * the two.
-	 */
-	it('reverts already-encrypted fields to their original plaintext when a later field fails to encrypt', async () => {
-		const data: Record<string, unknown> = { login: { email: 'a@b.test' }, notes: POISON }
+  /*
+   * ⚠️ The regression test for the mid-loop failure this hook now guards against. `login.email` is
+   * declared before `notes` in `FIELDS`, so it is already ciphertext on the document by the time
+   * `notes`'s encryption throws — without the fix, `login.email` would stay ciphertext even though
+   * the `save()` this hook belongs to never happens, leaving the in-memory document a silent mix of
+   * the two.
+   */
+  it('reverts already-encrypted fields to their original plaintext when a later field fails to encrypt', async () => {
+    const data: Record<string, unknown> = { login: { email: 'a@b.test' }, notes: POISON }
 
-		await expect(hooks.execPre('save', documentContext(data))).rejects.toThrow('KMS unreachable')
+    await expect(hooks.execPre('save', documentContext(data))).rejects.toThrow('KMS unreachable')
 
-		expect(valueAt(data, 'login.email')).toBe('a@b.test')
-		expect(data.notes).toBe(POISON)
-		// The KMS call for `login.email` already happened and cannot be undone — only the in-memory
-		// document is put back. One vault entry, from that one successful call.
-		expect(vault).toHaveLength(1)
-	})
+    expect(valueAt(data, 'login.email')).toBe('a@b.test')
+    expect(data.notes).toBe(POISON)
+    // The KMS call for `login.email` already happened and cannot be undone — only the in-memory
+    // document is put back. One vault entry, from that one successful call.
+    expect(vault).toHaveLength(1)
+  })
 
-	// A document read out of the database and saved straight back. Encrypting it again would produce
-	// a `binData` that decrypts to a `binData`.
-	it('does not encrypt a value that is already ciphertext', async () => {
-		const ciphertext = new Binary(Buffer.from('7'), Binary.SUBTYPE_ENCRYPTED)
-		const data: Record<string, unknown> = { notes: ciphertext }
+  // A document read out of the database and saved straight back. Encrypting it again would produce
+  // a `binData` that decrypts to a `binData`.
+  it('does not encrypt a value that is already ciphertext', async () => {
+    const ciphertext = new Binary(Buffer.from('7'), Binary.SUBTYPE_ENCRYPTED)
+    const data: Record<string, unknown> = { notes: ciphertext }
 
-		await hooks.execPre('save', documentContext(data))
+    await hooks.execPre('save', documentContext(data))
 
-		expect(data.notes).toBe(ciphertext)
-		expect(vault).toHaveLength(0)
-	})
+    expect(data.notes).toBe(ciphertext)
+    expect(vault).toHaveLength(0)
+  })
 
-	/*
-	 * `save()` leaves the document full of the ciphertext the pre-hook set, so a resolver that saves
-	 * an account and then reads `account.login.email` off the same object — which `registerNewUser`
-	 * does — would answer a `Binary` without this.
-	 */
-	it('puts the plaintext back into the document the caller is still holding', async () => {
-		const data: Record<string, unknown> = { login: { email: 'a@b.test' }, notes: 'a note' }
-		const context = documentContext(data)
+  /*
+   * `save()` leaves the document full of the ciphertext the pre-hook set, so a resolver that saves
+   * an account and then reads `account.login.email` off the same object — which `registerNewUser`
+   * does — would answer a `Binary` without this.
+   */
+  it('puts the plaintext back into the document the caller is still holding', async () => {
+    const data: Record<string, unknown> = { login: { email: 'a@b.test' }, notes: 'a note' }
+    const context = documentContext(data)
 
-		await hooks.execPre('save', context)
-		await hooks.execPost('save', context, [data])
+    await hooks.execPre('save', context)
+    await hooks.execPost('save', context, [data])
 
-		expect(valueAt(data, 'login.email')).toBe('a@b.test')
-		expect(data.notes).toBe('a note')
-	})
+    expect(valueAt(data, 'login.email')).toBe('a@b.test')
+    expect(data.notes).toBe('a note')
+  })
 })
 
 describe('insertMany', () => {
-	/*
-	 * Nothing on the platform calls it today. The hook exists because the day something does, the
-	 * alternative is a batch of plaintext personal data written into a collection whose every other
-	 * document is encrypted — silently, and with no way to tell afterwards which documents went in
-	 * which way.
-	 */
-	it('encrypts every document in the batch', async () => {
-		const documents: unknown[] = [{ login: { email: 'one@b.test' } }, { login: { email: 'two@b.test' } }]
+  /*
+   * Nothing on the platform calls it today. The hook exists because the day something does, the
+   * alternative is a batch of plaintext personal data written into a collection whose every other
+   * document is encrypted — silently, and with no way to tell afterwards which documents went in
+   * which way.
+   */
+  it('encrypts every document in the batch', async () => {
+    const documents: unknown[] = [{ login: { email: 'one@b.test' } }, { login: { email: 'two@b.test' } }]
 
-		await hooks.execPre('insertMany', null, [documents])
+    await hooks.execPre('insertMany', null, [documents])
 
-		expect(plaintextOf(valueAt(documents[0], 'login.email'))).toBe('one@b.test')
-		expect(plaintextOf(valueAt(documents[1], 'login.email'))).toBe('two@b.test')
-	})
+    expect(plaintextOf(valueAt(documents[0], 'login.email'))).toBe('one@b.test')
+    expect(plaintextOf(valueAt(documents[1], 'login.email'))).toBe('two@b.test')
+  })
 
-	/*
-	 * The hook takes the documents as its *first* argument and no `next`: mongoose's hook runner
-	 * stopped passing a callback, and a first parameter named `next` would be handed the array.
-	 *
-	 * ⚠️ A string, rather than a lone document object. The guard has to be the thing that returns, and
-	 * a batch loop let loose on an object simply finds no numeric keys and does nothing — so the
-	 * assertion would hold with the guard deleted. A string has a `length` and indices the loop will
-	 * walk and then try to assign to, which under ESM's strict mode throws.
-	 */
-	it('does nothing when it is not handed an array', async () => {
-		await expect(hooks.execPre('insertMany', null, ['not an array'])).resolves.toBeDefined()
+  /*
+   * The hook takes the documents as its *first* argument and no `next`: mongoose's hook runner
+   * stopped passing a callback, and a first parameter named `next` would be handed the array.
+   *
+   * ⚠️ A string, rather than a lone document object. The guard has to be the thing that returns, and
+   * a batch loop let loose on an object simply finds no numeric keys and does nothing — so the
+   * assertion would hold with the guard deleted. A string has a `length` and indices the loop will
+   * walk and then try to assign to, which under ESM's strict mode throws.
+   */
+  it('does nothing when it is not handed an array', async () => {
+    await expect(hooks.execPre('insertMany', null, ['not an array'])).resolves.toBeDefined()
 
-		expect(vault).toHaveLength(0)
-	})
+    expect(vault).toHaveLength(0)
+  })
 })
 
 /*
@@ -341,95 +341,95 @@ describe('insertMany', () => {
  * own rather than inheriting either array's.
  */
 describe('bulkWrite', () => {
-	it('encrypts each operation kind by the document shape it carries', async () => {
-		// The filter of every kind but `insertOne` uses the dotted-key shape a real MongoDB filter
-		// does — `{ 'login.email': … }`, one literal key, not `{ login: { email: … } }` — so it is read
-		// back the same way, by that one key, rather than through `valueAt`'s nested-path traversal.
-		const insertOp = { insertOne: { document: { login: { email: 'one@b.test' } } } }
-		const updateOp = { updateOne: { filter: { 'login.email': 'two@b.test' }, update: { $set: { notes: 'a note' } } } }
-		const replaceOp = {
-			replaceOne: { filter: { 'login.email': 'three@b.test' }, replacement: { login: { email: 'four@b.test' } } }
-		}
-		const deleteOneOp = { deleteOne: { filter: { 'login.email': 'five@b.test' } } }
-		const deleteManyOp = { deleteMany: { filter: { 'login.email': 'six@b.test' } } }
-		const updateManyOp = {
-			updateMany: { filter: { 'login.email': 'seven@b.test' }, update: { $set: { notes: 'another note' } } }
-		}
-		const ops = [insertOp, updateOp, replaceOp, deleteOneOp, deleteManyOp, updateManyOp]
+  it('encrypts each operation kind by the document shape it carries', async () => {
+    // The filter of every kind but `insertOne` uses the dotted-key shape a real MongoDB filter
+    // does — `{ 'login.email': … }`, one literal key, not `{ login: { email: … } }` — so it is read
+    // back the same way, by that one key, rather than through `valueAt`'s nested-path traversal.
+    const insertOp = { insertOne: { document: { login: { email: 'one@b.test' } } } }
+    const updateOp = { updateOne: { filter: { 'login.email': 'two@b.test' }, update: { $set: { notes: 'a note' } } } }
+    const replaceOp = {
+      replaceOne: { filter: { 'login.email': 'three@b.test' }, replacement: { login: { email: 'four@b.test' } } }
+    }
+    const deleteOneOp = { deleteOne: { filter: { 'login.email': 'five@b.test' } } }
+    const deleteManyOp = { deleteMany: { filter: { 'login.email': 'six@b.test' } } }
+    const updateManyOp = {
+      updateMany: { filter: { 'login.email': 'seven@b.test' }, update: { $set: { notes: 'another note' } } }
+    }
+    const ops = [insertOp, updateOp, replaceOp, deleteOneOp, deleteManyOp, updateManyOp]
 
-		await hooks.execPre('bulkWrite', null, [ops])
+    await hooks.execPre('bulkWrite', null, [ops])
 
-		expect(plaintextOf(valueAt(insertOp, 'insertOne.document.login.email'))).toBe('one@b.test')
-		expect(plaintextOf(updateOp.updateOne.filter['login.email'])).toBe('two@b.test')
-		expect(plaintextOf(updateOp.updateOne.update.$set.notes)).toBe('a note')
-		expect(plaintextOf(replaceOp.replaceOne.filter['login.email'])).toBe('three@b.test')
-		expect(plaintextOf(valueAt(replaceOp, 'replaceOne.replacement.login.email'))).toBe('four@b.test')
-		expect(plaintextOf(deleteOneOp.deleteOne.filter['login.email'])).toBe('five@b.test')
-		expect(plaintextOf(deleteManyOp.deleteMany.filter['login.email'])).toBe('six@b.test')
-		expect(plaintextOf(updateManyOp.updateMany.filter['login.email'])).toBe('seven@b.test')
-		expect(plaintextOf(updateManyOp.updateMany.update.$set.notes)).toBe('another note')
-	})
+    expect(plaintextOf(valueAt(insertOp, 'insertOne.document.login.email'))).toBe('one@b.test')
+    expect(plaintextOf(updateOp.updateOne.filter['login.email'])).toBe('two@b.test')
+    expect(plaintextOf(updateOp.updateOne.update.$set.notes)).toBe('a note')
+    expect(plaintextOf(replaceOp.replaceOne.filter['login.email'])).toBe('three@b.test')
+    expect(plaintextOf(valueAt(replaceOp, 'replaceOne.replacement.login.email'))).toBe('four@b.test')
+    expect(plaintextOf(deleteOneOp.deleteOne.filter['login.email'])).toBe('five@b.test')
+    expect(plaintextOf(deleteManyOp.deleteMany.filter['login.email'])).toBe('six@b.test')
+    expect(plaintextOf(updateManyOp.updateMany.filter['login.email'])).toBe('seven@b.test')
+    expect(plaintextOf(updateManyOp.updateMany.update.$set.notes)).toBe('another note')
+  })
 
-	it('does nothing when it is not handed an array', async () => {
-		await expect(hooks.execPre('bulkWrite', null, ['not an array'])).resolves.toBeDefined()
+  it('does nothing when it is not handed an array', async () => {
+    await expect(hooks.execPre('bulkWrite', null, ['not an array'])).resolves.toBeDefined()
 
-		expect(vault).toHaveLength(0)
-	})
+    expect(vault).toHaveLength(0)
+  })
 
-	/*
-	 * ⚠️ **A string survives an unguarded `for...of` too, which is exactly why the case above cannot
-	 * kill a mutant in this guard.** A plain object has no `Symbol.iterator` at all: `for (const op of
-	 * ops)` throws `ops is not iterable` the moment it is reached, so only a non-iterable `ops` tells a
-	 * skipped guard apart from one that actually ran.
-	 */
-	it('does nothing when it is not handed an array, and does not merely tolerate one that happens to be', async () => {
-		await expect(hooks.execPre('bulkWrite', null, [{}])).resolves.toBeDefined()
+  /*
+   * ⚠️ **A string survives an unguarded `for...of` too, which is exactly why the case above cannot
+   * kill a mutant in this guard.** A plain object has no `Symbol.iterator` at all: `for (const op of
+   * ops)` throws `ops is not iterable` the moment it is reached, so only a non-iterable `ops` tells a
+   * skipped guard apart from one that actually ran.
+   */
+  it('does nothing when it is not handed an array, and does not merely tolerate one that happens to be', async () => {
+    await expect(hooks.execPre('bulkWrite', null, [{}])).resolves.toBeDefined()
 
-		expect(vault).toHaveLength(0)
-	})
+    expect(vault).toHaveLength(0)
+  })
 
-	it('ignores an operation that is not an object, and a spec that is not an object', async () => {
-		const ops: unknown[] = ['not an operation', { deleteMany: 'nonsense' }]
+  it('ignores an operation that is not an object, and a spec that is not an object', async () => {
+    const ops: unknown[] = ['not an operation', { deleteMany: 'nonsense' }]
 
-		await hooks.execPre('bulkWrite', null, [ops])
+    await hooks.execPre('bulkWrite', null, [ops])
 
-		expect(ops).toEqual(['not an operation', { deleteMany: 'nonsense' }])
-		expect(vault).toHaveLength(0)
-	})
+    expect(ops).toEqual(['not an operation', { deleteMany: 'nonsense' }])
+    expect(vault).toHaveLength(0)
+  })
 
-	/*
-	 * ⚠️ **`null` is what tells this guard apart from the inner one two lines below it.** A string
-	 * operation skips *this* guard too (`isPlainObject('…')` is false) but then walks straight into
-	 * `Object.values('…')`, one character at a time, and the inner per-`spec` guard (`isPlainObject`
-	 * again) quietly skips every one of them — so a string never actually exercises this outer guard on
-	 * its own. `Object.values(null)` throws instead, which only this guard stands in front of.
-	 */
-	it('ignores a null operation, before it ever reaches Object.values', async () => {
-		const ops: unknown[] = [null]
+  /*
+   * ⚠️ **`null` is what tells this guard apart from the inner one two lines below it.** A string
+   * operation skips *this* guard too (`isPlainObject('…')` is false) but then walks straight into
+   * `Object.values('…')`, one character at a time, and the inner per-`spec` guard (`isPlainObject`
+   * again) quietly skips every one of them — so a string never actually exercises this outer guard on
+   * its own. `Object.values(null)` throws instead, which only this guard stands in front of.
+   */
+  it('ignores a null operation, before it ever reaches Object.values', async () => {
+    const ops: unknown[] = [null]
 
-		await expect(hooks.execPre('bulkWrite', null, [ops])).resolves.toBeDefined()
+    await expect(hooks.execPre('bulkWrite', null, [ops])).resolves.toBeDefined()
 
-		expect(vault).toHaveLength(0)
-	})
+    expect(vault).toHaveLength(0)
+  })
 
-	/*
-	 * ⚠️ **The two keys `encryptAtNode` writes back, not merely reads.** `document` and `replacement`
-	 * are assigned (`spec.document = await encryptAtNode(...)`), unlike `filter`/`update` two guards
-	 * below, which only ever mutate their argument in place. A spec that carries neither key would still
-	 * gain one, set to `undefined`, if either guard ran unconditionally — a change `toEqual` cannot see
-	 * (it treats an absent key and one set to `undefined` as equal), which is why this checks the key's
-	 * presence directly instead.
-	 */
-	it('adds neither a document nor a replacement key to a spec that carries only a filter', async () => {
-		const spec: Record<string, unknown> = { filter: { 'login.email': 'delete-me@b.test' } }
-		const ops = [{ deleteOne: spec }]
+  /*
+   * ⚠️ **The two keys `encryptAtNode` writes back, not merely reads.** `document` and `replacement`
+   * are assigned (`spec.document = await encryptAtNode(...)`), unlike `filter`/`update` two guards
+   * below, which only ever mutate their argument in place. A spec that carries neither key would still
+   * gain one, set to `undefined`, if either guard ran unconditionally — a change `toEqual` cannot see
+   * (it treats an absent key and one set to `undefined` as equal), which is why this checks the key's
+   * presence directly instead.
+   */
+  it('adds neither a document nor a replacement key to a spec that carries only a filter', async () => {
+    const spec: Record<string, unknown> = { filter: { 'login.email': 'delete-me@b.test' } }
+    const ops = [{ deleteOne: spec }]
 
-		await hooks.execPre('bulkWrite', null, [ops])
+    await hooks.execPre('bulkWrite', null, [ops])
 
-		expect(plaintextOf((spec.filter as Record<string, unknown>)['login.email'])).toBe('delete-me@b.test')
-		expect(Object.hasOwn(spec, 'document')).toBe(false)
-		expect(Object.hasOwn(spec, 'replacement')).toBe(false)
-	})
+    expect(plaintextOf((spec.filter as Record<string, unknown>)['login.email'])).toBe('delete-me@b.test')
+    expect(Object.hasOwn(spec, 'document')).toBe(false)
+    expect(Object.hasOwn(spec, 'replacement')).toBe(false)
+  })
 })
 
 /*
@@ -439,52 +439,52 @@ describe('bulkWrite', () => {
  * key — which would encrypt readable data into something no other service can decrypt.
  */
 describe.each([
-	['Admin', Admin, 'admin'],
-	['ShopOwner', ShopOwner, 'shopOwner'],
-	['User', User, 'user']
+  ['Admin', Admin, 'admin'],
+  ['ShopOwner', ShopOwner, 'shopOwner'],
+  ['User', User, 'user']
 ] as const)('%s', (_name, model, keyAltName) => {
-	it('encrypts a filter on the login email under its own data key', async () => {
-		const filter: Record<string, unknown> = { 'login.email': 'a@b.test' }
+  it('encrypts a filter on the login email under its own data key', async () => {
+    const filter: Record<string, unknown> = { 'login.email': 'a@b.test' }
 
-		await hooksOf(model.schema).execPre('findOne', queryContext(filter))
+    await hooksOf(model.schema).execPre('findOne', queryContext(filter))
 
-		expect(entryOf(filter['login.email'])).toEqual({
-			value: 'a@b.test',
-			algorithm: ALGORITHM_DETERMINISTIC,
-			keyAltName: keyAltName
-		})
-	})
+    expect(entryOf(filter['login.email'])).toEqual({
+      value: 'a@b.test',
+      algorithm: ALGORITHM_DETERMINISTIC,
+      keyAltName: keyAltName
+    })
+  })
 })
 
 // Checked through an update rather than a filter: both of Company's encrypted fields are random, and
 // `encryptFilter` refuses to build a query against one — see its own suite.
 describe('Company', () => {
-	it('encrypts its two personal fields under its own data key', async () => {
-		const update = { $set: { publicName: 'A Shop', contactPerson: 'A Person', administrator: 'Another Person' } }
+  it('encrypts its two personal fields under its own data key', async () => {
+    const update = { $set: { publicName: 'A Shop', contactPerson: 'A Person', administrator: 'Another Person' } }
 
-		await hooksOf(Company.schema).execPre('updateOne', queryContext({}, update))
+    await hooksOf(Company.schema).execPre('updateOne', queryContext({}, update))
 
-		expect(entryOf(update.$set.contactPerson)).toEqual({ value: 'A Person', algorithm: ALGORITHM_RANDOM, keyAltName: 'company' })
-		expect(entryOf(update.$set.administrator)).toEqual({
-			value: 'Another Person',
-			algorithm: ALGORITHM_RANDOM,
-			keyAltName: 'company'
-		})
+    expect(entryOf(update.$set.contactPerson)).toEqual({ value: 'A Person', algorithm: ALGORITHM_RANDOM, keyAltName: 'company' })
+    expect(entryOf(update.$set.administrator)).toEqual({
+      value: 'Another Person',
+      algorithm: ALGORITHM_RANDOM,
+      keyAltName: 'company'
+    })
 
-		// A shop's trading name is what the storefront renders. Nothing public is encrypted.
-		expect(update.$set.publicName).toBe('A Shop')
-	})
+    // A shop's trading name is what the storefront renders. Nothing public is encrypted.
+    expect(update.$set.publicName).toBe('A Shop')
+  })
 })
 
 // ⚠️ The catalogue is domain-neutral and holds nothing personal (ADR-008). Encrypting an item field
 // would cost the two text indexes and the category sort for nothing.
 describe('Item', () => {
-	it('has no encryption hooks at all', async () => {
-		const filter: Record<string, unknown> = { name: 'a value' }
+  it('has no encryption hooks at all', async () => {
+    const filter: Record<string, unknown> = { name: 'a value' }
 
-		await hooksOf(Item.schema).execPre('findOne', queryContext(filter))
+    await hooksOf(Item.schema).execPre('findOne', queryContext(filter))
 
-		expect(filter.name).toBe('a value')
-		expect(vault).toHaveLength(0)
-	})
+    expect(filter.name).toBe('a value')
+    expect(vault).toHaveLength(0)
+  })
 })

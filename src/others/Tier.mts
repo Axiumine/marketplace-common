@@ -10,9 +10,9 @@
  * `admin`, `shopOwner`, `user`. A fourth is added only when a fourth collection is added.
  */
 export const TIER = {
-	admin: 'admin',
-	shopOwner: 'shopOwner',
-	user: 'user'
+  admin: 'admin',
+  shopOwner: 'shopOwner',
+  user: 'user'
 } as const
 
 export type Tier = (typeof TIER)[keyof typeof TIER]

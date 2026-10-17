@@ -45,11 +45,11 @@ import { Types } from 'mongoose'
  * is testable against a stub with no `hGetAll` on it at all.
  */
 export interface ISessionReadStore extends ISessionFamilyStore {
-	hGetAll(key: string): Promise<Record<string, string>>
-	/** The grace counter and the claim counter — see `graceHitsKey` and `claimRefreshRotation`. */
-	incr(key: string): Promise<unknown>
-	/** The claim's own remaining life, read to repair one whose `expire` never landed — see `claimRefreshRotation`. */
-	ttl(key: string): Promise<number>
+  hGetAll(key: string): Promise<Record<string, string>>
+  /** The grace counter and the claim counter — see `graceHitsKey` and `claimRefreshRotation`. */
+  incr(key: string): Promise<unknown>
+  /** The claim's own remaining life, read to repair one whose `expire` never landed — see `claimRefreshRotation`. */
+  ttl(key: string): Promise<number>
 }
 
 /**
@@ -86,12 +86,12 @@ export interface ISessionReadStore extends ISessionFamilyStore {
  * and for the same reason.
  */
 async function claimRefreshRotation(store: ISessionReadStore, refreshToken: string): Promise<boolean> {
-	const key = refreshClaimKey(refreshToken)
-	const attempts = await store.incr(key)
+  const key = refreshClaimKey(refreshToken)
+  const attempts = await store.incr(key)
 
-	if (attempts === 1 || (await store.ttl(key)) < 0) await store.expire(key, GRACE_SECONDS)
+  if (attempts === 1 || (await store.ttl(key)) < 0) await store.expire(key, GRACE_SECONDS)
 
-	return attempts === 1
+  return attempts === 1
 }
 
 /**
@@ -119,58 +119,58 @@ async function claimRefreshRotation(store: ISessionReadStore, refreshToken: stri
  * and keeps its revocation: the trail is the explanation, never the mechanism.
  */
 async function assertNotReplayed(store: ISessionReadStore, refreshToken: string): Promise<void> {
-	// Spread first: a nullish reply and a hash with no `Object.prototype` both have to be readable here,
-	// for the reason `readSessionHash` spells out.
-	const tombstone: Partial<ITombstoneData> = { ...(await store.hGetAll(tombstoneKey(refreshToken))) }
+  // Spread first: a nullish reply and a hash with no `Object.prototype` both have to be readable here,
+  // for the reason `readSessionHash` spells out.
+  const tombstone: Partial<ITombstoneData> = { ...(await store.hGetAll(tombstoneKey(refreshToken))) }
 
-	// An absent tombstone is an ordinary expired or revoked session, and this early return is what says so.
-	//
-	// ⚠️ The `false` mutant of this condition is equivalent, which is why it is annotated rather than tested.
-	// With no tombstone every field read below is `undefined`: `Number(undefined)` is `NaN`, so the grace
-	// test is false, and `familyId` is `undefined`, so nothing is revoked — the fall-through lands on the
-	// same `throwRefreshTokenExpiredOrDeleted` the caller throws when this returns, and the two paths differ
-	// only in which frame throws it. The `true` mutant *is* live — it would skip the replay branch for a
-	// tombstone that exists, and the replay case kills it — but Stryker names both variants with one
-	// mutator, so the annotation cannot spare it.
-	// Stryker disable next-line ConditionalExpression: an absent tombstone falls through to the same 498, so returning early is unobservable
-	if (Object.keys(tombstone).length === 0) return
+  // An absent tombstone is an ordinary expired or revoked session, and this early return is what says so.
+  //
+  // ⚠️ The `false` mutant of this condition is equivalent, which is why it is annotated rather than tested.
+  // With no tombstone every field read below is `undefined`: `Number(undefined)` is `NaN`, so the grace
+  // test is false, and `familyId` is `undefined`, so nothing is revoked — the fall-through lands on the
+  // same `throwRefreshTokenExpiredOrDeleted` the caller throws when this returns, and the two paths differ
+  // only in which frame throws it. The `true` mutant *is* live — it would skip the replay branch for a
+  // tombstone that exists, and the replay case kills it — but Stryker names both variants with one
+  // mutator, so the annotation cannot spare it.
+  // Stryker disable next-line ConditionalExpression: an absent tombstone falls through to the same 498, so returning early is unobservable
+  if (Object.keys(tombstone).length === 0) return
 
-	if (Date.now() - Number(tombstone.consumedAt) <= GRACE_SECONDS * 1000) {
-		await store.incr(graceHitsKey())
+  if (Date.now() - Number(tombstone.consumedAt) <= GRACE_SECONDS * 1000) {
+    await store.incr(graceHitsKey())
 
-		throw throwRefreshRaceRetry()
-	}
+    throw throwRefreshRaceRetry()
+  }
 
-	if (tombstone.familyId !== undefined) {
-		await revokeSessionFamily({
-			store,
-			familyId: tombstone.familyId,
-			account:
-				isTier(tombstone.tier) && tombstone._id !== undefined ? { tier: tombstone.tier, accountId: tombstone._id } : undefined,
-			action: 'refreshTokenReplayed'
-		})
-	}
+  if (tombstone.familyId !== undefined) {
+    await revokeSessionFamily({
+      store,
+      familyId: tombstone.familyId,
+      account:
+        isTier(tombstone.tier) && tombstone._id !== undefined ? { tier: tombstone.tier, accountId: tombstone._id } : undefined,
+      action: 'refreshTokenReplayed'
+    })
+  }
 
-	throw throwRefreshTokenExpiredOrDeleted()
+  throw throwRefreshTokenExpiredOrDeleted()
 }
 
 export interface IResolveAuthorizationSessionInput<TAccountData extends object> {
-	store: ISessionReadStore
-	/**
-	 * The refresh token as `verifySignedRefreshToken` returned it — which carries the `refresh:` prefix
-	 * already, and must, because that prefix is hashed *into* every key built from it.
-	 */
-	refreshToken: string
-	/** The tier *this* service serves. A session minted for any other one is refused. */
-	tier: Tier
-	/** Re-reads the account and returns whatever this tier's access-token hash carries besides `_id` and `tier`. */
-	readSessionData: (_id: Types.ObjectId) => Promise<TAccountData>
+  store: ISessionReadStore
+  /**
+   * The refresh token as `verifySignedRefreshToken` returned it — which carries the `refresh:` prefix
+   * already, and must, because that prefix is hashed *into* every key built from it.
+   */
+  refreshToken: string
+  /** The tier *this* service serves. A session minted for any other one is refused. */
+  tier: Tier
+  /** Re-reads the account and returns whatever this tier's access-token hash carries besides `_id` and `tier`. */
+  readSessionData: (_id: Types.ObjectId) => Promise<TAccountData>
 }
 
 export type TAuthorizationSession<TAccountData extends object> = TAccountData & {
-	_id: string
-	tier: Tier
-	refreshToken: string
+  _id: string
+  tier: Tier
+  refreshToken: string
 } & Pick<IRefreshData, 'familyId' | 'originalLogin' | 'sessionCapDays' | 'accessKey'>
 
 /**
@@ -216,60 +216,60 @@ export type TAuthorizationSession<TAccountData extends object> = TAccountData & 
  *   the two it was holding.
  */
 export async function resolveAuthorizationSession<TAccountData extends object>({
-	store,
-	refreshToken,
-	tier,
-	readSessionData
+  store,
+  refreshToken,
+  tier,
+  readSessionData
 }: IResolveAuthorizationSessionInput<TAccountData>): Promise<TAuthorizationSession<TAccountData>> {
-	const redSession = await readSessionHash(store, refreshToken)
+  const redSession = await readSessionHash(store, refreshToken)
 
-	if (Object.keys(redSession).length === 0) {
-		await assertNotReplayed(store, refreshToken)
+  if (Object.keys(redSession).length === 0) {
+    await assertNotReplayed(store, refreshToken)
 
-		throw throwRefreshTokenExpiredOrDeleted()
-	}
+    throw throwRefreshTokenExpiredOrDeleted()
+  }
 
-	// A live session exists, so from here on this request is racing every other request that read the
-	// same token before either one has rotated it — see `claimRefreshRotation`. The loser gets the same
-	// 409 the post-consumption race gives a lost multi-tab refresh, and never reaches the account read
-	// below.
-	if (!(await claimRefreshRotation(store, refreshToken))) {
-		await store.incr(graceHitsKey())
+  // A live session exists, so from here on this request is racing every other request that read the
+  // same token before either one has rotated it — see `claimRefreshRotation`. The loser gets the same
+  // 409 the post-consumption race gives a lost multi-tab refresh, and never reaches the account read
+  // below.
+  if (!(await claimRefreshRotation(store, refreshToken))) {
+    await store.incr(graceHitsKey())
 
-		throw throwRefreshRaceRetry()
-	}
+    throw throwRefreshRaceRetry()
+  }
 
-	// Redis returns an object with no Object.prototype in its prototype chain; spreading it gives an
-	// ordinary one back before anything reads a property off it.
-	const redData = { ...redSession }
+  // Redis returns an object with no Object.prototype in its prototype chain; spreading it gives an
+  // ordinary one back before anything reads a property off it.
+  const redData = { ...redSession }
 
-	assertTier(redData.tier, tier)
-	assertRefreshLineage(redData)
+  assertTier(redData.tier, tier)
+  assertRefreshLineage(redData)
 
-	const { familyId, originalLogin, sessionCapDays } = redData
+  const { familyId, originalLogin, sessionCapDays } = redData
 
-	// The same deadline the index field's TTL is set to, from the same expression, so the row
-	// that names a session cannot outlive the session or predecease it.
-	if (Date.now() > sessionCapDeadline(originalLogin, sessionCapDays)) {
-		// `tier` rather than `redData.tier`: the two were just asserted equal, and the one this service was
-		// constructed with is the one no caller can influence — the same reason the returned session stamps it.
-		await revokeSessionFamily({
-			store,
-			familyId,
-			account: { tier, accountId: redData._id },
-			action: 'sessionCapReached'
-		})
+  // The same deadline the index field's TTL is set to, from the same expression, so the row
+  // that names a session cannot outlive the session or predecease it.
+  if (Date.now() > sessionCapDeadline(originalLogin, sessionCapDays)) {
+    // `tier` rather than `redData.tier`: the two were just asserted equal, and the one this service was
+    // constructed with is the one no caller can influence — the same reason the returned session stamps it.
+    await revokeSessionFamily({
+      store,
+      familyId,
+      account: { tier, accountId: redData._id },
+      action: 'sessionCapReached'
+    })
 
-		throw throwRefreshTokenExpiredOrDeleted()
-	}
+    throw throwRefreshTokenExpiredOrDeleted()
+  }
 
-	const _id = redData._id
-	const accountData = await readSessionData(new Types.ObjectId(_id))
+  const _id = redData._id
+  const accountData = await readSessionData(new Types.ObjectId(_id))
 
-	// ⚠️ **`accessKey` is carried, not asserted, and it is the one field here that may legitimately be
-	// absent.** A session minted before it existed has none, and the rotation reads that as "nothing to
-	// retire" — see `IRefreshData`. Nothing else may read it: it names the *current* access key, so a
-	// resolver treating it as this request's own credential would be reasoning about a key it did not
-	// present.
-	return { ...accountData, _id, tier, refreshToken, familyId, originalLogin, sessionCapDays, accessKey: redData.accessKey }
+  // ⚠️ **`accessKey` is carried, not asserted, and it is the one field here that may legitimately be
+  // absent.** A session minted before it existed has none, and the rotation reads that as "nothing to
+  // retire" — see `IRefreshData`. Nothing else may read it: it names the *current* access key, so a
+  // resolver treating it as this request's own credential would be reasoning about a key it did not
+  // present.
+  return { ...accountData, _id, tier, refreshToken, familyId, originalLogin, sessionCapDays, accessKey: redData.accessKey }
 }

@@ -11,9 +11,9 @@ import { Tier } from '@others/Tier.mjs'
  * issues at the cost of a second thing to bound.
  */
 export interface IReuseEventStore {
-	lPush(key: string, element: string): Promise<unknown>
-	lTrim(key: string, start: number, stop: number): Promise<unknown>
-	expire(key: string, seconds: number): Promise<unknown>
+  lPush(key: string, element: string): Promise<unknown>
+  lTrim(key: string, start: number, stop: number): Promise<unknown>
+  expire(key: string, seconds: number): Promise<unknown>
 }
 
 /**
@@ -39,8 +39,8 @@ export const REUSE_EVENTS_TTL_SECONDS = SESSION_INDEX_TTL_SECONDS
 
 /** The account a trail belongs to. Both halves, for the reason `sessionIndexKey` gives: ids collide across tiers. */
 export interface IReuseEventAccount {
-	tier: Tier
-	accountId: string
+  tier: Tier
+  accountId: string
 }
 
 /**
@@ -55,11 +55,11 @@ export interface IReuseEventAccount {
  * be a number in this process and a string in the next one.
  */
 export interface IReuseEvent {
-	familyId: string
-	tier: Tier
-	accountId: string
-	action: ReuseEventAction
-	at: string
+  familyId: string
+  tier: Tier
+  accountId: string
+  action: ReuseEventAction
+  at: string
 }
 
 /**
@@ -75,9 +75,9 @@ export interface IReuseEvent {
  * which is worse than silence: it is an explanation that is wrong.
  */
 export async function recordReuseEvent({ store, event }: { store: IReuseEventStore; event: IReuseEvent }): Promise<void> {
-	const key = reuseEventsKey(event.tier, event.accountId)
+  const key = reuseEventsKey(event.tier, event.accountId)
 
-	await store.lPush(key, JSON.stringify(event))
-	await store.lTrim(key, 0, REUSE_EVENTS_MAX - 1)
-	await store.expire(key, REUSE_EVENTS_TTL_SECONDS)
+  await store.lPush(key, JSON.stringify(event))
+  await store.lTrim(key, 0, REUSE_EVENTS_MAX - 1)
+  await store.expire(key, REUSE_EVENTS_TTL_SECONDS)
 }

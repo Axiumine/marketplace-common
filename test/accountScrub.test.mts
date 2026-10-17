@@ -5,17 +5,17 @@ import { ENCRYPTED_FIELDS_SHOP_OWNER, ENCRYPTED_FIELDS_USER } from '../src/encry
 import { ShopOwner } from '../src/models/MongoDB/ShopOwner.mts'
 import { User } from '../src/models/MongoDB/User.mts'
 import {
-	buildAccountScrub,
-	SCRUBBED_DISABLED_REASON,
-	SCRUBBED_EMAIL_HOST,
-	SCRUBBED_FIRST_NAME,
-	SCRUBBED_LAST_NAME,
-	SCRUBBED_PASSWORD_HASH,
-	SCRUBBED_POSTAL_CODE,
-	SCRUBBED_PROVINCE,
-	SCRUBBED_TEXT,
-	scrubbedBirthDate,
-	scrubbedEmail
+  buildAccountScrub,
+  SCRUBBED_DISABLED_REASON,
+  SCRUBBED_EMAIL_HOST,
+  SCRUBBED_FIRST_NAME,
+  SCRUBBED_LAST_NAME,
+  SCRUBBED_PASSWORD_HASH,
+  SCRUBBED_POSTAL_CODE,
+  SCRUBBED_PROVINCE,
+  SCRUBBED_TEXT,
+  scrubbedBirthDate,
+  scrubbedEmail
 } from '../src/others/accountScrub.mts'
 import { TIER } from '../src/others/Tier.mts'
 
@@ -49,19 +49,19 @@ const KEEP_LOGIN: string[] = []
  * schema path classified as neither personal nor kept.
  */
 const SUSPENSIONS = [
-	{ label: 'suspended', disabled: true },
-	{ label: 'never suspended', disabled: false }
+  { label: 'suspended', disabled: true },
+  { label: 'never suspended', disabled: false }
 ] as const
 
 /** The two collections, each with the pieces of itself a scrub has to be measured against. */
 const TIERS = [
-	{ tier: TIER.user, schema: User.schema, keep: KEEP_USER, fields: ENCRYPTED_FIELDS_USER },
-	{ tier: TIER.shopOwner, schema: ShopOwner.schema, keep: KEEP_SHOP_OWNER, fields: ENCRYPTED_FIELDS_SHOP_OWNER }
+  { tier: TIER.user, schema: User.schema, keep: KEEP_USER, fields: ENCRYPTED_FIELDS_USER },
+  { tier: TIER.shopOwner, schema: ShopOwner.schema, keep: KEEP_SHOP_OWNER, fields: ENCRYPTED_FIELDS_SHOP_OWNER }
 ] as const
 
 /** Both collections crossed with both suspension states — the four documents the sweep actually meets. */
 const CASES = SUSPENSIONS.flatMap(({ label, disabled }) =>
-	TIERS.map((entry) => ({ ...entry, disabled, name: `${entry.tier} (${label})` }))
+  TIERS.map((entry) => ({ ...entry, disabled, name: `${entry.tier} (${label})` }))
 )
 
 const topLevelPaths = (schema: Schema) => Object.keys(schema.paths)
@@ -72,156 +72,156 @@ const subPaths = (schema: Schema, path: string) => Object.keys((schema.path(path
 const rootOf = (path: string) => path.split('.')[0] as string
 
 describe('the scrub covers every path both collections carry', () => {
-	it.each(CASES)('$name — every path is overwritten, removed or deliberately kept', ({ tier, schema, keep, disabled }) => {
-		const scrub = buildAccountScrub(tier, ACCOUNT_ID, AT, disabled)
-		const touched = new Set([...Object.keys(scrub.$set), ...Object.keys(scrub.$unset)].map(rootOf))
+  it.each(CASES)('$name — every path is overwritten, removed or deliberately kept', ({ tier, schema, keep, disabled }) => {
+    const scrub = buildAccountScrub(tier, ACCOUNT_ID, AT, disabled)
+    const touched = new Set([...Object.keys(scrub.$set), ...Object.keys(scrub.$unset)].map(rootOf))
 
-		expect([...touched, ...keep].sort()).toStrictEqual([...new Set([...touched, ...keep])].sort())
-		expect(topLevelPaths(schema).filter((path) => !touched.has(path) && !keep.includes(path))).toStrictEqual([])
-	})
+    expect([...touched, ...keep].sort()).toStrictEqual([...new Set([...touched, ...keep])].sort())
+    expect(topLevelPaths(schema).filter((path) => !touched.has(path) && !keep.includes(path))).toStrictEqual([])
+  })
 
-	it.each(CASES)(
-		'$name — every member of login is overwritten or removed, none is merely left',
-		({ tier, schema, disabled }) => {
-			const scrub = buildAccountScrub(tier, ACCOUNT_ID, AT, disabled)
-			const touched = new Set(
-				[...Object.keys(scrub.$set), ...Object.keys(scrub.$unset)]
-					.filter((path) => path.startsWith('login.'))
-					.map((path) => path.slice('login.'.length))
-			)
+  it.each(CASES)(
+    '$name — every member of login is overwritten or removed, none is merely left',
+    ({ tier, schema, disabled }) => {
+      const scrub = buildAccountScrub(tier, ACCOUNT_ID, AT, disabled)
+      const touched = new Set(
+        [...Object.keys(scrub.$set), ...Object.keys(scrub.$unset)]
+          .filter((path) => path.startsWith('login.'))
+          .map((path) => path.slice('login.'.length))
+      )
 
-			expect(subPaths(schema, 'login').filter((member) => !touched.has(member) && !KEEP_LOGIN.includes(member))).toStrictEqual(
-				[]
-			)
-		}
-	)
+      expect(subPaths(schema, 'login').filter((member) => !touched.has(member) && !KEEP_LOGIN.includes(member))).toStrictEqual(
+        []
+      )
+    }
+  )
 
-	it.each(CASES)('$name — no encrypted path survives a scrub untouched', ({ tier, fields, disabled }) => {
-		const scrub = buildAccountScrub(tier, ACCOUNT_ID, AT, disabled)
-		const keys = [...Object.keys(scrub.$set), ...Object.keys(scrub.$unset)]
-		const reached = (path: string) => keys.some((key) => key === path || path.startsWith(`${key}.`))
+  it.each(CASES)('$name — no encrypted path survives a scrub untouched', ({ tier, fields, disabled }) => {
+    const scrub = buildAccountScrub(tier, ACCOUNT_ID, AT, disabled)
+    const keys = [...Object.keys(scrub.$set), ...Object.keys(scrub.$unset)]
+    const reached = (path: string) => keys.some((key) => key === path || path.startsWith(`${key}.`))
 
-		expect(fields.map(({ path }) => path).filter((path) => !reached(path))).toStrictEqual([])
-	})
+    expect(fields.map(({ path }) => path).filter((path) => !reached(path))).toStrictEqual([])
+  })
 })
 
 describe('what the scrub writes', () => {
-	/*
-	 * ⚠️ Every placeholder is pinned to its literal value here, and nowhere else is. The assertions below
-	 * read a scrub back against the constant that wrote it, so they pass whatever the constant says —
-	 * including the empty string, which is the one value that breaks both collections: `personalData` on
-	 * `shopOwner` is all-or-nothing with a `minLength` on every member, the postal code and province carry
-	 * a fixed length, and a blank cell in the admin table says "never filled in" where the record has to
-	 * say "erased".
-	 */
-	it('writes the exact placeholders the validators and the admin table need', () => {
-		expect(SCRUBBED_EMAIL_HOST).toBe('invalid.local')
-		expect(SCRUBBED_FIRST_NAME).toBe('Deleted')
-		expect(SCRUBBED_LAST_NAME).toBe('User')
-		expect(SCRUBBED_TEXT).toBe('Deleted')
-		expect(SCRUBBED_POSTAL_CODE).toBe('00000')
-		expect(SCRUBBED_PROVINCE).toBe('XX')
-	})
+  /*
+   * ⚠️ Every placeholder is pinned to its literal value here, and nowhere else is. The assertions below
+   * read a scrub back against the constant that wrote it, so they pass whatever the constant says —
+   * including the empty string, which is the one value that breaks both collections: `personalData` on
+   * `shopOwner` is all-or-nothing with a `minLength` on every member, the postal code and province carry
+   * a fixed length, and a blank cell in the admin table says "never filled in" where the record has to
+   * say "erased".
+   */
+  it('writes the exact placeholders the validators and the admin table need', () => {
+    expect(SCRUBBED_EMAIL_HOST).toBe('invalid.local')
+    expect(SCRUBBED_FIRST_NAME).toBe('Deleted')
+    expect(SCRUBBED_LAST_NAME).toBe('User')
+    expect(SCRUBBED_TEXT).toBe('Deleted')
+    expect(SCRUBBED_POSTAL_CODE).toBe('00000')
+    expect(SCRUBBED_PROVINCE).toBe('XX')
+  })
 
-	it('moves the address to a per-account name under a host that can never resolve', () => {
-		expect(scrubbedEmail(ACCOUNT_ID)).toBe(`deleted-${ACCOUNT_ID}@${SCRUBBED_EMAIL_HOST}`)
-		expect(scrubbedEmail(ACCOUNT_ID)).not.toBe(scrubbedEmail('68b1a9c4d3e2f10123456780'))
-		expect(buildAccountScrub(TIER.user, ACCOUNT_ID, AT, false).$set['login.email']).toBe(scrubbedEmail(ACCOUNT_ID))
-	})
+  it('moves the address to a per-account name under a host that can never resolve', () => {
+    expect(scrubbedEmail(ACCOUNT_ID)).toBe(`deleted-${ACCOUNT_ID}@${SCRUBBED_EMAIL_HOST}`)
+    expect(scrubbedEmail(ACCOUNT_ID)).not.toBe(scrubbedEmail('68b1a9c4d3e2f10123456780'))
+    expect(buildAccountScrub(TIER.user, ACCOUNT_ID, AT, false).$set['login.email']).toBe(scrubbedEmail(ACCOUNT_ID))
+  })
 
-	it('leaves a password nobody holds, in the exact shape the validator demands', () => {
-		expect(SCRUBBED_PASSWORD_HASH).toHaveLength(60)
-		expect(SCRUBBED_PASSWORD_HASH).toMatch(/^\$2[aby]\$14\$/)
-		expect(buildAccountScrub(TIER.shopOwner, ACCOUNT_ID, AT, false).$set['login.password']).toBe(SCRUBBED_PASSWORD_HASH)
-	})
+  it('leaves a password nobody holds, in the exact shape the validator demands', () => {
+    expect(SCRUBBED_PASSWORD_HASH).toHaveLength(60)
+    expect(SCRUBBED_PASSWORD_HASH).toMatch(/^\$2[aby]\$14\$/)
+    expect(buildAccountScrub(TIER.shopOwner, ACCOUNT_ID, AT, false).$set['login.password']).toBe(SCRUBBED_PASSWORD_HASH)
+  })
 
-	it('stamps scrubbedAt with the moment it was handed, so the sweep stops selecting the row', () => {
-		expect(buildAccountScrub(TIER.user, ACCOUNT_ID, AT, false).$set.scrubbedAt).toBe(AT)
-	})
+  it('stamps scrubbedAt with the moment it was handed, so the sweep stops selecting the row', () => {
+    expect(buildAccountScrub(TIER.user, ACCOUNT_ID, AT, false).$set.scrubbedAt).toBe(AT)
+  })
 
-	it('gives the customer the two-member block that collection requires, and nothing more', () => {
-		expect(buildAccountScrub(TIER.user, ACCOUNT_ID, AT, false).$set.personalData).toStrictEqual({
-			firstName: SCRUBBED_FIRST_NAME,
-			lastName: SCRUBBED_LAST_NAME
-		})
-	})
+  it('gives the customer the two-member block that collection requires, and nothing more', () => {
+    expect(buildAccountScrub(TIER.user, ACCOUNT_ID, AT, false).$set.personalData).toStrictEqual({
+      firstName: SCRUBBED_FIRST_NAME,
+      lastName: SCRUBBED_LAST_NAME
+    })
+  })
 
-	it('gives the shop owner every member its all-or-nothing block requires', () => {
-		expect(buildAccountScrub(TIER.shopOwner, ACCOUNT_ID, AT, false).$set.personalData).toStrictEqual({
-			firstName: SCRUBBED_FIRST_NAME,
-			lastName: SCRUBBED_LAST_NAME,
-			birth: { date: new Date(0) },
-			address: {
-				street: SCRUBBED_TEXT,
-				postalCode: SCRUBBED_POSTAL_CODE,
-				city: SCRUBBED_TEXT,
-				province: SCRUBBED_PROVINCE
-			},
-			contacts: {
-				mobile: SCRUBBED_TEXT,
-				email: scrubbedEmail(ACCOUNT_ID)
-			}
-		})
-	})
+  it('gives the shop owner every member its all-or-nothing block requires', () => {
+    expect(buildAccountScrub(TIER.shopOwner, ACCOUNT_ID, AT, false).$set.personalData).toStrictEqual({
+      firstName: SCRUBBED_FIRST_NAME,
+      lastName: SCRUBBED_LAST_NAME,
+      birth: { date: new Date(0) },
+      address: {
+        street: SCRUBBED_TEXT,
+        postalCode: SCRUBBED_POSTAL_CODE,
+        city: SCRUBBED_TEXT,
+        province: SCRUBBED_PROVINCE
+      },
+      contacts: {
+        mobile: SCRUBBED_TEXT,
+        email: scrubbedEmail(ACCOUNT_ID)
+      }
+    })
+  })
 
-	it('hands out a fresh birth date every time, so no caller can mutate the one the next scrub uses', () => {
-		const first = scrubbedBirthDate()
-		first.setUTCFullYear(1999)
+  it('hands out a fresh birth date every time, so no caller can mutate the one the next scrub uses', () => {
+    const first = scrubbedBirthDate()
+    first.setUTCFullYear(1999)
 
-		expect(scrubbedBirthDate()).toStrictEqual(new Date(0))
-	})
+    expect(scrubbedBirthDate()).toStrictEqual(new Date(0))
+  })
 
-	it('removes the address book only on the collection that has one, and the notes only on the other', () => {
-		const user = buildAccountScrub(TIER.user, ACCOUNT_ID, AT, false).$unset
-		const shopOwner = buildAccountScrub(TIER.shopOwner, ACCOUNT_ID, AT, false).$unset
+  it('removes the address book only on the collection that has one, and the notes only on the other', () => {
+    const user = buildAccountScrub(TIER.user, ACCOUNT_ID, AT, false).$unset
+    const shopOwner = buildAccountScrub(TIER.shopOwner, ACCOUNT_ID, AT, false).$unset
 
-		expect(Object.keys(user)).toContain('addresses')
-		expect(Object.keys(user)).toContain('defaultAddress')
-		expect(Object.keys(user)).not.toContain('notes')
-		expect(Object.keys(shopOwner)).toContain('notes')
-		expect(Object.keys(shopOwner)).not.toContain('addresses')
-	})
+    expect(Object.keys(user)).toContain('addresses')
+    expect(Object.keys(user)).toContain('defaultAddress')
+    expect(Object.keys(user)).not.toContain('notes')
+    expect(Object.keys(shopOwner)).toContain('notes')
+    expect(Object.keys(shopOwner)).not.toContain('addresses')
+  })
 
-	it('removes the two credential sub-documents on both', () => {
-		for (const tier of [TIER.user, TIER.shopOwner] as const) {
-			const { $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, false)
+  it('removes the two credential sub-documents on both', () => {
+    for (const tier of [TIER.user, TIER.shopOwner] as const) {
+      const { $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, false)
 
-			expect($unset.emailVerify).toBe('')
-			expect($unset.resetPwd).toBe('')
-		}
-	})
+      expect($unset.emailVerify).toBe('')
+      expect($unset.resetPwd).toBe('')
+    }
+  })
 
-	it('says the note was erased rather than leaving something an admin could have typed', () => {
-		expect(SCRUBBED_DISABLED_REASON).toBe('Deleted — the reason was erased with the account')
-		expect(SCRUBBED_DISABLED_REASON.startsWith(SCRUBBED_TEXT)).toBe(true)
-	})
+  it('says the note was erased rather than leaving something an admin could have typed', () => {
+    expect(SCRUBBED_DISABLED_REASON).toBe('Deleted — the reason was erased with the account')
+    expect(SCRUBBED_DISABLED_REASON.startsWith(SCRUBBED_TEXT)).toBe(true)
+  })
 
-	it('overwrites the admin reason on an account that was parked, because removing it is refused', () => {
-		for (const tier of [TIER.user, TIER.shopOwner] as const) {
-			const { $set, $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, true)
+  it('overwrites the admin reason on an account that was parked, because removing it is refused', () => {
+    for (const tier of [TIER.user, TIER.shopOwner] as const) {
+      const { $set, $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, true)
 
-			expect($set.disabledReason).toBe(SCRUBBED_DISABLED_REASON)
-			expect('disabledReason' in $unset).toBe(false)
-		}
-	})
+      expect($set.disabledReason).toBe(SCRUBBED_DISABLED_REASON)
+      expect('disabledReason' in $unset).toBe(false)
+    }
+  })
 
-	it('removes the admin reason outright on an account that was never parked', () => {
-		for (const tier of [TIER.user, TIER.shopOwner] as const) {
-			const { $set, $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, false)
+  it('removes the admin reason outright on an account that was never parked', () => {
+    for (const tier of [TIER.user, TIER.shopOwner] as const) {
+      const { $set, $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, false)
 
-			expect($unset.disabledReason).toBe('')
-			expect('disabledReason' in $set).toBe(false)
-		}
-	})
+      expect($unset.disabledReason).toBe('')
+      expect('disabledReason' in $set).toBe(false)
+    }
+  })
 
-	it('keeps the closure record itself out of both halves of the update', () => {
-		for (const { tier, disabled } of CASES) {
-			const { $set, $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, disabled)
+  it('keeps the closure record itself out of both halves of the update', () => {
+    for (const { tier, disabled } of CASES) {
+      const { $set, $unset } = buildAccountScrub(tier, ACCOUNT_ID, AT, disabled)
 
-			for (const path of ['deleted', 'deletedBy', 'disabled', 'disabledBy', 'registeredAt', '_id']) {
-				expect(path in $set).toBe(false)
-				expect(path in $unset).toBe(false)
-			}
-		}
-	})
+      for (const path of ['deleted', 'deletedBy', 'disabled', 'disabledBy', 'registeredAt', '_id']) {
+        expect(path in $set).toBe(false)
+        expect(path in $unset).toBe(false)
+      }
+    }
+  })
 })

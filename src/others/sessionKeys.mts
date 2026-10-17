@@ -13,9 +13,9 @@ import { Tier } from '@others/Tier.mjs'
  * than to a session key and is declared on `ISessionReadStore`, which is where it is issued.
  */
 export interface ISessionKeyStore {
-	hGetAll(key: string): Promise<Record<string, string>>
-	hGet(key: string, field: string): Promise<string | null>
-	del(key: string): Promise<unknown>
+  hGetAll(key: string): Promise<Record<string, string>>
+  hGet(key: string, field: string): Promise<string | null>
+  del(key: string): Promise<unknown>
 }
 
 /**
@@ -29,9 +29,9 @@ export interface ISessionKeyStore {
  * `assertHashFieldTTLSupport` so a server that cannot do this says so before it serves a request.
  */
 export interface ISessionIndexStore {
-	hSet(key: string, value: Record<string, string>): Promise<unknown>
-	expire(key: string, seconds: number): Promise<unknown>
-	hExpire(key: string, fields: string, seconds: number): Promise<unknown>
+  hSet(key: string, value: Record<string, string>): Promise<unknown>
+  expire(key: string, seconds: number): Promise<unknown>
+  hExpire(key: string, fields: string, seconds: number): Promise<unknown>
 }
 
 /**
@@ -43,7 +43,7 @@ export interface ISessionIndexStore {
  * business holding.
  */
 export interface ISessionIndexPruneStore {
-	hDel(key: string, field: string): Promise<unknown>
+  hDel(key: string, field: string): Promise<unknown>
 }
 
 /**
@@ -211,9 +211,9 @@ const isSessionHash = (hash: Record<string, string> | null | undefined) => hash 
  * and get it for a nullish reply too, which is what makes that test the *only* one they need.
  */
 export async function readSessionHash(store: Pick<ISessionKeyStore, 'hGetAll'>, token: string): Promise<Record<string, string>> {
-	const hash = await store.hGetAll(sessionKey(token))
+  const hash = await store.hGetAll(sessionKey(token))
 
-	return isSessionHash(hash) ? hash : {}
+  return isSessionHash(hash) ? hash : {}
 }
 
 /**
@@ -221,7 +221,7 @@ export async function readSessionHash(store: Pick<ISessionKeyStore, 'hGetAll'>, 
  * session", exactly as a single `hGet` answered before the fallback existed and again after it went.
  */
 export async function readSessionField(store: Pick<ISessionKeyStore, 'hGet'>, token: string, field: string) {
-	return store.hGet(sessionKey(token), field)
+  return store.hGet(sessionKey(token), field)
 }
 
 /**
@@ -237,7 +237,7 @@ export async function readSessionField(store: Pick<ISessionKeyStore, 'hGet'>, to
  * cluster slot.
  */
 export async function deleteSession(store: Pick<ISessionKeyStore, 'del'>, token: string) {
-	await store.del(sessionKey(token))
+  await store.del(sessionKey(token))
 }
 
 /**
@@ -274,11 +274,11 @@ const ACCESS_KEY_FIELD: keyof IRefreshData = 'accessKey'
  * may become a `del` of the bare prefix, which would name the wrong key for everyone.
  */
 export async function retireAccessSession(store: Pick<ISessionKeyStore, 'hGet' | 'del'>, refreshSessionKey: string) {
-	const accessKey = await store.hGet(refreshSessionKey, ACCESS_KEY_FIELD)
+  const accessKey = await store.hGet(refreshSessionKey, ACCESS_KEY_FIELD)
 
-	if (!accessKey) return
+  if (!accessKey) return
 
-	await store.del(accessKey)
+  await store.del(accessKey)
 }
 
 /**
@@ -295,8 +295,8 @@ export async function retireAccessSession(store: Pick<ISessionKeyStore, 'hGet' |
  * when that login happened.
  */
 export interface ISessionIndexEntry {
-	tier: Tier
-	mintedAt: string
+  tier: Tier
+  mintedAt: string
 }
 
 /**
@@ -341,17 +341,17 @@ export const SESSION_INDEX_TTL_SECONDS = (SESSION_CAP_DAYS_REMEMBERED * MILLISEC
  * (R54). One row still names one login; ending it now ends both halves of it.
  */
 export async function indexSession(
-	store: ISessionIndexStore,
-	prefixedRefreshToken: string,
-	{ _id, tier, originalLogin, sessionCapDays }: IRefreshData
+  store: ISessionIndexStore,
+  prefixedRefreshToken: string,
+  { _id, tier, originalLogin, sessionCapDays }: IRefreshData
 ) {
-	const key = sessionIndexKey(tier, _id)
-	const field = hashSessionToken(prefixedRefreshToken)
-	const entry: ISessionIndexEntry = { tier, mintedAt: originalLogin }
+  const key = sessionIndexKey(tier, _id)
+  const field = hashSessionToken(prefixedRefreshToken)
+  const entry: ISessionIndexEntry = { tier, mintedAt: originalLogin }
 
-	await store.hSet(key, { [field]: JSON.stringify(entry) })
-	await store.expire(key, SESSION_INDEX_TTL_SECONDS)
-	await store.hExpire(key, field, sessionCapRemainingSeconds(originalLogin, sessionCapDays))
+  await store.hSet(key, { [field]: JSON.stringify(entry) })
+  await store.expire(key, SESSION_INDEX_TTL_SECONDS)
+  await store.hExpire(key, field, sessionCapRemainingSeconds(originalLogin, sessionCapDays))
 }
 
 /**
@@ -369,9 +369,9 @@ export async function indexSession(
  * matched no field is indistinguishable from one that matched.
  */
 export async function unindexSession(
-	store: ISessionIndexPruneStore,
-	prefixedRefreshToken: string,
-	{ _id, tier }: Pick<IRefreshData, '_id' | 'tier'>
+  store: ISessionIndexPruneStore,
+  prefixedRefreshToken: string,
+  { _id, tier }: Pick<IRefreshData, '_id' | 'tier'>
 ) {
-	await store.hDel(sessionIndexKey(tier, _id), hashSessionToken(prefixedRefreshToken))
+  await store.hDel(sessionIndexKey(tier, _id), hashSessionToken(prefixedRefreshToken))
 }

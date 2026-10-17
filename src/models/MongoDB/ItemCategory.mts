@@ -16,43 +16,43 @@ import { model, Schema } from 'mongoose'
  * requiredness, `$jsonSchema` states limits, and two copies of a length are two places to disagree.
  */
 const ItemCategorySchema: Schema<IItemCategorySchema> = new Schema(
-	{
-		_id: {
-			type: Schema.Types.ObjectId
-		},
-		name: {
-			type: String,
-			required: true
-		},
-		slug: {
-			type: String,
-			required: true
-		},
-		// Self-reference, and optional: absent is what makes a category top-level. `ref` is this model's
-		// own name, which Mongoose resolves lazily, so the cycle is fine.
-		idParent: {
-			type: Schema.Types.ObjectId,
-			ref: 'ItemCategory'
-		},
-		// ⚠️ A sort ordinal, NOT the GeoJSON point that `Company.address.position` and
-		// `User.addresses[].position` carry. Same name, unrelated meaning; this collection stores no
-		// coordinates.
-		position: {
-			type: Number,
-			required: true
-		},
-		// Soft delete. A category is never removed outright: `item.idCategory` is required and nothing
-		// enforces the reference, so a hard delete would strand every item filed under it.
-		deleted: {
-			type: Date
-		},
-		__v: {
-			type: Number
-		}
-	},
-	{
-		collection: 'itemCategory'
-	}
+  {
+    _id: {
+      type: Schema.Types.ObjectId
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    slug: {
+      type: String,
+      required: true
+    },
+    // Self-reference, and optional: absent is what makes a category top-level. `ref` is this model's
+    // own name, which Mongoose resolves lazily, so the cycle is fine.
+    idParent: {
+      type: Schema.Types.ObjectId,
+      ref: 'ItemCategory'
+    },
+    // ⚠️ A sort ordinal, NOT the GeoJSON point that `Company.address.position` and
+    // `User.addresses[].position` carry. Same name, unrelated meaning; this collection stores no
+    // coordinates.
+    position: {
+      type: Number,
+      required: true
+    },
+    // Soft delete. A category is never removed outright: `item.idCategory` is required and nothing
+    // enforces the reference, so a hard delete would strand every item filed under it.
+    deleted: {
+      type: Date
+    },
+    __v: {
+      type: Number
+    }
+  },
+  {
+    collection: 'itemCategory'
+  }
 )
 
 const ItemCategory = model<IItemCategorySchema>('ItemCategory', ItemCategorySchema)

@@ -14,7 +14,7 @@ import { GraphQLInt, GraphQLNonNull, GraphQLString } from 'graphql'
  * rather than by pointer.
  */
 export const GraphQLItemCategoryFrag = {
-	name: { type: new GraphQLNonNull(GraphQLString) },
-	slug: { type: new GraphQLNonNull(GraphQLString) },
-	position: { type: new GraphQLNonNull(GraphQLInt) }
+  name: { type: new GraphQLNonNull(GraphQLString) },
+  slug: { type: new GraphQLNonNull(GraphQLString) },
+  position: { type: new GraphQLNonNull(GraphQLInt) }
 }

@@ -12,8 +12,8 @@ import { familyKey } from '@others/sessionKeys.mjs'
  * twice at every call site to buy a segregation nothing consumes.
  */
 export interface ISessionFamilyStore extends IReuseEventStore {
-	sMembers(key: string): Promise<string[]>
-	del(key: string): Promise<unknown>
+  sMembers(key: string): Promise<string[]>
+  del(key: string): Promise<unknown>
 }
 
 /**
@@ -47,28 +47,28 @@ export interface ISessionFamilyStore extends IReuseEventStore {
  * reach its own `throw` rather than die of a missing key.
  */
 export async function revokeSessionFamily({
-	store,
-	familyId,
-	account,
-	action
+  store,
+  familyId,
+  account,
+  action
 }: {
-	store: ISessionFamilyStore
-	familyId: string
-	/** Whose lineage this was, or `undefined` when the record that named it predates the reuse trail. */
-	account: IReuseEventAccount | undefined
-	action: ReuseEventAction
+  store: ISessionFamilyStore
+  familyId: string
+  /** Whose lineage this was, or `undefined` when the record that named it predates the reuse trail. */
+  account: IReuseEventAccount | undefined
+  action: ReuseEventAction
 }) {
-	const key = familyKey(familyId)
-	const members = await store.sMembers(key)
+  const key = familyKey(familyId)
+  const members = await store.sMembers(key)
 
-	await Promise.all(members.map((member) => store.del(member)))
+  await Promise.all(members.map((member) => store.del(member)))
 
-	await store.del(key)
+  await store.del(key)
 
-	if (account === undefined) return
+  if (account === undefined) return
 
-	await recordReuseEvent({
-		store,
-		event: { familyId, tier: account.tier, accountId: account.accountId, action, at: `${Date.now()}` }
-	})
+  await recordReuseEvent({
+    store,
+    event: { familyId, tier: account.tier, accountId: account.accountId, action, at: `${Date.now()}` }
+  })
 }

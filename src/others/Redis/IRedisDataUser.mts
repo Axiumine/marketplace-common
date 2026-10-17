@@ -8,6 +8,6 @@ import { Tier } from '@others/Tier.mjs'
  * See `IRedisDataAdmin` for why `tier` sits on this shape and not on `…Common`.
  */
 export interface IRedisDataUser extends IRedisDataUserCommon {
-	_id: string
-	tier: Tier
+  _id: string
+  tier: Tier
 }

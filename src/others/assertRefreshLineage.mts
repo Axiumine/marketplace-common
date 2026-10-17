@@ -31,11 +31,11 @@ const isStoredInteger = (value: string | undefined) => /^\d+$/.test(`${value}`)
  * correct move here — a 403 tells it the opposite, that trying again is pointless.
  */
 export function assertRefreshLineage({
-	familyId,
-	originalLogin,
-	sessionCapDays
+  familyId,
+  originalLogin,
+  sessionCapDays
 }: Partial<Pick<IRefreshData, 'familyId' | 'originalLogin' | 'sessionCapDays'>>): void {
-	if (!familyId || !isStoredInteger(originalLogin) || !isStoredInteger(sessionCapDays)) {
-		throw throwRefreshTokenExpiredOrDeleted()
-	}
+  if (!familyId || !isStoredInteger(originalLogin) || !isStoredInteger(sessionCapDays)) {
+    throw throwRefreshTokenExpiredOrDeleted()
+  }
 }

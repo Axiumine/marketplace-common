@@ -2,5 +2,5 @@ import { IRedisDataShopOwnerCommon } from '@others/Redis/IRedisDataShopOwnerComm
 import { Types } from 'mongoose'
 
 export interface IRedisDataShopOwnerForNode extends IRedisDataShopOwnerCommon {
-	_id: Types.ObjectId
+  _id: Types.ObjectId
 }

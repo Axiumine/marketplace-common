@@ -40,17 +40,17 @@ export const KEYGRIP_RETIRE_UNKNOWN = 'KEYGRIP_RETIRE_UNKNOWN'
  * grace period.
  */
 export function retireKeygripKey(keys: readonly IKeygripKeyMaterial[], id: string): IKeygripKeyMaterial[] {
-	if (keys[0]?.id === id)
-		throw new Error(
-			`${KEYGRIP_RETIRE_CURRENT}: ${id} is the key the platform is signing with and cannot be retired on its own. Rotate instead: that mints a fresh signer and moves this key down the array, and it can be retired from there.`
-		)
+  if (keys[0]?.id === id)
+    throw new Error(
+      `${KEYGRIP_RETIRE_CURRENT}: ${id} is the key the platform is signing with and cannot be retired on its own. Rotate instead: that mints a fresh signer and moves this key down the array, and it can be retired from there.`
+    )
 
-	const next = keys.filter((key) => key.id !== id)
+  const next = keys.filter((key) => key.id !== id)
 
-	if (next.length === keys.length)
-		throw new Error(
-			`${KEYGRIP_RETIRE_UNKNOWN}: no key in the current set is called ${id}. Nothing was retired — read the key set again before assuming this key is gone.`
-		)
+  if (next.length === keys.length)
+    throw new Error(
+      `${KEYGRIP_RETIRE_UNKNOWN}: no key in the current set is called ${id}. Nothing was retired — read the key set again before assuming this key is gone.`
+    )
 
-	return next
+  return next
 }

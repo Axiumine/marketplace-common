@@ -1,3 +1,3 @@
 export interface IRedisDataAdminCommon {
-	email: string
+  email: string
 }

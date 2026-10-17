@@ -37,24 +37,24 @@ import { sentryBeforeSend } from '../src/others/sentryBeforeSend.mts'
 const PINNED = '10.75.0'
 
 const MIGRATION =
-	'The Sentry SDK moved off 10.75.0. Re-read `resolveDataCollectionOptions` and `httpServerSpansIntegration` before trusting `src/instrument.mts`, then update the observability section of `docs/architecture.md`, which records what each `dataCollection` category replaced. v11 removes the blanket PII flag that mapping starts from.'
+  'The Sentry SDK moved off 10.75.0. Re-read `resolveDataCollectionOptions` and `httpServerSpansIntegration` before trusting `src/instrument.mts`, then update the observability section of `docs/architecture.md`, which records what each `dataCollection` category replaced. v11 removes the blanket PII flag that mapping starts from.'
 
 const installedVersion = async (name: string): Promise<string> => {
-	const manifest = await readFile(new URL(`../node_modules/@sentry/${name}/package.json`, import.meta.url), 'utf8')
+  const manifest = await readFile(new URL(`../node_modules/@sentry/${name}/package.json`, import.meta.url), 'utf8')
 
-	return (JSON.parse(manifest) as { version: string }).version
+  return (JSON.parse(manifest) as { version: string }).version
 }
 
 describe('the SDK is the version every claim in instrument.mts was read from', () => {
-	it.each(['node', 'core'])('@sentry/%s is pinned to the audited version', async (name) => {
-		expect(await installedVersion(name), MIGRATION).toBe(PINNED)
-	})
+  it.each(['node', 'core'])('@sentry/%s is pinned to the audited version', async (name) => {
+    expect(await installedVersion(name), MIGRATION).toBe(PINNED)
+  })
 })
 
 describe('the scrubber owes nothing to the SDK filtering anything', () => {
-	it('removes an authorization header no SDK filter ever saw', () => {
-		expect(sentryBeforeSend({ request: { headers: { authorization: 'Bearer 9f2c1b7e' } } })).toStrictEqual({
-			request: { headers: {} }
-		})
-	})
+  it('removes an authorization header no SDK filter ever saw', () => {
+    expect(sentryBeforeSend({ request: { headers: { authorization: 'Bearer 9f2c1b7e' } } })).toStrictEqual({
+      request: { headers: {} }
+    })
+  })
 })

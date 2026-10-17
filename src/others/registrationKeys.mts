@@ -24,4 +24,4 @@ import { Binary } from 'mongodb'
  * to the activation link.
  */
 export const pendingRegistrationKey = (tier: ScrubbableTier, email: Binary): string =>
-	`${process.env.REDIS_KEY}pending:${tier}:${Buffer.from(email.buffer).toString('hex')}`
+  `${process.env.REDIS_KEY}pending:${tier}:${Buffer.from(email.buffer).toString('hex')}`

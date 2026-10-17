@@ -8,10 +8,10 @@
  * with an identity of its own is treated as a leaf, which is exactly what it is.
  */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
-	if (typeof value !== 'object' || value === null) {
-		return false
-	}
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
 
-	const prototype = Object.getPrototypeOf(value) as unknown
-	return prototype === Object.prototype || prototype === null
+  const prototype = Object.getPrototypeOf(value) as unknown
+  return prototype === Object.prototype || prototype === null
 }

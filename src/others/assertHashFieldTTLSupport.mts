@@ -4,7 +4,7 @@
  * remember to clean it up.
  */
 export interface IHashFieldTTLProbeStore {
-	hTTL(key: string, fields: string): Promise<unknown>
+  hTTL(key: string, fields: string): Promise<unknown>
 }
 
 /**
@@ -36,13 +36,13 @@ const UNKNOWN_COMMAND = /unknown command/i
  * wrong page. Only the one recognisable phrase is translated.
  */
 export async function assertHashFieldTTLSupport(store: IHashFieldTTLProbeStore): Promise<void> {
-	try {
-		await store.hTTL(HASH_FIELD_TTL_PROBE_KEY(), 'probe')
-	} catch (e) {
-		if (!UNKNOWN_COMMAND.test(`${(e as Error)?.message}`)) throw e
+  try {
+    await store.hTTL(HASH_FIELD_TTL_PROBE_KEY(), 'probe')
+  } catch (e) {
+    if (!UNKNOWN_COMMAND.test(`${(e as Error)?.message}`)) throw e
 
-		throw new Error(
-			'Redis is older than 7.4.0: hash-field TTLs (HEXPIRE/HTTL) are missing, and the session index cannot prune itself without them. See marketplace-docker-DBs/README.md §Redis.'
-		)
-	}
+    throw new Error(
+      'Redis is older than 7.4.0: hash-field TTLs (HEXPIRE/HTTL) are missing, and the session index cannot prune itself without them. See marketplace-docker-DBs/README.md §Redis.'
+    )
+  }
 }

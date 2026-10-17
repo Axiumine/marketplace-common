@@ -13,7 +13,7 @@ import { GraphQLNonNull, GraphQLString } from 'graphql'
  * knows which shop it is, and only the tiers that write need the ids echoed back.
  */
 export const GraphQLItemFrag = {
-	name: { type: new GraphQLNonNull(GraphQLString) },
-	description: { type: new GraphQLNonNull(GraphQLString) },
-	slug: { type: new GraphQLNonNull(GraphQLString) }
+  name: { type: new GraphQLNonNull(GraphQLString) },
+  description: { type: new GraphQLNonNull(GraphQLString) },
+  slug: { type: new GraphQLNonNull(GraphQLString) }
 }

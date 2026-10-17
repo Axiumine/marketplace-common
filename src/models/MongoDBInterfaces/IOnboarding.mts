@@ -1,4 +1,4 @@
 export interface IOnboarding {
-	onboardingStep?: string
-	onboardingDone?: boolean
+  onboardingStep?: string
+  onboardingDone?: boolean
 }

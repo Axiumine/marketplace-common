@@ -38,18 +38,18 @@ export const KEYGRIP_TAG_BYTES = 16
  * 0 being the key that signs.
  */
 export function wrapKeygripKeys(keys: readonly IKeygripKeyMaterial[], version: number, kek: Buffer): string {
-	const iv = randomBytes(KEYGRIP_IV_BYTES)
-	const cipher = createCipheriv('aes-256-gcm', kek, iv)
+  const iv = randomBytes(KEYGRIP_IV_BYTES)
+  const cipher = createCipheriv('aes-256-gcm', kek, iv)
 
-	/*
-	 * ⚠️ No explicit `'utf8'` on either call, and that is not an omission: node falls back to utf8 for an
-	 * unrecognised encoding name rather than throwing, so an encoding argument here is a string no test can
-	 * prove is being honoured — it reads as a guarantee and provides none. The default is utf8 and the
-	 * reader takes the same default, which is the one place the two have to agree.
-	 */
-	cipher.setAAD(Buffer.from(String(version)))
+  /*
+   * ⚠️ No explicit `'utf8'` on either call, and that is not an omission: node falls back to utf8 for an
+   * unrecognised encoding name rather than throwing, so an encoding argument here is a string no test can
+   * prove is being honoured — it reads as a guarantee and provides none. The default is utf8 and the
+   * reader takes the same default, which is the one place the two have to agree.
+   */
+  cipher.setAAD(Buffer.from(String(version)))
 
-	const ciphertext = Buffer.concat([cipher.update(JSON.stringify(keys)), cipher.final()])
+  const ciphertext = Buffer.concat([cipher.update(JSON.stringify(keys)), cipher.final()])
 
-	return Buffer.concat([iv, cipher.getAuthTag(), ciphertext]).toString('base64')
+  return Buffer.concat([iv, cipher.getAuthTag(), ciphertext]).toString('base64')
 }

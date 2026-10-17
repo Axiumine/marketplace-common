@@ -15,13 +15,13 @@ export const ENV_MASTER_KEY_PATH = 'CSFLE_MASTER_KEY_PATH'
 export const ENV_KEY_VAULT_NAMESPACE = 'CSFLE_KEY_VAULT_NAMESPACE'
 
 function requiredEnv(name: string): string {
-	const value = process.env[name]
+  const value = process.env[name]
 
-	if (value === undefined || value === '') {
-		throw new Error(`${name} is not set — field encryption cannot start without it`)
-	}
+  if (value === undefined || value === '') {
+    throw new Error(`${name} is not set — field encryption cannot start without it`)
+  }
 
-	return value
+  return value
 }
 
 /**
@@ -43,12 +43,12 @@ function requiredEnv(name: string): string {
  * by resetting it.
  */
 export async function setupFieldEncryption(client?: MongoClient): Promise<void> {
-	const keyVaultNamespace = requiredEnv(ENV_KEY_VAULT_NAMESPACE)
-	const masterKey = await readFile(requiredEnv(ENV_MASTER_KEY_PATH))
+  const keyVaultNamespace = requiredEnv(ENV_KEY_VAULT_NAMESPACE)
+  const masterKey = await readFile(requiredEnv(ENV_MASTER_KEY_PATH))
 
-	await initFieldEncryption({
-		client: client ?? mongoose.connection.getClient(),
-		keyVaultNamespace: keyVaultNamespace,
-		masterKey: masterKey
-	})
+  await initFieldEncryption({
+    client: client ?? mongoose.connection.getClient(),
+    keyVaultNamespace: keyVaultNamespace,
+    masterKey: masterKey
+  })
 }

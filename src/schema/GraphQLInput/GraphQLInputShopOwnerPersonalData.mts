@@ -4,21 +4,21 @@ import { GraphQLDate } from 'graphql-scalars'
 import { GraphQLAddressFrag } from '../types/fragments/GraphQLAddressFrag.mjs'
 
 export const GraphQLInputShopOwnerPersonalData = new GraphQLInputObjectType({
-	name: 'GraphQLInputShopOwnerPersonalData',
-	fields: () => ({
-		firstName: { type: new GraphQLNonNull(GraphQLString) },
-		lastName: { type: new GraphQLNonNull(GraphQLString) },
-		birth: { type: new GraphQLNonNull(GraphQLInputBirth) },
-		address: { type: new GraphQLNonNull(GraphQLInputAddress) },
-		contacts: { type: new GraphQLNonNull(GraphQLInputContacts) }
-	})
+  name: 'GraphQLInputShopOwnerPersonalData',
+  fields: () => ({
+    firstName: { type: new GraphQLNonNull(GraphQLString) },
+    lastName: { type: new GraphQLNonNull(GraphQLString) },
+    birth: { type: new GraphQLNonNull(GraphQLInputBirth) },
+    address: { type: new GraphQLNonNull(GraphQLInputAddress) },
+    contacts: { type: new GraphQLNonNull(GraphQLInputContacts) }
+  })
 })
 
 const GraphQLInputBirth = new GraphQLInputObjectType({
-	name: 'GraphQLInputBirth',
-	fields: () => ({
-		date: { type: new GraphQLNonNull(GraphQLDate) }
-	})
+  name: 'GraphQLInputBirth',
+  fields: () => ({
+    date: { type: new GraphQLNonNull(GraphQLDate) }
+  })
 })
 
 /**
@@ -33,10 +33,10 @@ const GraphQLInputBirth = new GraphQLInputObjectType({
  * `Int cannot represent non-integer value: 45.75`.
  */
 const GraphQLInputAddressPosition = new GraphQLInputObjectType({
-	name: 'GraphQLInputAddressPosition',
-	fields: () => ({
-		coordinates: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLFloat))) }
-	})
+  name: 'GraphQLInputAddressPosition',
+  fields: () => ({
+    coordinates: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLFloat))) }
+  })
 })
 
 /*
@@ -50,18 +50,18 @@ const GraphQLInputAddressPosition = new GraphQLInputObjectType({
  * in the fragment would collide with that.
  */
 const GraphQLInputAddress = new GraphQLInputObjectType({
-	name: 'GraphQLInputAddress',
-	fields: () => ({
-		...GraphQLAddressFrag,
-		position: { type: GraphQLInputAddressPosition }
-	})
+  name: 'GraphQLInputAddress',
+  fields: () => ({
+    ...GraphQLAddressFrag,
+    position: { type: GraphQLInputAddressPosition }
+  })
 })
 
 const GraphQLInputContacts = new GraphQLInputObjectType({
-	name: 'GraphQLInputContacts',
-	fields: () => ({
-		mobile: { type: new GraphQLNonNull(GraphQLString) },
-		landline: { type: GraphQLString },
-		email: { type: new GraphQLNonNull(GraphQLString) }
-	})
+  name: 'GraphQLInputContacts',
+  fields: () => ({
+    mobile: { type: new GraphQLNonNull(GraphQLString) },
+    landline: { type: GraphQLString },
+    email: { type: new GraphQLNonNull(GraphQLString) }
+  })
 })

@@ -32,38 +32,38 @@ const TIMEOUT_MS = 5000
  * reintroducing it is a change to this package rather than a one-word edit in a guard.
  */
 export async function assertTurnstile(token: string | undefined) {
-	const secret = process.env.TURNSTILE_SECRET
+  const secret = process.env.TURNSTILE_SECRET
 
-	if (!secret) {
-		if (process.env.NODE_ENV === 'production') throw throwForbiddenError()
-		return
-	}
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') throw throwForbiddenError()
+    return
+  }
 
-	if (!token) throw throwForbiddenError()
+  if (!token) throw throwForbiddenError()
 
-	const body = new URLSearchParams({ secret, response: token })
+  const body = new URLSearchParams({ secret, response: token })
 
-	let success = false
+  let success = false
 
-	try {
-		const res = await fetch(VERIFY_URL, {
-			method: 'POST',
-			headers: { 'content-type': 'application/x-www-form-urlencoded' },
-			body,
-			signal: AbortSignal.timeout(TIMEOUT_MS)
-		})
+  try {
+    const res = await fetch(VERIFY_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: AbortSignal.timeout(TIMEOUT_MS)
+    })
 
-		// `fetch` only rejects on a transport failure — a 500 from Cloudflare arrives as a resolved
-		// response, and parsing its HTML error page as JSON would throw somewhere much less obvious
-		if (res.ok) success = ((await res.json()) as { success?: boolean }).success === true
-	} catch {
-		// Deliberately swallowed, and deliberately empty. The outcome is already "not verified" — `success`
-		// is initialised `false` and is only ever raised on the one line that cannot be reached from here —
-		// and the token is attacker-supplied, so neither the error nor the token belongs in a log line.
-		// A `success = false` here re-assigns the value it already holds, which is a mutant no test can
-		// kill: Stryker empties the block and nothing observable changes. An empty block is not mutated at
-		// all, and eslint's `no-empty` accepts one that carries a comment.
-	}
+    // `fetch` only rejects on a transport failure — a 500 from Cloudflare arrives as a resolved
+    // response, and parsing its HTML error page as JSON would throw somewhere much less obvious
+    if (res.ok) success = ((await res.json()) as { success?: boolean }).success === true
+  } catch {
+    // Deliberately swallowed, and deliberately empty. The outcome is already "not verified" — `success`
+    // is initialised `false` and is only ever raised on the one line that cannot be reached from here —
+    // and the token is attacker-supplied, so neither the error nor the token belongs in a log line.
+    // A `success = false` here re-assigns the value it already holds, which is a mutant no test can
+    // kill: Stryker empties the block and nothing observable changes. An empty block is not mutated at
+    // all, and eslint's `no-empty` accepts one that carries a comment.
+  }
 
-	if (!success) throw throwForbiddenError()
+  if (!success) throw throwForbiddenError()
 }

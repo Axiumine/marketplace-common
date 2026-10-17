@@ -22,10 +22,10 @@ const KEK_BYTES = 32
  * for exactly that.
  */
 export function readKek(): Buffer {
-	const kek = Buffer.from(process.env.KEYGRIP_KEK ?? '', 'base64')
+  const kek = Buffer.from(process.env.KEYGRIP_KEK ?? '', 'base64')
 
-	if (kek.length !== KEK_BYTES)
-		throw new Error(`KEYGRIP_KEK_MISMATCH: KEYGRIP_KEK must be base64 of ${KEK_BYTES} bytes, this one decodes to ${kek.length}.`)
+  if (kek.length !== KEK_BYTES)
+    throw new Error(`KEYGRIP_KEK_MISMATCH: KEYGRIP_KEK must be base64 of ${KEK_BYTES} bytes, this one decodes to ${kek.length}.`)
 
-	return kek
+  return kek
 }

@@ -6,7 +6,7 @@ import { throwUnauthorizedError } from '@axiumine/koa-utils/graphQL/throw/throwU
  * own narrow projection result and grows no field it has no other use for.
  */
 export interface IShopOwnerEmailVerifyGated {
-	emailVerify?: { valid?: boolean }
+  emailVerify?: { valid?: boolean }
 }
 
 /**
@@ -41,7 +41,7 @@ export interface IShopOwnerEmailVerifyGated {
  * @param shopOwner the projection result, which must have asked for `emailVerify.valid`
  */
 export function checkShopOwnerEmailVerified(shopOwner: IShopOwnerEmailVerifyGated) {
-	if (shopOwner.emailVerify?.valid === false) {
-		throw throwUnauthorizedError() // fixme email: 'Confirm your email address first.'
-	}
+  if (shopOwner.emailVerify?.valid === false) {
+    throw throwUnauthorizedError() // fixme email: 'Confirm your email address first.'
+  }
 }

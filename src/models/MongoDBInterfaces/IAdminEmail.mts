@@ -19,8 +19,8 @@ import { Types } from 'mongoose'
  * own.
  */
 export interface IAdminEmail extends IAuthorizationDisDel {
-	_id: Types.ObjectId
-	login: {
-		email: string
-	}
+  _id: Types.ObjectId
+  login: {
+    email: string
+  }
 }

@@ -27,10 +27,10 @@ import { model, Schema, SchemaDefinition } from 'mongoose'
  * every write fail.
  */
 const BirthSubDocSchema = new Schema<NonNullable<IUserPersonalData['birth']>>(
-	{
-		date: encryptedPath({ plaintext: 'date', required: true })
-	},
-	{ _id: false }
+  {
+    date: encryptedPath({ plaintext: 'date', required: true })
+  },
+  { _id: false }
 )
 
 /*
@@ -43,15 +43,15 @@ const BirthSubDocSchema = new Schema<NonNullable<IUserPersonalData['birth']>>(
  * account that only ever needs an inbox.
  */
 const ContactsUserSubDocSchema = new Schema<NonNullable<IUserPersonalData['contacts']>>(
-	{
-		mobile: encryptedPath({ plaintext: 'string' }),
-		landline: encryptedPath({ plaintext: 'string' }),
-		// Random, unlike `login.email` two blocks down, and for the reason the paragraph above gives:
-		// this is a second address to be reached on, not the credential, and nothing looks an account
-		// up by it.
-		email: encryptedPath({ plaintext: 'string' })
-	},
-	{ _id: false }
+  {
+    mobile: encryptedPath({ plaintext: 'string' }),
+    landline: encryptedPath({ plaintext: 'string' }),
+    // Random, unlike `login.email` two blocks down, and for the reason the paragraph above gives:
+    // this is a second address to be reached on, not the credential, and nothing looks an account
+    // up by it.
+    email: encryptedPath({ plaintext: 'string' })
+  },
+  { _id: false }
 )
 
 /*
@@ -73,139 +73,139 @@ const ContactsUserSubDocSchema = new Schema<NonNullable<IUserPersonalData['conta
  * the geocoder's autocomplete, and one typed by hand has no map until it is re-picked.
  */
 const UserAddressSubDocSchema = BaseAddressSchema.clone().add({
-	// ⚠️ In the clear, and it must be. The `user` validator is `$and: [ {$jsonSchema}, {$expr} ]` and
-	// the `$expr` half `$map`s this `_id` over every element and checks `defaultAddress` is one of
-	// them. Encrypt either side of that comparison and the validator becomes unsatisfiable — every
-	// write to the collection is refused, not just the ones that set a default. A server-minted
-	// ObjectId is not personal data on its own, so nothing is given up.
-	_id: {
-		type: Schema.Types.ObjectId,
-		auto: true
-	},
-	// Everything else in the element is encrypted, `city` included — unlike the shop owner's address,
-	// nothing sorts or searches a customer's, and a customer reads their own document by `_id`.
-	label: encryptedPath({ plaintext: 'string' }),
-	street: encryptedPath({ plaintext: 'string', required: true }),
-	postalCode: encryptedPath({ plaintext: 'string', required: true }),
-	city: encryptedPath({ plaintext: 'string', required: true }),
-	province: encryptedPath({ plaintext: 'string', required: true }),
-	// Encrypted whole and therefore flat, as on the shop owner: random is the only algorithm defined
-	// for an object, and a sub-schema under a path that holds a `binData` has nothing to cast.
-	// `validateUserAddress` in the user resource service is what still checks the point's shape — it
-	// builds `type` itself and validates both coordinates.
-	position: encryptedPath({ plaintext: 'object' })
+  // ⚠️ In the clear, and it must be. The `user` validator is `$and: [ {$jsonSchema}, {$expr} ]` and
+  // the `$expr` half `$map`s this `_id` over every element and checks `defaultAddress` is one of
+  // them. Encrypt either side of that comparison and the validator becomes unsatisfiable — every
+  // write to the collection is refused, not just the ones that set a default. A server-minted
+  // ObjectId is not personal data on its own, so nothing is given up.
+  _id: {
+    type: Schema.Types.ObjectId,
+    auto: true
+  },
+  // Everything else in the element is encrypted, `city` included — unlike the shop owner's address,
+  // nothing sorts or searches a customer's, and a customer reads their own document by `_id`.
+  label: encryptedPath({ plaintext: 'string' }),
+  street: encryptedPath({ plaintext: 'string', required: true }),
+  postalCode: encryptedPath({ plaintext: 'string', required: true }),
+  city: encryptedPath({ plaintext: 'string', required: true }),
+  province: encryptedPath({ plaintext: 'string', required: true }),
+  // Encrypted whole and therefore flat, as on the shop owner: random is the only algorithm defined
+  // for an object, and a sub-schema under a path that holds a `binData` has nothing to cast.
+  // `validateUserAddress` in the user resource service is what still checks the point's shape — it
+  // builds `type` itself and validates both coordinates.
+  position: encryptedPath({ plaintext: 'object' })
 } as SchemaDefinition)
 
 const UserSchema: Schema<IUserModel> = new Schema(
-	{
-		_id: {
-			type: Schema.Types.ObjectId
-		},
-		login: {
-			type: LoginSubDocSchema,
-			required: true
-		},
-		// Not required, unlike the shop owner's. Registration on this tier is an email and a
-		// password; the name and contacts are filled in after the address is confirmed, and an
-		// account that never fills them in still works. Keep this in step with the `user` collection
-		// validator field for field — the validator is the source of truth, migrations are immutable,
-		// and this is the copy that moves.
-		personalData: {
-			type: {
-				_id: false,
-				// Encrypted, unlike the shop owner's two — there is no admin table over this
-				// collection, so nothing sorts or prefix-searches a customer's name.
-				firstName: encryptedPath({ plaintext: 'string', required: true }),
-				lastName: encryptedPath({ plaintext: 'string', required: true }),
-				birth: {
-					type: BirthSubDocSchema
-				},
-				contacts: {
-					type: ContactsUserSubDocSchema
-				}
-			}
-		},
-		addresses: {
-			type: [UserAddressSubDocSchema]
-		},
-		// ⚠️ The `_id` of one element of `addresses`, and the database enforces that — the `user`
-		// validator is `$and: [ {$jsonSchema}, {$expr} ]` and the second clause refuses a pointer
-		// that names nothing. Two things follow for every write path: setting the default is a
-		// single atomic `$set` with no "clear the others first" step, and removing the default
-		// address must `$unset` this in the *same* update or Mongo rejects the write.
-		//
-		// Deliberately not a `default: true` boolean on each element: that shape can represent two
-		// defaults, so "at most one" would be a rule somebody has to remember rather than something
-		// the document cannot say.
-		defaultAddress: {
-			type: Schema.Types.ObjectId
-		},
-		registeredAt: {
-			type: Date,
-			required: true
-		},
-		deleted: {
-			type: Date
-		},
-		// Which admin closed this account — an `admin._id`, and **absent when the account holder
-		// closed it themselves**. That absence is the whole encoding: no actor *type* sits beside it,
-		// because a field naming which collection an id came from is a `role` field by the back door and
-		// ADR-002 does not have one. In the clear: an id the server minted is not personal data.
-		deletedBy: {
-			type: Schema.Types.ObjectId
-		},
-		disabled: {
-			type: Boolean
-		},
-		// Which admin suspended this account — an `admin._id`, written with `disabled: true` and
-		// always present beside it. No self-service counterpart, unlike `deletedBy`: a person closes
-		// their own account, they never suspend it.
-		disabledBy: {
-			type: Schema.Types.ObjectId
-		},
-		// Why, in the admin's own words. **Mandatory whenever `disabled` is true** — enforced by the
-		// collection validator's `dependencies`, which can require the path's *presence* without being
-		// able to read what is in it.
-		//
-		// ⚠️ **The 1000-character cap is not here and cannot be.** The field is encrypted, so the
-		// validator sees a `binData` and `maxLength` does not apply. The length is enforced in the
-		// service that writes it and nowhere else — ADR-044 records the split, ADR-035 is its mirror
-		// image, and a `maxLength` added to the validator refuses every write instead of long ones.
-		//
-		// Encrypted, and the one field on this model the subject never sees: it is what the platform
-		// wrote about a customer, not what the customer declared about themselves.
-		disabledReason: encryptedPath({ plaintext: 'string' }),
-		// When the retention sweeper overwrote this document's personal data with placeholders.
-		//
-		// ⚠️ **Its absence is the sweeper's candidate filter**, which is why it stays in the clear: the
-		// sweep matches `{ deleted: { $lte: cutoff }, scrubbedAt: { $exists: false } }`, a server-side
-		// comparison. Deterministic ciphertext answers equality and nothing else — never `$lte` — and
-		// random ciphertext answers nothing at all.
-		scrubbedAt: {
-			type: Date
-		},
-		// No `waitApprov`: a shop owner waits for an admin to approve the account, a customer
-		// self-serves. The only gate between registering and logging in is `emailVerify.valid`,
-		// which `loginUser` checks.
-		resetPwd: ResetPwdSubDocSchema,
-		// Kept strictly disjoint from `resetPwd`, as on the other two models. koa-utils documents why
-		// on `IResetPwdPaths`: while the activation token and the password-reset token shared one
-		// slot, a hash issued by either flow authenticated the other, and an unauthenticated reset
-		// request killed pending activation links.
-		emailVerify: EmailVerifySubDocSchema,
-		__v: {
-			type: Number
-		}
-	},
-	{
-		collection: 'user'
-	}
+  {
+    _id: {
+      type: Schema.Types.ObjectId
+    },
+    login: {
+      type: LoginSubDocSchema,
+      required: true
+    },
+    // Not required, unlike the shop owner's. Registration on this tier is an email and a
+    // password; the name and contacts are filled in after the address is confirmed, and an
+    // account that never fills them in still works. Keep this in step with the `user` collection
+    // validator field for field — the validator is the source of truth, migrations are immutable,
+    // and this is the copy that moves.
+    personalData: {
+      type: {
+        _id: false,
+        // Encrypted, unlike the shop owner's two — there is no admin table over this
+        // collection, so nothing sorts or prefix-searches a customer's name.
+        firstName: encryptedPath({ plaintext: 'string', required: true }),
+        lastName: encryptedPath({ plaintext: 'string', required: true }),
+        birth: {
+          type: BirthSubDocSchema
+        },
+        contacts: {
+          type: ContactsUserSubDocSchema
+        }
+      }
+    },
+    addresses: {
+      type: [UserAddressSubDocSchema]
+    },
+    // ⚠️ The `_id` of one element of `addresses`, and the database enforces that — the `user`
+    // validator is `$and: [ {$jsonSchema}, {$expr} ]` and the second clause refuses a pointer
+    // that names nothing. Two things follow for every write path: setting the default is a
+    // single atomic `$set` with no "clear the others first" step, and removing the default
+    // address must `$unset` this in the *same* update or Mongo rejects the write.
+    //
+    // Deliberately not a `default: true` boolean on each element: that shape can represent two
+    // defaults, so "at most one" would be a rule somebody has to remember rather than something
+    // the document cannot say.
+    defaultAddress: {
+      type: Schema.Types.ObjectId
+    },
+    registeredAt: {
+      type: Date,
+      required: true
+    },
+    deleted: {
+      type: Date
+    },
+    // Which admin closed this account — an `admin._id`, and **absent when the account holder
+    // closed it themselves**. That absence is the whole encoding: no actor *type* sits beside it,
+    // because a field naming which collection an id came from is a `role` field by the back door and
+    // ADR-002 does not have one. In the clear: an id the server minted is not personal data.
+    deletedBy: {
+      type: Schema.Types.ObjectId
+    },
+    disabled: {
+      type: Boolean
+    },
+    // Which admin suspended this account — an `admin._id`, written with `disabled: true` and
+    // always present beside it. No self-service counterpart, unlike `deletedBy`: a person closes
+    // their own account, they never suspend it.
+    disabledBy: {
+      type: Schema.Types.ObjectId
+    },
+    // Why, in the admin's own words. **Mandatory whenever `disabled` is true** — enforced by the
+    // collection validator's `dependencies`, which can require the path's *presence* without being
+    // able to read what is in it.
+    //
+    // ⚠️ **The 1000-character cap is not here and cannot be.** The field is encrypted, so the
+    // validator sees a `binData` and `maxLength` does not apply. The length is enforced in the
+    // service that writes it and nowhere else — ADR-044 records the split, ADR-035 is its mirror
+    // image, and a `maxLength` added to the validator refuses every write instead of long ones.
+    //
+    // Encrypted, and the one field on this model the subject never sees: it is what the platform
+    // wrote about a customer, not what the customer declared about themselves.
+    disabledReason: encryptedPath({ plaintext: 'string' }),
+    // When the retention sweeper overwrote this document's personal data with placeholders.
+    //
+    // ⚠️ **Its absence is the sweeper's candidate filter**, which is why it stays in the clear: the
+    // sweep matches `{ deleted: { $lte: cutoff }, scrubbedAt: { $exists: false } }`, a server-side
+    // comparison. Deterministic ciphertext answers equality and nothing else — never `$lte` — and
+    // random ciphertext answers nothing at all.
+    scrubbedAt: {
+      type: Date
+    },
+    // No `waitApprov`: a shop owner waits for an admin to approve the account, a customer
+    // self-serves. The only gate between registering and logging in is `emailVerify.valid`,
+    // which `loginUser` checks.
+    resetPwd: ResetPwdSubDocSchema,
+    // Kept strictly disjoint from `resetPwd`, as on the other two models. koa-utils documents why
+    // on `IResetPwdPaths`: while the activation token and the password-reset token shared one
+    // slot, a hash issued by either flow authenticated the other, and an unauthenticated reset
+    // request killed pending activation links.
+    emailVerify: EmailVerifySubDocSchema,
+    __v: {
+      type: Number
+    }
+  },
+  {
+    collection: 'user'
+  }
 )
 
 UserSchema.plugin(fieldEncryptionPlugin, { fields: ENCRYPTED_FIELDS_USER, keyAltName: KEY_ALT_NAME_USER })
 
 UserSchema.methods.generateHashPassword = async function (password: string) {
-	return await bcrypt.hash(password, SALT_ROUNDS)
+  return await bcrypt.hash(password, SALT_ROUNDS)
 }
 
 const User = model<IUserModel>('User', UserSchema)

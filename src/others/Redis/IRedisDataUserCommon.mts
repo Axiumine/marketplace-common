@@ -7,5 +7,5 @@
  * the two symmetrical would be inventing a flow that does not exist.
  */
 export interface IRedisDataUserCommon {
-	email: string
+  email: string
 }

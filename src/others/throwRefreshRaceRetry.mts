@@ -24,11 +24,11 @@ export const REFRESH_RACE_RETRY_CODE = 'REFRESH_RACE_RETRY'
  * the client retries, the winner's `Set-Cookie` has landed in the jar both tabs share.
  */
 export const throwRefreshRaceRetry = (): never => {
-	throw new GraphQLError('Refresh In Progress', {
-		extensions: {
-			http: { status: 409 },
-			code: REFRESH_RACE_RETRY_CODE,
-			description: 'This refresh token was just rotated by another request. Retry with the current cookie.'
-		}
-	})
+  throw new GraphQLError('Refresh In Progress', {
+    extensions: {
+      http: { status: 409 },
+      code: REFRESH_RACE_RETRY_CODE,
+      description: 'This refresh token was just rotated by another request. Retry with the current cookie.'
+    }
+  })
 }

@@ -18,35 +18,35 @@ import { type ISentryScrubbableEvent, sentryBeforeSend } from '../../src/others/
 type TSentryTransactionEvent = Parameters<NonNullable<NodeOptions['beforeSendTransaction']>>[0]
 
 describe('sentryBeforeSend drops into Sentry.init with no cast at the call site', () => {
-	test("the SDK's own ErrorEvent satisfies the structural constraint", () => {
-		expectTypeOf<ErrorEvent>().toExtend<ISentryScrubbableEvent>()
-	})
+  test("the SDK's own ErrorEvent satisfies the structural constraint", () => {
+    expectTypeOf<ErrorEvent>().toExtend<ISentryScrubbableEvent>()
+  })
 
-	test('the function is assignable to the beforeSend option', () => {
-		expectTypeOf(sentryBeforeSend).toExtend<NonNullable<NodeOptions['beforeSend']>>()
-	})
+  test('the function is assignable to the beforeSend option', () => {
+    expectTypeOf(sentryBeforeSend).toExtend<NonNullable<NodeOptions['beforeSend']>>()
+  })
 
-	// The SDK routes transaction events to the second hook only, and the four network-derived
-	// attributes the scrubber exists for are on the transaction. One function, both hooks — proved here so
-	// that a widening of the interface for the transaction shape cannot quietly stop fitting either.
-	test("the SDK's own transaction event satisfies the structural constraint", () => {
-		expectTypeOf<TSentryTransactionEvent>().toExtend<ISentryScrubbableEvent>()
-	})
+  // The SDK routes transaction events to the second hook only, and the four network-derived
+  // attributes the scrubber exists for are on the transaction. One function, both hooks — proved here so
+  // that a widening of the interface for the transaction shape cannot quietly stop fitting either.
+  test("the SDK's own transaction event satisfies the structural constraint", () => {
+    expectTypeOf<TSentryTransactionEvent>().toExtend<ISentryScrubbableEvent>()
+  })
 
-	test('the function is assignable to the beforeSendTransaction option', () => {
-		expectTypeOf(sentryBeforeSend).toExtend<NonNullable<NodeOptions['beforeSendTransaction']>>()
-	})
+  test('the function is assignable to the beforeSendTransaction option', () => {
+    expectTypeOf(sentryBeforeSend).toExtend<NonNullable<NodeOptions['beforeSendTransaction']>>()
+  })
 
-	test('the event type flows through the transaction hook too', () => {
-		expectTypeOf(sentryBeforeSend<TSentryTransactionEvent>).returns.toEqualTypeOf<TSentryTransactionEvent>()
-	})
+  test('the event type flows through the transaction hook too', () => {
+    expectTypeOf(sentryBeforeSend<TSentryTransactionEvent>).returns.toEqualTypeOf<TSentryTransactionEvent>()
+  })
 
-	test('the event type flows through — an ErrorEvent in is an ErrorEvent out', () => {
-		expectTypeOf(sentryBeforeSend<ErrorEvent>).returns.toEqualTypeOf<ErrorEvent>()
-	})
+  test('the event type flows through — an ErrorEvent in is an ErrorEvent out', () => {
+    expectTypeOf(sentryBeforeSend<ErrorEvent>).returns.toEqualTypeOf<ErrorEvent>()
+  })
 
-	test('negative: an event missing the bags the scrubber walks is still accepted, an unrelated type is not', () => {
-		expectTypeOf<Record<string, never>>().toExtend<ISentryScrubbableEvent>()
-		expectTypeOf<string>().not.toExtend<ISentryScrubbableEvent>()
-	})
+  test('negative: an event missing the bags the scrubber walks is still accepted, an unrelated type is not', () => {
+    expectTypeOf<Record<string, never>>().toExtend<ISentryScrubbableEvent>()
+    expectTypeOf<string>().not.toExtend<ISentryScrubbableEvent>()
+  })
 })

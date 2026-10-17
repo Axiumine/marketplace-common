@@ -13,10 +13,10 @@
  * answered "not attributable" for now. Adding a value here would answer it by accident.
  */
 export const REUSE_EVENT_ACTIONS = [
-	/** A consumed refresh token was presented again, past the grace window. */
-	'refreshTokenReplayed',
-	/** The session reached its absolute age cap, measured from the login it descends from. */
-	'sessionCapReached'
+  /** A consumed refresh token was presented again, past the grace window. */
+  'refreshTokenReplayed',
+  /** The session reached its absolute age cap, measured from the login it descends from. */
+  'sessionCapReached'
 ] as const
 
 export type ReuseEventAction = (typeof REUSE_EVENT_ACTIONS)[number]

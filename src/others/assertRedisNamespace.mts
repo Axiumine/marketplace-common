@@ -8,7 +8,7 @@ import { keygripKey } from '@others/sessionKeys.mjs'
  * dependency of the *services*, not of this library.
  */
 export interface IRedisNamespaceProbeStore {
-	hGetAll(key: string): Promise<Record<string, string>>
+  hGetAll(key: string): Promise<Record<string, string>>
 }
 
 /**
@@ -38,10 +38,10 @@ export interface IRedisNamespaceProbeStore {
  * both causes because at this point the two are indistinguishable from inside the process.
  */
 export async function assertRedisNamespace(store: IRedisNamespaceProbeStore): Promise<void> {
-	const record = await store.hGetAll(keygripKey())
+  const record = await store.hGetAll(keygripKey())
 
-	if (!record?.wrapped)
-		throw new Error(
-			`KEYGRIP_RECORD_MISSING: no keygrip key set at "${keygripKey()}". Either REDIS_KEY names a namespace this platform was never seeded into, or "yarn seed:keygrip" has not been run in marketplace-db-setup.`
-		)
+  if (!record?.wrapped)
+    throw new Error(
+      `KEYGRIP_RECORD_MISSING: no keygrip key set at "${keygripKey()}". Either REDIS_KEY names a namespace this platform was never seeded into, or "yarn seed:keygrip" has not been run in marketplace-db-setup.`
+    )
 }

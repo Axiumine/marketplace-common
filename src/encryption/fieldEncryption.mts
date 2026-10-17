@@ -13,9 +13,9 @@ import { Binary, ClientEncryption, MongoClient, MongoServerError } from 'mongodb
  * a 32-byte MAC key and 32 bytes of reserve, and rejects any other length outright.
  */
 export interface IFieldEncryptionConfig {
-	client: MongoClient
-	keyVaultNamespace: string
-	masterKey: Buffer
+  client: MongoClient
+  keyVaultNamespace: string
+  masterKey: Buffer
 }
 
 export const MASTER_KEY_LENGTH = 96
@@ -30,7 +30,7 @@ export const MASTER_KEY_LENGTH = 96
 let clientEncryption: ClientEncryption | null = null
 
 export function isFieldEncryptionReady(): boolean {
-	return clientEncryption !== null
+  return clientEncryption !== null
 }
 
 /**
@@ -42,11 +42,11 @@ export function isFieldEncryptionReady(): boolean {
  * detectable afterwards without reading every document.
  */
 export function getFieldEncryption(): ClientEncryption {
-	if (clientEncryption === null) {
-		throw new Error('Field encryption is not initialised — call initFieldEncryption() before the first query')
-	}
+  if (clientEncryption === null) {
+    throw new Error('Field encryption is not initialised — call initFieldEncryption() before the first query')
+  }
 
-	return clientEncryption
+  return clientEncryption
 }
 
 /**
@@ -54,7 +54,7 @@ export function getFieldEncryption(): ClientEncryption {
  * calls it.
  */
 export function resetFieldEncryption(): void {
-	clientEncryption = null
+  clientEncryption = null
 }
 
 /**
@@ -66,12 +66,12 @@ export function resetFieldEncryption(): void {
  * nothing today and costs nothing to keep correct.
  */
 async function ensureKeyVaultIndex(client: MongoClient, keyVaultNamespace: string): Promise<void> {
-	const [database, collection] = keyVaultNamespace.split('.')
+  const [database, collection] = keyVaultNamespace.split('.')
 
-	await client
-		.db(database)
-		.collection(collection as string)
-		.createIndex({ keyAltNames: 1 }, { unique: true, partialFilterExpression: { keyAltNames: { $exists: true } } })
+  await client
+    .db(database)
+    .collection(collection as string)
+    .createIndex({ keyAltNames: 1 }, { unique: true, partialFilterExpression: { keyAltNames: { $exists: true } } })
 }
 
 /**
@@ -83,20 +83,20 @@ async function ensureKeyVaultIndex(client: MongoClient, keyVaultNamespace: strin
  * `E11000` and reads the winner's key, which is the correct outcome and the only one.
  */
 async function ensureDataKeys(encryption: ClientEncryption): Promise<void> {
-	for (const keyAltName of KEY_ALT_NAMES) {
-		const existing = await encryption.getKeyByAltName(keyAltName)
-		if (existing !== null) {
-			continue
-		}
+  for (const keyAltName of KEY_ALT_NAMES) {
+    const existing = await encryption.getKeyByAltName(keyAltName)
+    if (existing !== null) {
+      continue
+    }
 
-		try {
-			await encryption.createDataKey('local', { keyAltNames: [keyAltName] })
-		} catch (error) {
-			if (!(error instanceof MongoServerError) || error.code !== 11000) {
-				throw error
-			}
-		}
-	}
+    try {
+      await encryption.createDataKey('local', { keyAltNames: [keyAltName] })
+    } catch (error) {
+      if (!(error instanceof MongoServerError) || error.code !== 11000) {
+        throw error
+      }
+    }
+  }
 }
 
 /**
@@ -109,26 +109,26 @@ async function ensureDataKeys(encryption: ClientEncryption): Promise<void> {
  * reset.
  */
 export async function initFieldEncryption(config: IFieldEncryptionConfig): Promise<void> {
-	if (config.masterKey.length !== MASTER_KEY_LENGTH) {
-		throw new Error(`The CSFLE master key must be exactly ${MASTER_KEY_LENGTH} bytes, got ${config.masterKey.length}`)
-	}
+  if (config.masterKey.length !== MASTER_KEY_LENGTH) {
+    throw new Error(`The CSFLE master key must be exactly ${MASTER_KEY_LENGTH} bytes, got ${config.masterKey.length}`)
+  }
 
-	await ensureKeyVaultIndex(config.client, config.keyVaultNamespace)
+  await ensureKeyVaultIndex(config.client, config.keyVaultNamespace)
 
-	const encryption = new ClientEncryption(config.client, {
-		keyVaultNamespace: config.keyVaultNamespace,
-		kmsProviders: { local: { key: config.masterKey } }
-	})
+  const encryption = new ClientEncryption(config.client, {
+    keyVaultNamespace: config.keyVaultNamespace,
+    kmsProviders: { local: { key: config.masterKey } }
+  })
 
-	await ensureDataKeys(encryption)
+  await ensureDataKeys(encryption)
 
-	clientEncryption = encryption
+  clientEncryption = encryption
 }
 
 export async function encryptValue(value: unknown, algorithm: EncryptionAlgorithm, keyAltName: string): Promise<Binary> {
-	return await getFieldEncryption().encrypt(value, { keyAltName: keyAltName, algorithm: algorithm })
+  return await getFieldEncryption().encrypt(value, { keyAltName: keyAltName, algorithm: algorithm })
 }
 
 export async function decryptValue(value: Binary): Promise<unknown> {
-	return await getFieldEncryption().decrypt(value)
+  return await getFieldEncryption().decrypt(value)
 }

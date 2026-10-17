@@ -17,12 +17,12 @@ import { GraphQLAddressFrag } from '../types/fragments/GraphQLAddressFrag.mjs'
  * repointing the default in one call, which is two writes wearing one name.
  */
 export const GraphQLInputUserAddress = new GraphQLInputObjectType({
-	name: 'GraphQLInputUserAddress',
-	fields: () => ({
-		...GraphQLAddressFrag,
-		label: { type: GraphQLString },
-		position: { type: GraphQLInputUserAddressPosition }
-	})
+  name: 'GraphQLInputUserAddress',
+  fields: () => ({
+    ...GraphQLAddressFrag,
+    label: { type: GraphQLString },
+    position: { type: GraphQLInputUserAddressPosition }
+  })
 })
 
 /**
@@ -41,8 +41,8 @@ export const GraphQLInputUserAddress = new GraphQLInputObjectType({
  * `Int cannot represent non-integer value: 45.75`.
  */
 const GraphQLInputUserAddressPosition = new GraphQLInputObjectType({
-	name: 'GraphQLInputUserAddressPosition',
-	fields: () => ({
-		coordinates: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLFloat))) }
-	})
+  name: 'GraphQLInputUserAddressPosition',
+  fields: () => ({
+    coordinates: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLFloat))) }
+  })
 })

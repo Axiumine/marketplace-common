@@ -12,6 +12,6 @@ import { Tier } from '@others/Tier.mjs'
  * somebody to trust it instead of the middleware.
  */
 export interface IRedisDataAdmin extends IRedisDataAdminCommon {
-	_id: string
-	tier: Tier
+  _id: string
+  tier: Tier
 }

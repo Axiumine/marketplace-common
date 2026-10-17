@@ -24,5 +24,5 @@ import { createHash } from 'node:crypto'
  * matched by.
  */
 export function sha256Hex(value: string) {
-	return createHash('sha256').update(value).digest('hex')
+  return createHash('sha256').update(value).digest('hex')
 }

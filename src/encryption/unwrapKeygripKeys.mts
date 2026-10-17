@@ -24,22 +24,22 @@ import { IKeygripKeyMaterial } from '@others/IKeygripKeyMaterial.mjs'
  * checked — that the array is not empty — belongs to `loadKeygrip`, where the boot decision is made.
  */
 export function unwrapKeygripKeys(wrapped: string, version: number, kek: Buffer): IKeygripKeyMaterial[] {
-	const raw = Buffer.from(wrapped, 'base64')
-	const iv = raw.subarray(0, KEYGRIP_IV_BYTES)
-	const tag = raw.subarray(KEYGRIP_IV_BYTES, KEYGRIP_IV_BYTES + KEYGRIP_TAG_BYTES)
-	const ciphertext = raw.subarray(KEYGRIP_IV_BYTES + KEYGRIP_TAG_BYTES)
+  const raw = Buffer.from(wrapped, 'base64')
+  const iv = raw.subarray(0, KEYGRIP_IV_BYTES)
+  const tag = raw.subarray(KEYGRIP_IV_BYTES, KEYGRIP_IV_BYTES + KEYGRIP_TAG_BYTES)
+  const ciphertext = raw.subarray(KEYGRIP_IV_BYTES + KEYGRIP_TAG_BYTES)
 
-	/*
-	 * ⚠️ `authTagLength` is passed explicitly. Without it node accepts a *truncated* tag — GCM verifies
-	 * against 8 bytes as readily as against 16, with nothing but a deprecation warning, at 2^64 instead of
-	 * 2^128 to forge. The layout only yields a short tag on a blob shorter than 28 bytes, so what this buys
-	 * is a rejection on the length rather than a confusing authentication failure four calls later.
-	 */
-	const decipher = createDecipheriv('aes-256-gcm', kek, iv, { authTagLength: KEYGRIP_TAG_BYTES })
+  /*
+   * ⚠️ `authTagLength` is passed explicitly. Without it node accepts a *truncated* tag — GCM verifies
+   * against 8 bytes as readily as against 16, with nothing but a deprecation warning, at 2^64 instead of
+   * 2^128 to forge. The layout only yields a short tag on a blob shorter than 28 bytes, so what this buys
+   * is a rejection on the length rather than a confusing authentication failure four calls later.
+   */
+  const decipher = createDecipheriv('aes-256-gcm', kek, iv, { authTagLength: KEYGRIP_TAG_BYTES })
 
-	// utf8 by default on both, matching the writer — see the note there on why neither is named.
-	decipher.setAAD(Buffer.from(String(version)))
-	decipher.setAuthTag(tag)
+  // utf8 by default on both, matching the writer — see the note there on why neither is named.
+  decipher.setAAD(Buffer.from(String(version)))
+  decipher.setAuthTag(tag)
 
-	return JSON.parse(Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString())
+  return JSON.parse(Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString())
 }

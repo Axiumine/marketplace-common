@@ -24,15 +24,15 @@
  * spelling only type-checks if the data interface has a slot for the flag.
  */
 export interface IUserPersonalData {
-	_id?: boolean
-	firstName: string
-	lastName: string
-	birth?: {
-		date: Date
-	}
-	contacts?: {
-		mobile?: string
-		landline?: string
-		email?: string
-	}
+  _id?: boolean
+  firstName: string
+  lastName: string
+  birth?: {
+    date: Date
+  }
+  contacts?: {
+    mobile?: string
+    landline?: string
+    email?: string
+  }
 }

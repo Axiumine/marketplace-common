@@ -88,13 +88,13 @@ export const REFRESH_FAMILY_WINDOW_SECONDS = 3600
  * command on `ISessionReadStore`, whose whole point is that reading a session cannot write anything.
  */
 export const guardRefreshAttempt = (store: IRateLimitStore, refreshToken: string) =>
-	assertUnderRateLimit(
-		store,
-		REFRESH_ATTEMPT_BUCKET,
-		hashSessionToken(refreshToken),
-		REFRESH_ATTEMPTS_PER_WINDOW,
-		REFRESH_ATTEMPT_WINDOW_SECONDS
-	)
+  assertUnderRateLimit(
+    store,
+    REFRESH_ATTEMPT_BUCKET,
+    hashSessionToken(refreshToken),
+    REFRESH_ATTEMPTS_PER_WINDOW,
+    REFRESH_ATTEMPT_WINDOW_SECONDS
+  )
 
 /**
  * The **post-lookup** limiter: called by `refreshSessionTokens` on the path that actually mints a pair,
@@ -106,4 +106,4 @@ export const guardRefreshAttempt = (store: IRateLimitStore, refreshToken: string
  * attacker who already holds a valid token. `guardRefreshAttempt` is the one carrying weight.
  */
 export const guardFamilyMintRate = (store: IRateLimitStore, familyId: string) =>
-	assertUnderRateLimit(store, REFRESH_FAMILY_BUCKET, familyId, REFRESH_MINTS_PER_WINDOW, REFRESH_FAMILY_WINDOW_SECONDS)
+  assertUnderRateLimit(store, REFRESH_FAMILY_BUCKET, familyId, REFRESH_MINTS_PER_WINDOW, REFRESH_FAMILY_WINDOW_SECONDS)

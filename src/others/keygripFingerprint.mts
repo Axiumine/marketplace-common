@@ -20,4 +20,4 @@ import { sha256Hex } from '@others/sha256Hex.mjs'
  * makes the holders table permanently disagree with the record it is reporting on.
  */
 export const keygripFingerprint = (keys: readonly IKeygripKeyMaterial[]) =>
-	sha256Hex(keys.map((key) => key.id).join(':')).slice(0, 12)
+  sha256Hex(keys.map((key) => key.id).join(':')).slice(0, 12)
