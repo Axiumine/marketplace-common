@@ -11,7 +11,21 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.6.0...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.6.1...HEAD)
+
+## [4.6.1](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.1) - 2026-10-17
+
+### Changed
+
+- **`LICENSE` is now the pristine GPL-3.0 text — ships no change to `dist/`.** GitHub's licence detector
+  reported `NOASSERTION` for the file: a nine-line preamble above the GPL text held its similarity to the
+  FSF's text at 88.81% against a 98% threshold. `LICENSE` is now byte-identical to gnu.org's
+  `gpl-3.0.txt` (workspace ADR-056). It is the one file in this release that reaches the tarball: npm packs
+  `LICENSE` and `README.md` whatever `files` says, so the licence text a consumer finds in
+  `node_modules` changes while `dist/` stays byte-identical to `4.6.0`'s. That is why this is a patch.
+- **The `README.md` License section now carries the identity line, the copyright notice and the GPL notice
+  that used to head `LICENSE` — ships no change to `dist/`.** Documentation. `package.json`'s `license`
+  field, `GPL-3.0-or-later`, is unchanged.
 
 ## [4.6.0](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.0) - 2026-09-23
 
