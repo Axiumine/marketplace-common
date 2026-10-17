@@ -92,4 +92,5 @@ asking** — every other repo in the workspace is push-on-request.
   (never `-D`, which would drop unmerged work).
 - ⚠️ Never lower a coverage or mutation threshold, and never remove a gate. A threshold miss gets the
   missing assertion, not a lowered number.
-- Tabs, not spaces. English only. Node `^24.18.0`, yarn classic.
+- Two spaces, not tabs (ADR-058): prettier `useTabs: false`, `tabWidth: 2`, and prettier alone owns indentation — the shared
+  config's `indent: ['error', 'tab']` is switched off in `eslint.config.js`. English only. Node `^24.18.0`, yarn classic.
