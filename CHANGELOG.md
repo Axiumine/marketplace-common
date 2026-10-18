@@ -13,6 +13,16 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.6.1...HEAD)
 
+### Changed
+
+- **`@sentry/node` 10.75.0 → 10.76.2 — ships no change to `dist/`.** It is a devDependency, imported nowhere
+  under `src/`, and the guard that pins it was bumped with it and now also covers `@sentry/node-core`,
+  `@sentry/opentelemetry` and `@sentry/server-utils`. The release only narrows what the SDK collects.
+- **Still open, deliberately not in that commit:** the JSDoc in `src/others/sentryBeforeSend.mts` still cites
+  10.75.0 and says `urlQueryParams: false` gates only `event.request.query_string`, which 10.76.2 made too
+  narrow a description (it now gates every URL the SDK collects). Correcting it changes `dist/`
+  (`removeComments` is off), so it goes in the next release.
+
 ## [4.6.1](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.1) - 2026-10-17
 
 ### Changed
