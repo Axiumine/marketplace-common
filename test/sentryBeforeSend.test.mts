@@ -369,6 +369,8 @@ describe('sentryBeforeSend — the removal list, one key at a time', () => {
     'user_agent',
     'ip_address',
     'remote_addr',
+    'http.query',
+    'url.query',
     'keygrip_kek',
     'http.request.header.authorization',
     'http.request.header.anything-added-later',
@@ -385,16 +387,21 @@ describe('sentryBeforeSend — the removal list, one key at a time', () => {
   })
 
   // Header attribute names arrive lower-cased today. The guarantee must not depend on that.
-  it.each(['Authorization', 'X-Forwarded-For', 'HTTP.REQUEST.HEADER.AUTHORIZATION', 'Http.Client_Ip', 'User-Agent'])(
-    'removes %s regardless of case',
-    (key) => {
-      const event: ISentryScrubbableEvent = { contexts: { trace: { data: { [key]: TOKEN, keep: 'kept' } } } }
+  it.each([
+    'Authorization',
+    'X-Forwarded-For',
+    'HTTP.REQUEST.HEADER.AUTHORIZATION',
+    'Http.Client_Ip',
+    'User-Agent',
+    'HTTP.QUERY',
+    'Url.Query'
+  ])('removes %s regardless of case', (key) => {
+    const event: ISentryScrubbableEvent = { contexts: { trace: { data: { [key]: TOKEN, keep: 'kept' } } } }
 
-      sentryBeforeSend(event)
+    sentryBeforeSend(event)
 
-      expect(event.contexts?.trace?.data).toStrictEqual({ keep: 'kept' })
-    }
-  )
+    expect(event.contexts?.trace?.data).toStrictEqual({ keep: 'kept' })
+  })
 
   it.each(['http.method', 'url.path', 'sentry.op', 'net.peer.port', 'http.route', 'server.address'])('keeps %s', (key) => {
     const event: ISentryScrubbableEvent = { contexts: { trace: { data: { [key]: 'kept' } } } }
@@ -402,6 +409,114 @@ describe('sentryBeforeSend — the removal list, one key at a time', () => {
     sentryBeforeSend(event)
 
     expect(event.contexts?.trace?.data).toStrictEqual({ [key]: 'kept' })
+  })
+})
+
+describe('sentryBeforeSend — the query string as a span or breadcrumb attribute', () => {
+  // `docs/report/sentry-10-76-2-url-query-capture.md` §3: at `@sentry/node` 10.75.0, with `urlQueryParams`
+  // set to `false`, the query string of an inbound and of an outgoing request still shipped in these two
+  // keys — on the server transaction, on the client span and on the breadcrumbs of a transaction and of a
+  // later error. 10.76.2 gates them SDK-side; these tests keep the guarantee independent of that version.
+  const QUERY = 'token=QSENTINEL&user=alice'
+
+  // Both exact keys, plus a mixed-case spelling of each: a case-sensitive match would let the second pair
+  // through while the first pair passed.
+  const QUERY_KEYS = ['http.query', 'url.query', 'HTTP.QUERY', 'Url.Query']
+
+  /** One attribute bag with a query-bearing key and three neighbours that must come out untouched. */
+  function bagWith(key: string): Record<string, unknown> {
+    return { 'http.method': 'POST', [key]: QUERY, 'url.path': '/probe', 'url.scheme': 'https' }
+  }
+
+  const NEIGHBOURS = { 'http.method': 'POST', 'url.path': '/probe', 'url.scheme': 'https' }
+
+  it.each(QUERY_KEYS)('removes %s from the trace context and keeps the keys beside it', (key) => {
+    const event: ISentryScrubbableEvent = { contexts: { trace: { data: bagWith(key) } } }
+
+    sentryBeforeSend(event)
+
+    expect(event.contexts?.trace?.data).toStrictEqual(NEIGHBOURS)
+  })
+
+  it.each(QUERY_KEYS)('removes %s from a span and leaves the span next to it alone', (key) => {
+    const event: ISentryScrubbableEvent = {
+      spans: [{ data: { 'sentry.op': 'http.client', 'url.path': '/probe' } }, { data: bagWith(key) }]
+    }
+
+    sentryBeforeSend(event)
+
+    expect(event.spans?.map((span) => span.data)).toStrictEqual([
+      { 'sentry.op': 'http.client', 'url.path': '/probe' },
+      NEIGHBOURS
+    ])
+  })
+
+  it.each(QUERY_KEYS)('removes %s from a breadcrumb data bag and keeps the rest of the breadcrumb', (key) => {
+    const event: ISentryScrubbableEvent = {
+      breadcrumbs: [{ category: 'http', type: 'http', data: bagWith(key) }] as unknown as ISentryScrubbableEvent['breadcrumbs']
+    }
+
+    sentryBeforeSend(event)
+
+    expect(event.breadcrumbs).toStrictEqual([{ category: 'http', type: 'http', data: NEIGHBOURS }])
+  })
+
+  // Matching is by whole key. The names are not SDK attributes — they exist to prove that sharing a prefix
+  // with a removed key removes nothing.
+  it.each(['http.querystring', 'url.query_params', 'http.query.extra'])(
+    'keeps %s, which only starts like a removed key',
+    (key) => {
+      const event: ISentryScrubbableEvent = {
+        contexts: { trace: { data: { [key]: 'kept' } } },
+        spans: [{ data: { [key]: 'kept' } }],
+        breadcrumbs: [{ data: { [key]: 'kept' } }]
+      }
+
+      sentryBeforeSend(event)
+
+      expect(event.contexts?.trace?.data).toStrictEqual({ [key]: 'kept' })
+      expect(event.spans?.[0]?.data).toStrictEqual({ [key]: 'kept' })
+      expect(event.breadcrumbs?.[0]?.data).toStrictEqual({ [key]: 'kept' })
+    }
+  )
+
+  // The five fields of the 10.75.0 control, in the shape the replay recorded them, with the URL-valued
+  // neighbours the same event carries: those are truncated by `sanitiseUrl`, the bare query strings removed.
+  it('removes all five fields the 10.75.0 replay found and leaves no sentinel in the serialised event', () => {
+    const event: ISentryScrubbableEvent = {
+      contexts: {
+        trace: {
+          data: {
+            'sentry.op': 'http.server',
+            'url.full': 'https://api.example/probe?token=QSENTINEL&user=alice',
+            'http.target': '/probe?token=QSENTINEL&user=alice',
+            'http.query': 'token=QSENTINEL&user=alice'
+          }
+        }
+      } as ISentryScrubbableEvent['contexts'],
+      spans: [
+        {
+          data: {
+            'sentry.op': 'http.client',
+            'url.full': 'https://backend.example/call?apikey=OSENTINEL',
+            'url.query': '?apikey=OSENTINEL',
+            'http.query': 'apikey=OSENTINEL'
+          }
+        }
+      ],
+      breadcrumbs: [{ data: { 'http.method': 'GET', 'http.query': 'apikey=OSENTINEL' } }]
+    }
+
+    sentryBeforeSend(event)
+
+    expect(event.contexts?.trace?.data).toStrictEqual({
+      'sentry.op': 'http.server',
+      'url.full': 'https://api.example/probe',
+      'http.target': '/probe'
+    })
+    expect(event.spans?.[0]?.data).toStrictEqual({ 'sentry.op': 'http.client', 'url.full': 'https://backend.example/call' })
+    expect(event.breadcrumbs?.[0]?.data).toStrictEqual({ 'http.method': 'GET' })
+    expect(JSON.stringify(event)).not.toMatch(/QSENTINEL|OSENTINEL|alice/u)
   })
 })
 

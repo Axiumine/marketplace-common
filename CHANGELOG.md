@@ -11,17 +11,40 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.6.1...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.6.2...HEAD)
+
+## [4.6.2](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.2) - 2026-10-18
+
+### Fixed
+
+- **`sentryBeforeSend` now removes `http.query` and `url.query`**, the query string of a request as a span or
+  breadcrumb attribute, wherever the scrubber walks a bag: `contexts.trace.data`, `spans[].data` and
+  `breadcrumbs[].data`, matched exactly and case-insensitively like the rest of the list. Measured at
+  `@sentry/node` 10.75.0 with `dataCollection.urlQueryParams` set to `false`: the query string of an inbound
+  request still shipped in `http.query` on the server transaction, and that of an outgoing call in `http.query`
+  and `url.query` on the client span and in `http.query` on the breadcrumbs of a transaction and of a later
+  error, and the scrubber passed all of it untouched (workspace
+  `docs/report/sentry-10-76-2-url-query-capture.md` §3). 10.76.2 gates them SDK-side; the two keys now stay on
+  the list so the guarantee does not depend on the SDK version. Consumer-observable: an event that carried one
+  of the two keys no longer does after `beforeSend` / `beforeSendTransaction`. Nothing else in the event changes.
+  The URL-valued keys (`url.full`, `http.url`, `http.target`, `url`) are unchanged and still keep their path.
 
 ### Changed
 
+- **The JSDoc of `src/others/sentryBeforeSend.mts` is corrected, and it ships** (`removeComments` is off, so the
+  comments are in `dist/`; no runtime behaviour changes beyond the entry above). The `REMOVED_PREFIXES` comment
+  cited `@sentry/core` 10.75.0 `filterKeyValueData.js:11`; it now cites 10.76.2, where the check is
+  `shouldFilterDataKey` (`filterKeyValueData.js:8-23`, check on `:14`) and the value written is `[Filtered]`,
+  not an absent attribute. The `URL_VALUED_KEYS` comment said `urlQueryParams: false` gates only
+  `event.request.query_string`; on the Node SDK 10.76.2 it also reaches `event.request.url`, `url.full`,
+  `http.url`, `http.target`, `url.query` and `http.query`, and the comment now says so with their call sites.
+  The browser measurement in that comment is relabelled as taken at 10.69.0 and not repeated at 10.76.2. The
+  `file.js:line` references in the file are re-pointed at 10.76.2, and the services' body-size option is named
+  as it is spelt on `httpIntegration`, `maxIncomingRequestBodySize`.
 - **`@sentry/node` 10.75.0 → 10.76.2 — ships no change to `dist/`.** It is a devDependency, imported nowhere
   under `src/`, and the guard that pins it was bumped with it and now also covers `@sentry/node-core`,
-  `@sentry/opentelemetry` and `@sentry/server-utils`. The release only narrows what the SDK collects.
-- **Still open, deliberately not in that commit:** the JSDoc in `src/others/sentryBeforeSend.mts` still cites
-  10.75.0 and says `urlQueryParams: false` gates only `event.request.query_string`, which 10.76.2 made too
-  narrow a description (it now gates every URL the SDK collects). Correcting it changes `dist/`
-  (`removeComments` is off), so it goes in the next release.
+  `@sentry/opentelemetry` and `@sentry/server-utils`. The release only narrows what the SDK collects; it is
+  recorded here because it is what made the two keys above worth re-measuring.
 
 ## [4.6.1](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.1) - 2026-10-17
 
