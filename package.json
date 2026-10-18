@@ -451,7 +451,7 @@
 		"eslint-plugin-n": "^18.2.2",
 		"eslint-plugin-promise": "^7.2.1",
 		"eslint-plugin-simple-import-sort": "^14.0.0",
-		"graphql": "^16.11.0",
+		"graphql": "^17.0.2",
 		"mongodb": "^7.5.0",
 		"mongodb-client-encryption": "^7.2.1",
 		"mongoose": "^9.1.1",
