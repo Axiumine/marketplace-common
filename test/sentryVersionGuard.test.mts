@@ -32,12 +32,26 @@ import { sentryBeforeSend } from '../src/others/sentryBeforeSend.mts'
  * a shorthand for both directions, and the explicit `{ request: false, response: false }` passed here
  * still resolves through `??` to both `false`. No `dataCollection` category was added, which is the
  * change that would have mattered most — an omitted category is an enabled one.
+ *
+ * 10.75.0 → 10.76.2 is the second bump this guard caught, and unlike the first it is not byte-identical. Two files of the
+ * audited surface changed, both for one reason: 10.75.2 wires `dataCollection.urlQueryParams` into every URL the SDK
+ * collects (`event.request.url`, the server span's `url.full`, `http.url` and `http.target`, outgoing `url.query` and
+ * `http.query`) through the new `filterCollectedUrl` and `filterUrlQuery` modules. They are core's `requestdata`
+ * integration and node-core's `httpServerSpansIntegration`. The change only narrows: with `urlQueryParams: false` the query
+ * is removed from values that 10.75.0 sent raw, and the filter falls back to the old unfiltered behaviour only when no
+ * client exists. `include.query_string` can now also be forced on by an explicit `requestDataIntegration` option, which
+ * no service sets. Still byte-identical: `DEFAULTS` and the base-selection line in `resolveDataCollectionOptions`,
+ * `defaultPiiToCollectionOptions`, `filtering-snippets`, `types/datacollection`, `utils/request`, `filterCookies`, and
+ * node-core's `httpServerIntegration` and `http/index`. No `dataCollection` category was added. `@sentry/node` pins
+ * `@sentry/opentelemetry` and `@sentry/server-utils` exactly, so they move in lockstep and join the list below; the
+ * `opentelemetry` change is the same URL filtering. Read from both releases' published tarballs, whose hashes match the
+ * lockfile and the registry, and measured end to end (docs/report/sentry-10-76-2-url-query-capture.md).
  */
 
-const PINNED = '10.75.0'
+const PINNED = '10.76.2'
 
 const MIGRATION =
-  'The Sentry SDK moved off 10.75.0. Re-read `resolveDataCollectionOptions` and `httpServerSpansIntegration` before trusting `src/instrument.mts`, then update the observability section of `docs/architecture.md`, which records what each `dataCollection` category replaced. v11 removes the blanket PII flag that mapping starts from.'
+  'The Sentry SDK moved off 10.76.2. Re-read `resolveDataCollectionOptions` and `httpServerSpansIntegration` before trusting `src/instrument.mts`, then update the observability section of `docs/architecture.md`, which records what each `dataCollection` category replaced. v11 removes the blanket PII flag that mapping starts from.'
 
 const installedVersion = async (name: string): Promise<string> => {
   const manifest = await readFile(new URL(`../node_modules/@sentry/${name}/package.json`, import.meta.url), 'utf8')
@@ -46,9 +60,13 @@ const installedVersion = async (name: string): Promise<string> => {
 }
 
 describe('the SDK is the version every claim in instrument.mts was read from', () => {
-  it.each(['node', 'core'])('@sentry/%s is pinned to the audited version', async (name) => {
-    expect(await installedVersion(name), MIGRATION).toBe(PINNED)
-  })
+  // `opentelemetry` and `server-utils` ship in lockstep with `node`: `@sentry/node` pins both exactly.
+  it.each(['node', 'core', 'node-core', 'opentelemetry', 'server-utils'])(
+    '@sentry/%s is pinned to the audited version',
+    async (name) => {
+      expect(await installedVersion(name), MIGRATION).toBe(PINNED)
+    }
+  )
 })
 
 describe('the scrubber owes nothing to the SDK filtering anything', () => {
