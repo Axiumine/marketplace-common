@@ -33,6 +33,14 @@ const MIGRATION =
 const installed = async (path: string) =>
   readFile(new URL(`../node_modules/@axiumine/koa-utils/dist/${path}`, import.meta.url), 'utf8')
 
+/*
+ * `@axiumine/koa-utils@7.2.0` compiles its environment reads as `process.env['NAME']` where 7.1.0 emitted
+ * `process.env.NAME`. Only the quoting moved: the helpers, the exact-`'true'` flag, the scheme choice and the
+ * fail-closed refusal are unchanged. What is asserted below is what is read and how it is used, so both
+ * spellings count. Returns the regex source of one such read; `name` is an already-escaped pattern.
+ */
+const envRead = (name: string) => String.raw`process\.env(?:\.${name}|\['${name}'])`
+
 describe('the Redis connection scheme koa-utils actually builds', () => {
   /*
    * The cluster branch, which is the one every service `env` selects. Three rootNodes, and since 7.1.0
@@ -42,10 +50,12 @@ describe('the Redis connection scheme koa-utils actually builds', () => {
   it('builds the cluster rootNodes through redisNodeUrl instead of a hardcoded scheme', async () => {
     const source = await installed('dataSources/Redis.mjs')
 
-    expect(
-      source.match(/url: redisNodeUrl\(process\.env\.REDIS_DB[123]_HOST, process\.env\.REDIS_DB[123]_PORT\)/g),
-      MIGRATION
-    ).toHaveLength(3)
+    const rootNode = new RegExp(
+      String.raw`url: redisNodeUrl\(${envRead('REDIS_DB[123]_HOST')}, ${envRead('REDIS_DB[123]_PORT')}\)`,
+      'g'
+    )
+
+    expect(source.match(rootNode), MIGRATION).toHaveLength(3)
     expect(source, MIGRATION).not.toMatch(/url: `redis:\/\//)
   })
 
@@ -70,8 +80,11 @@ describe('the Redis connection scheme koa-utils actually builds', () => {
   it('routes the single-node URL through resolveRedisUrl rather than reading REDIS_URL raw', async () => {
     const source = await installed('dataSources/Redis.mjs')
 
-    expect(source, MIGRATION).toContain('createClient({ url: resolveRedisUrl(process.env.REDIS_URL) })')
-    expect(source, MIGRATION).not.toContain('createClient({ url: process.env.REDIS_URL })')
+    const routed = new RegExp(String.raw`createClient\(\{ url: resolveRedisUrl\(${envRead('REDIS_URL')}\) }\)`)
+    const raw = new RegExp(String.raw`createClient\(\{ url: ${envRead('REDIS_URL')} }\)`)
+
+    expect(source, MIGRATION).toMatch(routed)
+    expect(source, MIGRATION).not.toMatch(raw)
   })
 })
 
@@ -84,7 +97,7 @@ describe('the flag that decides the scheme', () => {
    */
   it('is off unless REDIS_TLS is exactly the string true', async () => {
     expect(await installed('private/dataSources/isRedisTlsRequired.mjs'), MIGRATION).toMatch(
-      /process\.env\.REDIS_TLS === 'true'/
+      new RegExp(String.raw`${envRead('REDIS_TLS')} === 'true'`)
     )
   })
 

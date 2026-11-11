@@ -630,9 +630,9 @@
   integrity sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==
 
 "@mongodb-js/saslprep@^1.5.0":
-  version "1.6.1"
-  resolved "https://registry.yarnpkg.com/@mongodb-js/saslprep/-/saslprep-1.6.1.tgz#c3da2d4013e5fe3d22661da3f8ec36b231a30de7"
-  integrity sha512-D4CQtk9IwjCLAvCf1xvHEod3960q8XMUzfmdRU9qjUNlHnesGuTOvJcOTaPm9koZ1caUKA2aTbszZiAkcmSgmg==
+  version "1.6.3"
+  resolved "https://registry.npmjs.org/@mongodb-js/saslprep/-/saslprep-1.6.3.tgz#fcaf031c046a5dadcb1eb1dc45b52b349330f4f6"
+  integrity sha512-aHGFvT95c82CoQ7hb6qXpz8Hcc5PJb3ZtQ+P01QDBbyQday0mjcrJPeNJOHCgWe0pGX0zKmKP+1mWi/I/BCX9Q==
   dependencies:
     sparse-bitfield "^3.0.3"
 
@@ -1514,9 +1514,9 @@ browserslist@^4.24.0:
     update-browserslist-db "^1.3.3"
 
 bson@^7.3.2:
-  version "7.3.3"
-  resolved "https://registry.npmjs.org/bson/-/bson-7.3.3.tgz#c0183c023d02e81b528275129ef4b23ad7d449dd"
-  integrity sha512-oz3LwE3qGEhTCSyhzQRLY3Bj1NLOsjFMf6tcmY5J8M+3R7EVcmoBfSHWvjUK3yXCLDUsGpIuB3aQL4nDZ1EV/g==
+  version "7.3.4"
+  resolved "https://registry.npmjs.org/bson/-/bson-7.3.4.tgz#5ecd7387584e20324dd105e23eeb063fc0d95bb3"
+  integrity sha512-eb33j2Ha6xgygjJ8bhI3sYaI9cLAbSaopZLRJQ5/rxk32XyBSoVVcbeHIzVGJx1SyQpyyoElkoEZgQrg+RVVoA==
 
 buffer@^5.5.0:
   version "5.7.1"
@@ -2406,7 +2406,7 @@ json5@^2.2.3:
 
 kareem@3.4.1:
   version "3.4.1"
-  resolved "https://registry.yarnpkg.com/kareem/-/kareem-3.4.1.tgz#468c10416476f86bcef127d00f937cbb0a029e3b"
+  resolved "https://registry.npmjs.org/kareem/-/kareem-3.4.1.tgz#468c10416476f86bcef127d00f937cbb0a029e3b"
   integrity sha512-UlgCAFNAdk/HLSsbfkmbH8pJqpEN52Ek8RG53Ys1i3Q3gbCQruSrWpplZlgIGyDHX/LNoLW97ei3OG43s7UhUA==
 
 keyv@^5.6.0:
@@ -2615,7 +2615,7 @@ mongodb-connection-string-url@^7.0.2:
     "@types/whatwg-url" "^13.0.0"
     whatwg-url "^14.1.0"
 
-mongodb@^7.5.0:
+mongodb@^7.5.0, mongodb@~7.8:
   version "7.8.0"
   resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-7.8.0.tgz#d9f7a9d40caecbdaef9a34ed6806c39c4571615a"
   integrity sha512-p2NKagbQ41+daACG/ZSvhTzeAo+DoEyWE9Cmpf/SyP3pTC43+X0mwKE/44PpKtCxp5wOxnXz+t2pXEZRSkt9Yg==
@@ -2624,27 +2624,18 @@ mongodb@^7.5.0:
     bson "^7.3.2"
     mongodb-connection-string-url "^7.0.2"
 
-mongodb@~7.7:
-  version "7.7.0"
-  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-7.7.0.tgz#e7b7bccf0199d7ec5a5c2eebae7c376b606c2743"
-  integrity sha512-XG1xXEqyouAV8GCb3PuRaujofeXKpAJAPvXYWZgHl6Dz4QHSJ1nRLl0+GpqaLTwKvC0RFE9truOur34RNFY1nw==
-  dependencies:
-    "@mongodb-js/saslprep" "^1.5.0"
-    bson "^7.3.2"
-    mongodb-connection-string-url "^7.0.2"
-
 mongoose@^9.1.1:
-  version "9.11.4"
-  resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-9.11.4.tgz#a15599b2ecb3d6885de9e0341f8dddc5513f9f7e"
-  integrity sha512-+xME0fduXl1sWF+NZpJHZaNcwQSt+X2vbJ/h7GRSZ/ltLycAkGZSEABhzic0+q3IMF66KqF0viEE5+frchKCAQ==
+  version "9.12.1"
+  resolved "https://registry.npmjs.org/mongoose/-/mongoose-9.12.1.tgz#981a019b94410190f66f633dd67a27421e248fd6"
+  integrity sha512-wPw1NKurTDShT+kr/JJvhdwPKIJkxFJv5GEbv++QahN8snPR9Fp/BFg6nQbbCyUHBB8DexwwlCQW6SfBD99QCg==
   dependencies:
     "@standard-schema/spec" "^1.1.0"
     kareem "3.4.1"
-    mongodb "~7.7"
+    mongodb "~7.8"
     mpath "0.9.0"
     mquery "6.0.1"
     ms "2.1.3"
-    sift "17.1.3"
+    sift "17.1.4"
 
 mpath@0.9.0:
   version "0.9.0"
@@ -2653,7 +2644,7 @@ mpath@0.9.0:
 
 mquery@6.0.1:
   version "6.0.1"
-  resolved "https://registry.yarnpkg.com/mquery/-/mquery-6.0.1.tgz#4b98f9e19fc7b226c89bc06e5e11f254c16a4877"
+  resolved "https://registry.npmjs.org/mquery/-/mquery-6.0.1.tgz#4b98f9e19fc7b226c89bc06e5e11f254c16a4877"
   integrity sha512-/Nijmq3JcpHwDM+5CwBp5yEl6fUa6jLsIhPsoQywlGXU/ZrKIvSpBzfaGnW9BLqcne/CoUwd1ch7MRqptDgFTA==
 
 ms@2.1.3, ms@^2.1.3:
@@ -3067,10 +3058,10 @@ side-channel@^1.1.1:
     side-channel-map "^1.0.1"
     side-channel-weakmap "^1.0.2"
 
-sift@17.1.3:
-  version "17.1.3"
-  resolved "https://registry.npmjs.org/sift/-/sift-17.1.3.tgz#9d2000d4d41586880b0079b5183d839c7a142bf7"
-  integrity sha512-Rtlj66/b0ICeFzYTuNvX/EF1igRbbnGSvEyT79McoZa/DeGhMyC5pWKOEsZKnpkqtSeovd5FL/bjHWC3CIIvCQ==
+sift@17.1.4:
+  version "17.1.4"
+  resolved "https://registry.npmjs.org/sift/-/sift-17.1.4.tgz#636cfbc06abb549ebf0f51459071a0afb5de7630"
+  integrity sha512-/OIVvj9Ts1mFwTYzW09YODMPeIOnDoigMOvKSIN44OmaCyhuCH/05UPF45XW7Ax0snmzDzCzdlSYqvqsn8+sIg==
 
 siginfo@^2.0.0:
   version "2.0.0"
