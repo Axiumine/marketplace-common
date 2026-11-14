@@ -11,7 +11,34 @@ plumbing that never reaches the tarball (`files` is `["dist"]`) is recorded unde
 marked as shipping no change to `dist/`, so that a reader deciding whether to publish can tell the two
 apart without reading the diff.
 
-## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.6.2...HEAD)
+## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.6.3...HEAD)
+
+## [4.6.3](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.3) - 2026-11-14
+
+**Nothing in this release changes `dist/`.** A fresh `yarn build` at this commit is byte-identical to the
+`dist/` of the published `4.6.2` tarball (compared file by file), `src/` is untouched since `4.6.2`, and
+`package.json` differs from `4.6.2`'s only in `version`. Every entry below is repo plumbing or a lockfile
+move; the release exists to give the lockfile-level dependency fixes a published version number.
+
+### Changed
+
+- **`graphql-scalars` 2.0.0 → 2.0.1 in `yarn.lock` — ships no change to `dist/`.** It is the one runtime
+  dependency (`dependencies`); the declared range stays `^2.0.0`, so what a consumer's own lockfile resolves
+  is unchanged by this release. Recorded in the repo's commit history as the fix for CVE-2026-115887 (HIGH,
+  production dependency tree), which failed the trivy gate of any branch still on 2.0.0.
+- **Dev-toolchain lockfile bumps — ship no change to `dist/`.** `mongoose` 9.11.2 → 9.12.1 (it pins
+  `mongodb` `~7.8`, which leaves a single `mongodb` copy and clears a `tspc` TS2322), `mongodb` 7.7.0 → 7.8.0,
+  `@axiumine/koa-utils` 7.1.0 → 7.2.0, `graphql` 17.0.2 → 17.1.0, `mongodb-client-encryption` 7.2.1 → 7.2.2,
+  `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` 8.71.2 → 8.72.2, `eslint` 10.12.0 →
+  10.14.0, `eslint-plugin-n` 18.4.1 → 18.5.0, `@types/node` 26.6.5 → 26.6.6, `vite` 8.3.0 → 8.3.4 and the
+  transitive `fast-uri` 3.1.8 → 3.1.9. All are devDependencies or transitive; no range in `package.json`
+  moved, and the peer ranges are untouched (pull requests #16, #20, #22, #24).
+- **`test/redisScheme.test.mts` accepts both spellings of an environment read — ships no change to `dist/`.**
+  `@axiumine/koa-utils` 7.2.0 compiles `process.env['NAME']` where 7.1.0 emitted `process.env.NAME`; the
+  helpers, the exact-`'true'` flag, the scheme choice and the fail-closed refusal are unchanged, and the guard
+  now matches either quoting.
+- **`github/codeql-action` 4.38.3 → 4.39.3 (`init`, `analyze`, `upload-sarif`) in `.github/workflows/` — ships
+  no change to `dist/`.** Workflow plumbing, pinned by commit SHA (pull requests #19 and #27).
 
 ## [4.6.2](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.2) - 2026-10-18
 
