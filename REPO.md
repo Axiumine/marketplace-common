@@ -1,6 +1,6 @@
 # Repository mechanics
 
-How this package's git plumbing, build, registry filter and test layout behave, and why. Nothing here
+How this package's git plumbing, build, registry handling and test layout behave, and why. Nothing here
 changes what you write — it explains what happens when you build, commit, push or publish. [`CLAUDE.md`](./CLAUDE.md)
 carries the rules; [`README.md`](./README.md) is the consumer-facing document.
 
@@ -130,110 +130,47 @@ must drop the copy too, or the maps break again in the CJS half.
 `../../src/x.mts` names a file no consumer has. The sources are embedded, which is what makes the shipped
 maps resolvable off this checkout — about 36 KB across the whole of `dist/`.
 
-## Registry: public npm by default, a local mirror only if you ask
+## Registry: public npm by default, a local mirror per machine only if you ask
 
 ### Publishing pins the registry too
 
 ⚠️ **`yarn upload` pins `--registry=https://registry.npmjs.org/`.** Yarn 1 exported whatever registry it was
 configured with to child processes as `npm_config_registry`, so on a machine pointed at a local mirror a bare
 `npm publish` through yarn published *to that mirror* — silently, and with a success message. Yarn 4 does not
-export it (measured on 4.18.1), but npm's own configuration can still name a mirror, so the pin stays.
+export it (measured on 4.18.1), but npm's own configuration can still name a mirror, so the pin stays. A mirror
+configured for installs does not touch publishing.
 
-⚠️ **Yarn 4 changed the install side, and the rest of this section describes Yarn 1.** A Yarn 4 lockfile has no
-`resolved` line — its `resolution: "pkg@npm:1.2.3"` names no host — so there is no registry URL in `yarn.lock`
-for a mirror to leak into, and `clean`/`smudge` rewrite nothing. Yarn 4 also exports no `npm_config_registry`,
-so `install` can no longer learn a mirror from yarn: it keeps whatever `yarnlock-registry.mirror` already
-records, and with nothing recorded it does nothing. The filter and the pre-commit host check stay as the
-backstop for a lockfile that is, or goes back to, Yarn 1 format. A mirror for Yarn 4 itself is
-`npmRegistryServer` in `~/.yarnrc.yml` (the project's committed file deliberately sets none).
+### A lockfile never records the registry
 
-Every clone installs from `registry.npmjs.org`, and its `yarn.lock` keeps the public URLs — on the first
-install and on every one after it. Nothing below runs unless a machine explicitly opts in, and that is the
-default the whole section exists to protect.
+A Yarn 4 lockfile has no `resolved` line — its `resolution: "pkg@npm:1.2.3"` names no host — so an install
+through a mirror leaves `yarn.lock` byte-for-byte what an install from `registry.npmjs.org` leaves. There is
+nothing to rewrite on the way into git, and the clean/smudge filter (`scripts/lockfile-registry-filter.sh`,
+`.gitattributes`, the `filter.yarnlock-registry.*` and `yarnlock-registry.mirror` keys of `.git/config`) that kept
+a mirror host out of a Yarn 1 lockfile, was retired on 2026-11-16 (dated note in ADR-059). It lived in this
+repository only and never in the published tarball (`files` is `["dist"]`), so no consumer ever held it.
 
-The committed lockfile names `registry.npmjs.org` throughout, and that is the host to keep. Yarn 1's *own*
-default is `registry.yarnpkg.com`, npm's CDN alias, so re-resolving the lockfile from scratch with stock yarn
-config rewrites all 510 lines to it. Both are public and both install for everyone, so the pre-commit gate
-accepts either rather than rejecting a contributor who never went near a mirror.
+The one piece that stays is the `.githooks/pre-commit` check. It is a gate and does not move: it blocks any commit
+whose **indexed** `yarn.lock` resolves against a non-public host — `registry.npmjs.org` and `registry.yarnpkg.com`
+pass, everything else blocks. Under Yarn 4 it matches nothing, by construction, and it stays as the backstop for a
+lockfile that is, or goes back to, Yarn 1 format.
 
-Installing through a local mirror is what needs machinery. Yarn 1 writes **absolute** tarball URLs into every
-`resolved` line of `yarn.lock`, so a mirrored install would put a host that resolves on one network only into
-510 lines of a lockfile this repo publishes on a public GitHub, and `yarn install` would then fail for every
-clone that cannot reach it. The npm tarball is unaffected (`files: ["dist"]` keeps `yarn.lock` out of it);
-clones are not.
+### Installing through a LAN mirror
 
-Three parts:
+A mirror is per machine, optional and never committed. Put two keys in the machine's own `~/.yarnrc.yml` — and
+nowhere in a repository, where a project-level value would override it for everyone who clones:
 
-|Part|Does|
-|---|---|
-|`scripts/lockfile-registry-filter.sh`|`clean` (worktree → git) rewrites mirror → npmjs; `smudge` (git → worktree) rewrites npmjs → mirror; `install` reads the mirror out of yarn, records it, writes the filter into `.git/config` and reconciles the current checkout; `uninstall` restores the public URLs and removes both|
-|`.gitattributes`|`yarn.lock filter=yarnlock-registry` — binds the filter to the one file|
-|`.githooks/pre-commit`|blocks any commit whose **indexed** `yarn.lock` resolves against a non-public host — the two public registries pass, everything else blocks|
-
-### Opting in
-
-**There is no switch of this repo's own to set.** Point yarn at the mirror the way you would for any project
-— the gitignored `.yarnrc`, or `~/.yarnrc` for every project on the machine — and install:
-
-```bash
-printf 'registry "http://<your-mirror>/"\n' > .yarnrc   # this checkout only
-yarn config set registry 'http://<your-mirror>/'        # or every project, ~/.yarnrc
-yarn install
+```yaml
+npmRegistryServer: "http://<your-mirror>:4873"
+unsafeHttpWhitelist:
+  - <your-mirror>
 ```
 
-`install` takes the host from **yarn itself**: yarn 1 exports the effective registry to every script it runs,
-this one included (`prepare` → `hooks:install`), as `npm_config_registry`. That value already folds in
-`.yarnrc`, `~/.yarnrc` and a `--registry` flag, so a mirror configured *globally* — which no repo-local
-setting could see — is caught as well. A second variable naming the same host would be a second source of
-truth, and the case it would miss is exactly the dangerous one: yarn on a mirror, the filter unaware, the LAN
-host in the index.
+`unsafeHttpWhitelist` is needed only for an `http` host. `yarn install` then resolves through the mirror and the
+lockfile stays host-free. `z-ram.sh` asks yarn the same question, with `yarn config get npmRegistryServer`, and
+**refuses to run** on a public answer: it wipes `node_modules` before installing, so with no mirror in play it
+would do nothing but refill it from npmjs over the internet.
 
-The host is then written to `yarnlock-registry.mirror` in `.git/config`, with the filter next to it. git never
-clones `.git/config`, so the choice is per-checkout and reaches nobody else.
-
-⚠️ **`clean` and `smudge` read the host back from `.git/config`, never from yarn.** git runs them as its own
-subprocesses, from whichever shell happened to touch the file — an IDE checkout, a hook's `git add`, a rebase
-— and none of those carry yarn's environment. Reading it from there would let one direction fire while the
-other did not, and the two disagreeing is precisely the state that puts a mirror host into a public lockfile.
-Hence a recorded copy, refreshed on every install.
-
-`z-ram.sh` asks yarn the same question, with `yarn config get npmRegistryServer`, and **refuses to run** on a public
-answer: it wipes `node_modules` before installing, so with no mirror in play it would do nothing but refill it
-from npmjs over the internet.
-
-### Opting back out
-
-Point yarn back at the public registry (remove `.yarnrc`, or `yarn config delete registry`) and run
-`yarn install`. `install` sees a public `npm_config_registry`, and a mirror recorded earlier is now stale — so
-it tears the filter down for you rather than leaving `smudge` writing a host into `yarn.lock` that nothing
-fetches from any more. `./scripts/lockfile-registry-filter.sh uninstall` does the same thing directly.
-
-Either way the worktree is rewritten back to the public URLs *before* the config is dropped — the other order
-leaves the mirror host in the worktree with the filter that would have stripped it already gone, so the next
-`git add` stages it and the pre-commit gate blocks the commit.
-
-Running the script **by hand** outside yarn is the one case with no `npm_config_registry` to read: no
-information, so no opinion — whatever is recorded stays.
-
-`required` is deliberately `false`: a missing script must degrade to passthrough, not break checkout.
-
-A fresh clone lands the public URLs *before* the filter exists, and git will not re-smudge a file it already
-considers up to date — `install` therefore rewrites `yarn.lock` in place once, by hand. If the worktree lock
-ever disagrees with what you expect, `touch yarn.lock && git add yarn.lock` re-runs `clean` on it.
-
-Verify both directions at any time. An empty first line is the answer on a machine that never opted in — there
-is no filter and nothing to check:
-
-```bash
-MIRROR="$(git config --get yarnlock-registry.mirror)"   # empty → public npm, no filter, stop here
-grep -cF "$MIRROR" yarn.lock                            # worktree: expect all of them
-git show :yarn.lock | grep -c 'registry\.npmjs'         # index: expect the same count
-git show :yarn.lock | grep -cF "$MIRROR"                # index: expect 0
-```
-
-Only this repo has the mechanism. The other sub-repos commit whatever host their lockfile was resolved
-against; `marketplace-services-status` has no lockfile at all. The same three files fix each of them, and are the thing
-to port rather than reinvent.
+Opting out is deleting those two keys and running `yarn install`; nothing in the repository remembers the mirror.
 
 ## Publishing a release — the mandatory flow
 
@@ -513,7 +450,7 @@ yarn typecheck      # tsc -p tsconfig.test.json — src/, test/ and the vitest c
 yarn lint           # eslint --fix . && prettier --write .      (lint:check = read-only)
 yarn prepare        # hooks:install + rm -rf dist && yarn build (runs on `npm publish`/`npm pack`, NOT on install)
 yarn postinstall    # runs on install: hooks:install in a clone, a no-op where .githooks is absent (consumer node_modules)
-yarn hooks:install  # core.hooksPath .githooks + the yarn.lock registry filter
+yarn hooks:install  # core.hooksPath .githooks
 yarn upload         # npm publish --registry=https://registry.npmjs.org/
 yarn test           # unit tests once      (test:watch for watch mode)
 yarn test:cov       # unit + coverage, fails under 100 on any metric

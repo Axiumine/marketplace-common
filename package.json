@@ -19,7 +19,7 @@
 	"scripts": {
 		"prepare": "yarn run hooks:install && rm -rf dist && yarn run build",
 		"postinstall": "[ ! -d .githooks ] || yarn run hooks:install",
-		"hooks:install": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .githooks && ./scripts/lockfile-registry-filter.sh install || true",
+		"hooks:install": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .githooks || true",
 		"build": "yarn run build:esm",
 		"prepare:all": "echo 'read REAMDE' && rm -rf dist && yarn run build:all",
 		"build:all": "yarn run build:cjs && yarn run build:esm",

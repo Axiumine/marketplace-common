@@ -30,6 +30,11 @@ apart without reading the diff.
   format with every resolved `name@version` kept. `prepare` stays, because `npm publish` still has to build;
   Yarn 4 never runs it on install, so a `postinstall` installs the git hooks in a clone and is a no-op wherever
   `.githooks` is absent, which includes a consumer's `node_modules`.
+- **The lockfile registry filter is retired — repo-only, never in the tarball, ships no change to `dist/`.**
+  `scripts/lockfile-registry-filter.sh`, its `.gitattributes` line and the `hooks:install` call to it are gone:
+  a Yarn 4 lockfile records no registry URL, so there was nothing left to rewrite. The `pre-commit` backstop stays as a gate, with its comments and message reworded; a LAN mirror now
+  lives in the machine's own `~/.yarnrc.yml` (`npmRegistryServer`, `unsafeHttpWhitelist`) and never reaches the
+  lockfile. Publishing is unaffected: `yarn upload` still pins `--registry=https://registry.npmjs.org/`.
 
 ## [4.6.3](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.3) - 2026-11-14
 

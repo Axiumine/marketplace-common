@@ -8,7 +8,7 @@ Building blocks only; nothing here listens on a port.
 | Need | File |
 |---|---|
 | consumer-facing overview, import paths | [`README.md`](./README.md) |
-| hooks, build, registry filter, release flow, data model, `exports` map, architecture, test traps, commands | [`REPO.md`](./REPO.md) |
+| hooks, build, registry handling, release flow, data model, `exports` map, architecture, test traps, commands | [`REPO.md`](./REPO.md) |
 | GitNexus rules, this repo's registry name | [`AGENTS.md`](./AGENTS.md) |
 | why the three authz svcs stay three | parent [`docs/decisions/authorization-service-consolidation.md`](https://github.com/Axiumine/fullstack-marketplace-blueprint/blob/main/docs/decisions/authorization-service-consolidation.md) |
 
