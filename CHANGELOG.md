@@ -19,6 +19,10 @@ apart without reading the diff.
   entries below it, this one reaches the tarball (`package.json` carries `engines`), so a consumer on Node 24
   will see an engines warning from the release that includes it. `dist/` is unchanged. The CI corepack step
   now installs a pinned corepack from `.github/tools`, because Node 25+ no longer bundles it.
+- **`@axiumine/koa-utils` devDependency `^7.1.0` → `^9.1.0` (lockfile 7.2.0 → 9.1.0) — ships no change to `dist/`.**
+  The peer range stays `>=6`, so what a consumer may install is unchanged. koa-utils 9 is AGPL-3.0-or-later; it is
+  a devDependency, used by the tests only, and never reaches the tarball. Supersedes Dependabot pull request #26
+  (8.1.0).
 - **Package manager Yarn 1.22.22 → Yarn 4.18.1 (node-modules linker) — ships no change to `dist/`.** A fresh
   `yarn build` is byte-identical to the previous `dist/`, and `npm pack` lists the same 336 files with only
   `package.json` differing (`packageManager`, the `update` script, the new `postinstall`, and `"private": false`,

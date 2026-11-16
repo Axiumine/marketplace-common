@@ -27,9 +27,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@axiumine/koa-utils@npm:^7.1.0":
-  version: 7.2.0
-  resolution: "@axiumine/koa-utils@npm:7.2.0"
+"@axiumine/koa-utils@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "@axiumine/koa-utils@npm:9.1.0"
   peerDependencies:
     "@node-rs/bcrypt": <2
     "@sentry/node": <11
@@ -49,15 +49,22 @@ __metadata:
     sequelize: <7
     sequelize-typescript: <3
     sharp: <1
-    uuid: <15
   peerDependenciesMeta:
+    "@node-rs/bcrypt":
+      optional: true
+    "@sentry/node":
+      optional: true
     "@socketlabs/email":
       optional: true
     clamscan:
       optional: true
+    dotenv:
+      optional: true
     file-type:
       optional: true
     fs-extra:
+      optional: true
+    graphql:
       optional: true
     keygrip:
       optional: true
@@ -65,7 +72,11 @@ __metadata:
       optional: true
     mariadb:
       optional: true
+    mongoose:
+      optional: true
     pg:
+      optional: true
+    redis:
       optional: true
     reflect-metadata:
       optional: true
@@ -75,7 +86,7 @@ __metadata:
       optional: true
     sharp:
       optional: true
-  checksum: 10c0/f5ed984c037728993bd854a3fca3e8c717af2c3285b216303bedb82e35355f72c993908e974dc611de869bac9e881620338f17d380545fc39aa1ab9eea01a176
+  checksum: 10c0/1b0cba39a5326cb97766cb724b7a1b8c21452185f9cf60c78d02bbeebe00d1a4f82f2fd74e6c149f268d576a158ef67248c10ea4a1ad743f851eb5e7cb294b60
   languageName: node
   linkType: hard
 
@@ -84,7 +95,7 @@ __metadata:
   resolution: "@axiumine/marketplace-common@workspace:."
   dependencies:
     "@axiumine/eslint-config-be": "npm:^2.0.1"
-    "@axiumine/koa-utils": "npm:^7.1.0"
+    "@axiumine/koa-utils": "npm:^9.1.0"
     "@eslint/eslintrc": "npm:^3.3.5"
     "@eslint/js": "npm:^10.0.1"
     "@node-rs/bcrypt": "npm:^1.10.7"
