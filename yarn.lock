@@ -135,6 +135,9 @@ __metadata:
     mongodb-client-encryption: "*"
     mongoose: "*"
     reflect-metadata: "*"
+  dependenciesMeta:
+    mongodb-client-encryption:
+      built: true
   languageName: unknown
   linkType: soft
 
