@@ -15,6 +15,10 @@ apart without reading the diff.
 
 ### Changed
 
+- **`engines.node` `^24.18.0` → `^26.13.1`, `.nvmrc` 26.13.1 — ships with the next release.** Unlike the
+  entries below it, this one reaches the tarball (`package.json` carries `engines`), so a consumer on Node 24
+  will see an engines warning from the release that includes it. `dist/` is unchanged. The CI corepack step
+  now installs a pinned corepack from `.github/tools`, because Node 25+ no longer bundles it.
 - **Package manager Yarn 1.22.22 → Yarn 4.18.1 (node-modules linker) — ships no change to `dist/`.** A fresh
   `yarn build` is byte-identical to the previous `dist/`, and `npm pack` lists the same 336 files with only
   `package.json` differing (`packageManager`, the `update` script, the new `postinstall`, and `"private": false`,

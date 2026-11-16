@@ -13,7 +13,7 @@ fi
 . ~/.bashrc
 
 # set node
-nvm use v24.18.0  # if this changes, update the other .sh scripts too
+nvm use v26.13.1  # if this changes, update the other .sh scripts too
 node --version
 
 # The mirror is opt-in and nothing tracked in this repo names one; the host lives
