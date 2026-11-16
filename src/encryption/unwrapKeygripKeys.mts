@@ -34,7 +34,15 @@ export function unwrapKeygripKeys(wrapped: string, version: number, kek: Buffer)
    * against 8 bytes as readily as against 16, with nothing but a deprecation warning, at 2^64 instead of
    * 2^128 to forge. The layout only yields a short tag on a blob shorter than 28 bytes, so what this buys
    * is a rejection on the length rather than a confusing authentication failure four calls later.
+   *
+   * Since Node 25 (DEP0182 end-of-life) node refuses a short GCM tag without being told the length, so on
+   * the `^26.13.1` this package's engines require, `{}` and `{ authTagLength: 16 }` behave identically:
+   * measured on 26.13.1, a 16-byte tag passes and a 12- or 4-byte tag throws ERR_CRYPTO_INVALID_AUTH_TAG
+   * at `setAuthTag` under both. The option stays as the statement of intent and as the guard for any
+   * runtime that still accepts a short tag; the mutant that empties it is equivalent on every node this
+   * package can be installed on, so no test can tell the two apart.
    */
+  // Stryker disable next-line ObjectLiteral: equivalent on node >=25, where a short GCM tag is refused without authTagLength, see above
   const decipher = createDecipheriv('aes-256-gcm', kek, iv, { authTagLength: KEYGRIP_TAG_BYTES })
 
   // utf8 by default on both, matching the writer — see the note there on why neither is named.
