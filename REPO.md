@@ -61,7 +61,8 @@ gate by hand lives in [`CLAUDE.md`](./CLAUDE.md).
 
 Ahead of all of them each hook selects node by itself, reading `engines.node` and sourcing nvm, because
 git runs each hook in its own process — the switch one hook makes is gone before the next one starts — and
-this machine's default node is older than the pin while yarn's engine check is a hard failure.
+this machine's default node is older than the pin, and Yarn 4 does not enforce `engines` (yarn classic's check
+was a hard failure, and nothing took over), so this selection is the only enforcement.
 
 Coverage runs at commit time despite pre-push already gating it, because Qodana scores coverage from
 `coverage/lcov.info` and `qodana.sh` regenerates that with `yarn test:cov || true`, deliberately swallowing
@@ -133,10 +134,18 @@ maps resolvable off this checkout — about 36 KB across the whole of `dist/`.
 
 ### Publishing pins the registry too
 
-⚠️ **`yarn upload` pins `--registry=https://registry.npmjs.org/`.** Yarn 1 exports whatever registry it is
+⚠️ **`yarn upload` pins `--registry=https://registry.npmjs.org/`.** Yarn 1 exported whatever registry it was
 configured with to child processes as `npm_config_registry`, so on a machine pointed at a local mirror a bare
-`npm publish` through yarn publishes *to that mirror* — silently, and with a success message. The rest of
-this section is the same fact from the install side.
+`npm publish` through yarn published *to that mirror* — silently, and with a success message. Yarn 4 does not
+export it (measured on 4.18.1), but npm's own configuration can still name a mirror, so the pin stays.
+
+⚠️ **Yarn 4 changed the install side, and the rest of this section describes Yarn 1.** A Yarn 4 lockfile has no
+`resolved` line — its `resolution: "pkg@npm:1.2.3"` names no host — so there is no registry URL in `yarn.lock`
+for a mirror to leak into, and `clean`/`smudge` rewrite nothing. Yarn 4 also exports no `npm_config_registry`,
+so `install` can no longer learn a mirror from yarn: it keeps whatever `yarnlock-registry.mirror` already
+records, and with nothing recorded it does nothing. The filter and the pre-commit host check stay as the
+backstop for a lockfile that is, or goes back to, Yarn 1 format. A mirror for Yarn 4 itself is
+`npmRegistryServer` in `~/.yarnrc.yml` (the project's committed file deliberately sets none).
 
 Every clone installs from `registry.npmjs.org`, and its `yarn.lock` keeps the public URLs — on the first
 install and on every one after it. Nothing below runs unless a machine explicitly opts in, and that is the
@@ -188,7 +197,7 @@ subprocesses, from whichever shell happened to touch the file — an IDE checkou
 other did not, and the two disagreeing is precisely the state that puts a mirror host into a public lockfile.
 Hence a recorded copy, refreshed on every install.
 
-`z-ram.sh` asks yarn the same question, with `yarn config get registry`, and **refuses to run** on a public
+`z-ram.sh` asks yarn the same question, with `yarn config get npmRegistryServer`, and **refuses to run** on a public
 answer: it wipes `node_modules` before installing, so with no mirror in play it would do nothing but refill it
 from npmjs over the internet.
 
@@ -502,7 +511,8 @@ config inlining requirement — live in [`CLAUDE.md`](./CLAUDE.md).
 yarn build          # ESM build only (tspc → dist/). This is the working build.
 yarn typecheck      # tsc -p tsconfig.test.json — src/, test/ and the vitest configs, no emit
 yarn lint           # eslint --fix . && prettier --write .      (lint:check = read-only)
-yarn prepare        # hooks:install + rm -rf dist && yarn build (runs on install/publish)
+yarn prepare        # hooks:install + rm -rf dist && yarn build (runs on `npm publish`/`npm pack`, NOT on install)
+yarn postinstall    # runs on install: hooks:install in a clone, a no-op where .githooks is absent (consumer node_modules)
 yarn hooks:install  # core.hooksPath .githooks + the yarn.lock registry filter
 yarn upload         # npm publish --registry=https://registry.npmjs.org/
 yarn test           # unit tests once      (test:watch for watch mode)

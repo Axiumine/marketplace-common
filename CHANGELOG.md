@@ -13,6 +13,16 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.6.3...HEAD)
 
+### Changed
+
+- **Package manager Yarn 1.22.22 → Yarn 4.18.1 (node-modules linker) — ships no change to `dist/`.** A fresh
+  `yarn build` is byte-identical to the previous `dist/`, and `npm pack` lists the same 336 files with only
+  `package.json` differing (`packageManager`, the `update` script, the new `postinstall`, and `"private": false`,
+  which Yarn 4 drops on every install and which only restated the default). `yarn.lock` is regenerated in Yarn 4
+  format with every resolved `name@version` kept. `prepare` stays, because `npm publish` still has to build;
+  Yarn 4 never runs it on install, so a `postinstall` installs the git hooks in a clone and is a no-op wherever
+  `.githooks` is absent, which includes a consumer's `node_modules`.
+
 ## [4.6.3](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.3) - 2026-11-14
 
 **Nothing in this release changes `dist/`.** A fresh `yarn build` at this commit is byte-identical to the
