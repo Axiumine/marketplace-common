@@ -8,7 +8,7 @@ Building blocks only; nothing here listens on a port.
 | Need | File |
 |---|---|
 | consumer-facing overview, import paths | [`README.md`](./README.md) |
-| hooks, build, registry filter, release flow, data model, `exports` map, architecture, test traps, commands | [`REPO.md`](./REPO.md) |
+| hooks, build, registry handling, release flow, data model, `exports` map, architecture, test traps, commands | [`REPO.md`](./REPO.md) |
 | GitNexus rules, this repo's registry name | [`AGENTS.md`](./AGENTS.md) |
 | why the three authz svcs stay three | parent [`docs/decisions/authorization-service-consolidation.md`](https://github.com/Axiumine/fullstack-marketplace-blueprint/blob/main/docs/decisions/authorization-service-consolidation.md) |
 
@@ -93,4 +93,4 @@ asking** — every other repo in the workspace is push-on-request.
 - ⚠️ Never lower a coverage or mutation threshold, and never remove a gate. A threshold miss gets the
   missing assertion, not a lowered number.
 - Two spaces, not tabs (ADR-058): prettier `useTabs: false`, `tabWidth: 2`, and prettier alone owns indentation — the shared
-  config's `indent: ['error', 'tab']` is switched off in `eslint.config.js`. English only. Node `^24.18.0`, yarn classic.
+  config's `indent: ['error', 'tab']` is switched off in `eslint.config.js`. English only. Node `^26.13.1`, Yarn 4.

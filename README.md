@@ -17,7 +17,7 @@ have in common. It is a library, not a service: nothing here listens on a port.
 yarn add @axiumine/marketplace-common
 ```
 
-Node `^24.18.0`, ESM only.
+Node `^26.13.1`, ESM only.
 
 ## What is in it
 

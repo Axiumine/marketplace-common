@@ -13,6 +13,29 @@ apart without reading the diff.
 
 ## [Unreleased](https://github.com/Axiumine/marketplace-common/compare/v4.6.3...HEAD)
 
+### Changed
+
+- **`engines.node` `^24.18.0` → `^26.13.1`, `.nvmrc` 26.13.1 — ships with the next release.** Unlike the
+  entries below it, this one reaches the tarball (`package.json` carries `engines`), so a consumer on Node 24
+  will see an engines warning from the release that includes it. `dist/` is unchanged. The CI corepack step
+  now installs a pinned corepack from `.github/tools`, because Node 25+ no longer bundles it.
+- **`@axiumine/koa-utils` devDependency `^7.1.0` → `^9.1.0` (lockfile 7.2.0 → 9.1.0) — ships no change to `dist/`.**
+  The peer range stays `>=6`, so what a consumer may install is unchanged. koa-utils 9 is AGPL-3.0-or-later; it is
+  a devDependency, used by the tests only, and never reaches the tarball. Supersedes Dependabot pull request #26
+  (8.1.0).
+- **Package manager Yarn 1.22.22 → Yarn 4.18.1 (node-modules linker) — ships no change to `dist/`.** A fresh
+  `yarn build` is byte-identical to the previous `dist/`, and `npm pack` lists the same 336 files with only
+  `package.json` differing (`packageManager`, the `update` script, the new `postinstall`, and `"private": false`,
+  which Yarn 4 drops on every install and which only restated the default). `yarn.lock` is regenerated in Yarn 4
+  format with every resolved `name@version` kept. `prepare` stays, because `npm publish` still has to build;
+  Yarn 4 never runs it on install, so a `postinstall` installs the git hooks in a clone and is a no-op wherever
+  `.githooks` is absent, which includes a consumer's `node_modules`.
+- **The lockfile registry filter is retired — repo-only, never in the tarball, ships no change to `dist/`.**
+  `scripts/lockfile-registry-filter.sh`, its `.gitattributes` line and the `hooks:install` call to it are gone:
+  a Yarn 4 lockfile records no registry URL, so there was nothing left to rewrite. The `pre-commit` backstop stays as a gate, with its comments and message reworded; a LAN mirror now
+  lives in the machine's own `~/.yarnrc.yml` (`npmRegistryServer`, `unsafeHttpWhitelist`) and never reaches the
+  lockfile. Publishing is unaffected: `yarn upload` still pins `--registry=https://registry.npmjs.org/`.
+
 ## [4.6.3](https://github.com/Axiumine/marketplace-common/releases/tag/v4.6.3) - 2026-11-14
 
 **Nothing in this release changes `dist/`.** A fresh `yarn build` at this commit is byte-identical to the
