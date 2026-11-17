@@ -23,6 +23,10 @@ apart without reading the diff.
   The peer range stays `>=6`, so what a consumer may install is unchanged. koa-utils 9 is AGPL-3.0-or-later; it is
   a devDependency, used by the tests only, and never reaches the tarball. Supersedes Dependabot pull request #26
   (8.1.0).
+- **Test toolchain: vitest and `@vitest/coverage-v8` `^4.1.10` → `^5.1.0`, Stryker core and vitest-runner `^9.6.1` →
+  `^10.1.1`, and `vite` `^8.3.8` as a new devDependency — ships no change to `dist/`.** vitest 5 takes `vite` as a
+  required peer instead of bundling it. eslint 10.15.0 and prettier 3.10.1 land inside their ranges (lockfile only).
+  mongodb stays at 7.8.x: mongoose 9.12.2 still pins `~7.8`, so 7.9.0 would add a second driver copy.
 - **Package manager Yarn 1.22.22 → Yarn 4.18.1 (node-modules linker) — ships no change to `dist/`.** A fresh
   `yarn build` is byte-identical to the previous `dist/`, and `npm pack` lists the same 336 files with only
   `package.json` differing (`packageManager`, the `update` script, the new `postinstall`, and `"private": false`,
