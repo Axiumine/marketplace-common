@@ -459,7 +459,7 @@
 		"reflect-metadata": "^0.2.2",
 		"ts-node": "^10.9.2",
 		"ts-patch": "^4.0.1",
-		"typescript": "^6.0.3",
+		"typescript": "^7.0.2",
 		"typescript-transform-paths": "^4.0.0",
 		"uuid": "^14.0.1",
 		"vite": "^8.3.8",
