@@ -68,7 +68,7 @@ sibling backend services (same engine, same rule packs):
 Cause: semgrep selects a parser by file extension; `.mts` maps to nothing, so
 the file is treated as generic and all `typescript`/`javascript` rules are
 dropped. (`.mjs` and `.cjs` *are* recognized as JavaScript; only the TS variants
-are missing. GitNexus has the same `.mts` gap on this platform.)
+are missing.)
 
 ### Workaround baked into the yarn scripts
 
