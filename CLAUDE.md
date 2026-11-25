@@ -9,15 +9,10 @@ Building blocks only; nothing here listens on a port.
 |---|---|
 | consumer-facing overview, import paths | [`README.md`](./README.md) |
 | hooks, build, registry handling, release flow, data model, `exports` map, architecture, test traps, commands | [`REPO.md`](./REPO.md) |
-| GitNexus rules, this repo's registry name | [`AGENTS.md`](./AGENTS.md) |
 | why the three authz svcs stay three | parent [`docs/decisions/authorization-service-consolidation.md`](https://github.com/Axiumine/fullstack-marketplace-blueprint/blob/main/docs/decisions/authorization-service-consolidation.md) |
 
 Contents: Mongoose models & schemas (`src/models/`) · GraphQL type fragments & inputs (`src/schema/`) ·
 interfaces, Redis DTOs, constants, auth helpers (`src/others/`, `src/models/MongoDBInterfaces/`).
-
-⚠️ **Run `impact({target, repo: "marketplace-common"})` before editing a symbol, and `detect_changes()`
-before committing** — `repo:` is mandatory and always a `marketplace*` registry name. Full GitNexus rules
-and CLI: [`AGENTS.md`](./AGENTS.md).
 
 ## Hard rules
 
