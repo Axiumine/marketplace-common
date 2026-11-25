@@ -1,3 +1,6 @@
+import { availableParallelism } from 'node:os'
+import process from 'node:process'
+
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   testRunner: 'vitest',
@@ -24,8 +27,11 @@ export default {
    * What was compared instead is the set of non-killed mutants, where load surfaces first: both runs
    * ended on the same zero non-killed mutants — no survivor, no timeout, nothing to compare away.
    * Re-measure that way before touching this.
+   *
+   * ⚠️ On CI, one worker per core: a GitHub-hosted `ubuntu-latest` runner has 4 vCPU, 28 workers starve it,
+   * and a starved worker is counted as a kill.
    */
-  concurrency: 28,
+  concurrency: process.env.CI ? availableParallelism() : 28,
   timeoutMS: 60000,
   thresholds: { high: 100, low: 95, break: 100 },
   /**
