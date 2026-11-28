@@ -40,6 +40,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # CodeQL's TypeScript extractor runs on Node, which GitHub's images carried and the
+      # self-hosted runners do not.
+      - name: Set up node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
       - name: Initialise CodeQL
         uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
